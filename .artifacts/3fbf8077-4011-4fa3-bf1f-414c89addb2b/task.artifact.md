@@ -1,0 +1,2 @@
+- [ ] Disable Kotlin incremental compilation in `android/gradle.properties`
+- [ ] Verify build status
