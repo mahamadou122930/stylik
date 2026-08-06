@@ -44,45 +44,40 @@ class RoleSelector extends StatelessWidget {
         for (final role in UserRole.values) ...[
           AppCard(
             onTap: () => onChanged(role),
-            radius: 14,
+            radius: 18,
             shadow: false,
-            color:
-                selected == role ? AppColors.tintGreenSoft : AppColors.surface,
+            color: AppColors.surface,
             borderColor:
                 selected == role ? AppColors.accent : AppColors.border,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                AppIconTile(
-                  icon: _iconFor(role),
-                  color: selected == role
-                      ? AppColors.primary
-                      : AppColors.textSecondary,
-                  background: selected == role
-                      ? AppColors.tintGreen
-                      : AppColors.surfaceMuted,
-                ),
-                const SizedBox(width: 12),
+                _buildIconTile(role),
+                const SizedBox(width: 13),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         role.label,
-                        style: AppTypography.sora(14.5, FontWeight.w700),
+                        style: AppTypography.sora(16, FontWeight.w700),
                       ),
-                      const SizedBox(height: 1),
+                      const SizedBox(height: 2),
                       Text(
                         _descriptionFor(role),
-                        style: AppTypography.rowSubtitle,
+                        style: AppTypography.manrope(
+                          12.5,
+                          FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Container(
-                  width: 22,
-                  height: 22,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color:
@@ -94,7 +89,7 @@ class RoleSelector extends StatelessWidget {
                   child: selected == role
                       ? const Icon(
                           Icons.check_rounded,
-                          size: 13,
+                          size: 14,
                           color: Colors.white,
                         )
                       : null,
@@ -102,22 +97,46 @@ class RoleSelector extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 9),
+          const SizedBox(height: 12),
         ],
       ],
     );
   }
 
-  IconData _iconFor(UserRole role) => switch (role) {
-        UserRole.gerant => Icons.workspace_premium_rounded,
-        UserRole.coiffeur => Icons.content_cut_rounded,
-        UserRole.receptionniste => Icons.support_agent_rounded,
-      };
+  Widget _buildIconTile(UserRole role) {
+    final (background, color, iconData) = switch (role) {
+      UserRole.gerant => (
+          AppColors.primary,
+          Colors.white,
+          Icons.workspace_premium_rounded
+        ),
+      UserRole.coiffeur => (
+          AppColors.tintBlue,
+          AppColors.blue,
+          Icons.content_cut_rounded
+        ),
+      UserRole.receptionniste => (
+          AppColors.tintAmber,
+          AppColors.amber,
+          Icons.calendar_today_rounded
+        ),
+    };
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Icon(iconData, size: 24, color: color),
+    );
+  }
 
   String _descriptionFor(UserRole role) => switch (role) {
-        UserRole.gerant => 'Accès complet : finance, équipe, paramètres',
-        UserRole.coiffeur => 'Agenda personnel, clients, encaissement',
-        UserRole.receptionniste => 'Agenda global, file d\'attente, caisse',
+        UserRole.gerant => 'Accès complet : finance, staff, réglages',
+        UserRole.coiffeur => 'Son planning, ses clients, ses commissions',
+        UserRole.receptionniste => 'Agenda, clients et caisse',
       };
 }
 
@@ -152,8 +171,6 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
       return;
     }
 
-    // Session ouverte : `_AuthGate` bascule seul sur l'espace de travail. Sinon
-    // Supabase attend une confirmation par email — on renvoie à la connexion.
     final navigator = Navigator.of(context);
     if (ref.read(currentSessionProvider) != null) {
       navigator.popUntil((route) => route.isFirst);
@@ -201,6 +218,11 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
             selected: _role,
             showLabel: false,
             onChanged: (role) => setState(() => _role = role),
+          ),
+          const SizedBox(height: 16),
+          const AppCallout(
+            message:
+                'Le gérant peut modifier les rôles et permissions à tout moment dans les réglages.',
           ),
         ],
       ),
