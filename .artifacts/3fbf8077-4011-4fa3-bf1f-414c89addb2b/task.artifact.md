@@ -1,2 +1,8 @@
-- [ ] Disable Kotlin incremental compilation in `android/gradle.properties`
-- [ ] Verify build status
+- [x] Update `AppInput` to support dark theme styling
+- [x] Refactor `LoginPage` UI to match design:
+    - [x] Set dark background
+    - [x] Center and restyle logo
+    - [x] Center and restyle text (white)
+    - [x] Update inputs to dark variant with icons
+    - [x] Restyle footer link
+- [/] Verify final UI

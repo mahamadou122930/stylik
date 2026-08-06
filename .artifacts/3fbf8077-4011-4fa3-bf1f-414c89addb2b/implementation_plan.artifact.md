@@ -1,22 +1,33 @@
-# Fix Kotlin Daemon Compilation Error (Different Roots)
+# Fix Login Page Design Mismatch
 
-The build is failing with `java.lang.IllegalArgumentException: this and base files have different roots` during Kotlin compilation. This typically occurs in Flutter projects when the project is on one drive (e.g., `D:`) and the Pub cache is on another (e.g., `C:`). The Kotlin incremental compiler fails to calculate relative paths between these locations.
+The current Login Page uses a light theme that doesn't match the "dark branded" design from the reference mockup (Lot 1.2). I will update the page to match the dark background, centered branding, and specific styling of the mockup.
 
 ## Proposed Changes
 
-### [Android Configuration]
+### [Core Widgets]
 
-#### [MODIFY] [gradle.properties](file:///D:/02-Dev/Dev/stylik/android/gradle.properties)
+#### [MODIFY] [app_input.dart](file:///D:/02-Dev/Dev/stylik/lib/core/widgets/app_input.dart)
+- Add a `dark` boolean parameter to `AppInput`.
+- When `dark` is true:
+    - Use white text.
+    - Use a transparent/dark background with a subtle border.
+    - Change prefix icon color to white.
 
-I will add flags to disable incremental compilation and relocatable caches, which are known to cause this issue across different drives.
+### [Auth Feature]
 
-```properties
-kotlin.incremental=false
-kotlin.incremental.usePreciseJavaTracking=false
-```
+#### [MODIFY] [login_page.dart](file:///D:/02-Dev/Dev/stylik/lib/features/auth/presentation/login_page.dart)
+- Set `Scaffold` background to `AppColors.textPrimary`.
+- Center the logo, title, and subtitle.
+- Update logo container to be a centered square with `AppColors.accent`.
+- Update text colors to white.
+- Use the new `dark` variant for `AppInput`.
+- Change "Créer un compte" to match the design: "Pas de compte ? Inscrire mon salon".
 
 ## Verification Plan
 
 ### Manual Verification
-- Run the Gradle build again (e.g., `./gradlew assembleDebug` or use the IDE build button).
-- If the issue persists, a full clean might be necessary: `./gradlew clean`.
+- Launch the app to the login screen.
+- Verify that the background is dark.
+- Verify that the logo is a centered green square.
+- Verify that inputs have white icons and text.
+- Verify that the "Sign up" link is correctly styled at the bottom.

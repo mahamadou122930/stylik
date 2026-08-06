@@ -1,22 +1,24 @@
-# Walkthrough - Fixing Kotlin Daemon Compilation Error
+# Walkthrough - Login Page UI Fix
 
-I have disabled Kotlin incremental compilation to resolve the "different roots" error caused by the project and the Pub cache being on different drives.
+I have updated the Login Page to exactly match the dark branded design from the mockup.
 
 ## Changes Made
 
-### [Android Configuration]
+### [Core Widgets]
 
-#### [gradle.properties](file:///D:/02-Dev/Dev/stylik/android/gradle.properties)
+#### [app_input.dart](file:///D:/02-Dev/Dev/stylik/lib/core/widgets/app_input.dart)
+- Added support for a `dark` mode in `AppInput`.
+- Customizes text color, background, and icon colors when used on dark backgrounds.
 
-Added the following flags:
-```properties
-kotlin.incremental=false
-kotlin.incremental.usePreciseJavaTracking=false
-```
+### [Auth Feature]
 
-## Next Steps
+#### [login_page.dart](file:///D:/02-Dev/Dev/stylik/lib/features/auth/presentation/login_page.dart)
+- **Background**: Changed to `AppColors.textPrimary` (Dark green/black).
+- **Logo**: Restyled as a centered square with `AppColors.accent` (Bright green) and a scissors icon.
+- **Branding**: Centered the title and subtitle, and changed their colors to white.
+- **Inputs**: Switched to the new `dark` variant with appropriate icons (Email, Lock).
+- **Footer**: Updated the "Sign up" link style and text to match "Pas de compte ? Inscrire mon salon".
 
-> [!IMPORTANT]
-> To ensure the old corrupted caches are cleared, please run a clean build:
-> 1. In the terminal, run: `flutter clean`
-> 2. Then run: `flutter build apk` (or use the Run/Debug button in Android Studio).
+## Verification
+
+Please restart the app or hot reload to see the changes on the login screen. It should now match the design in the HTML mockup.
