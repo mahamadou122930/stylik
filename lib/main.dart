@@ -22,9 +22,17 @@ Future<void> main() async {
   await initializeDateFormatting(Formatters.locale);
 
   // Chargement des variables d'environnement (.env)
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('Erreur de chargement du fichier .env: $e');
+  }
 
-  await SupabaseService.initialize();
+  try {
+    await SupabaseService.initialize();
+  } catch (e) {
+    debugPrint('Erreur d\'initialisation Supabase: $e');
+  }
 
   runApp(const ProviderScope(child: AtelierApp()));
 }

@@ -1,82 +1,176 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/supabase_tables.dart';
+import '../../../core/services/local_db_service.dart';
 import '../domain/product.dart';
 
-/// Stock : inventaire, réception fournisseur et consommation en cabine.
+/// Stock : inventaire, réception fournisseur et consommation en cabine avec support Offline-First.
 class InventoryRepository {
-  const InventoryRepository(this._client);
+  const InventoryRepository(this._client, this._localDb);
 
   final SupabaseClient _client;
+  final LocalDbService _localDb;
 
   Future<List<Product>> fetchAll({
     required String salonId,
     bool onlyLowStock = false,
   }) async {
-    final data = await _client
-        .from(SupabaseTables.products)
-        .select()
-        .eq('salon_id', salonId)
-        .eq('is_active', true)
-        .order('name');
+    try {
+      final data = await _client
+          .from(SupabaseTables.products)
+          .select()
+          .eq('salon_id', salonId)
+          .eq('is_active', true)
+          .order('name', ascending: true);
 
-    final products = data.map((row) => Product.fromMap(row)).toList();
-    return onlyLowStock
-        ? products.where((product) => product.isLowStock).toList()
-        : products;
+      final records = List<Map<String, dynamic>>.from(data);
+      await _localDb.cacheRecords(
+        tableName: SupabaseTables.products,
+        salonId: salonId,
+        records: records,
+      );
+
+      final products = records.map((row) => Product.fromMap(row)).toList();
+      return onlyLowStock
+          ? products.where((product) => product.isLowStock).toList()
+          : products;
+    } catch (_) {
+      final cached = await _localDb.getCachedRecords(
+        tableName: SupabaseTables.products,
+        salonId: salonId,
+      );
+
+      var products = cached.map((row) => Product.fromMap(row)).toList();
+      products = products.where((p) => p.isActive).toList();
+      products.sort((a, b) => a.name.compareTo(b.name));
+
+      return onlyLowStock
+          ? products.where((product) => product.isLowStock).toList()
+          : products;
+    }
   }
 
   Future<Product?> fetchById(String productId) async {
-    final data = await _client
-        .from(SupabaseTables.products)
-        .select()
-        .eq('id', productId)
-        .maybeSingle();
-    return data == null ? null : Product.fromMap(data);
+    try {
+      final data = await _client
+          .from(SupabaseTables.products)
+          .select()
+          .eq('id', productId)
+          .maybeSingle();
+
+      if (data != null) {
+        await _localDb.cacheRecord(
+          tableName: SupabaseTables.products,
+          salonId: data['salon_id'] as String,
+          record: data,
+        );
+        return Product.fromMap(data);
+      }
+    } catch (_) {}
+
+    final cached = await _localDb.getCachedRecordById(
+      tableName: SupabaseTables.products,
+      recordId: productId,
+    );
+    return cached == null ? null : Product.fromMap(cached);
   }
 
   Future<Product> create(Product product) async {
-    final data = await _client
-        .from(SupabaseTables.products)
-        .insert(product.toMap())
-        .select()
-        .single();
-    return Product.fromMap(data);
+    await _localDb.cacheRecord(
+      tableName: SupabaseTables.products,
+      salonId: product.salonId,
+      record: product.toMap(),
+    );
+
+    try {
+      final data = await _client
+          .from(SupabaseTables.products)
+          .insert(product.toMap())
+          .select()
+          .single();
+
+      final created = Product.fromMap(data);
+      await _localDb.cacheRecord(
+        tableName: SupabaseTables.products,
+        salonId: product.salonId,
+        record: created.toMap(),
+      );
+
+      return created;
+    } catch (_) {
+      await _localDb.enqueueMutation(
+        action: 'INSERT',
+        tableName: SupabaseTables.products,
+        recordId: product.id,
+        payload: product.toMap(),
+      );
+      return product;
+    }
   }
 
   Future<Product> update(Product product) async {
-    final data = await _client
-        .from(SupabaseTables.products)
-        .update(product.toMap())
-        .eq('id', product.id)
-        .select()
-        .single();
-    return Product.fromMap(data);
+    await _localDb.cacheRecord(
+      tableName: SupabaseTables.products,
+      salonId: product.salonId,
+      record: product.toMap(),
+    );
+
+    try {
+      final data = await _client
+          .from(SupabaseTables.products)
+          .update(product.toMap())
+          .eq('id', product.id)
+          .select()
+          .single();
+
+      return Product.fromMap(data);
+    } catch (_) {
+      await _localDb.enqueueMutation(
+        action: 'UPDATE',
+        tableName: SupabaseTables.products,
+        recordId: product.id,
+        payload: product.toMap(),
+      );
+      return product;
+    }
   }
 
-  /// Ajuste le stock d'un produit et journalise le mouvement.
-  ///
-  /// S'appuie sur la fonction Postgres `adjust_stock`, qui écrit dans
-  /// `stock_movements` et met `products.stock_quantity` à jour de façon
-  /// atomique.
   Future<void> adjustStock({
     required String productId,
     required int delta,
     required String reason,
     String? contextLabel,
-  }) {
-    return _client.rpc<void>(
-      'adjust_stock',
-      params: {
-        'p_product_id': productId,
-        'p_delta': delta,
-        'p_reason': reason,
-        'p_context': contextLabel,
-      },
+  }) async {
+    final cached = await _localDb.getCachedRecordById(
+      tableName: SupabaseTables.products,
+      recordId: productId,
     );
+
+    if (cached != null) {
+      final currentStock = (cached['stock_quantity'] as num?)?.toInt() ?? 0;
+      cached['stock_quantity'] = currentStock + delta;
+      await _localDb.cacheRecord(
+        tableName: SupabaseTables.products,
+        salonId: cached['salon_id'] as String,
+        record: cached,
+      );
+    }
+
+    try {
+      await _client.rpc<void>(
+        'adjust_stock',
+        params: {
+          'p_product_id': productId,
+          'p_delta': delta,
+          'p_reason': reason,
+          'p_context': contextLabel,
+        },
+      );
+    } catch (_) {
+      // Enregistré localement
+    }
   }
 
-  /// Réception fournisseur : incrémente le stock des lignes livrées.
   Future<void> receiveDelivery({
     required Map<String, int> quantitiesByProductId,
     String? supplierLabel,
@@ -92,7 +186,6 @@ class InventoryRepository {
     }
   }
 
-  /// Sortie de stock (consommation en cabine, casse).
   Future<void> consumeStock({
     required String productId,
     required int quantity,
@@ -105,23 +198,26 @@ class InventoryRepository {
         contextLabel: contextLabel,
       );
 
-  /// Mouvements de stock d'une période, les plus récents en premier.
   Future<List<StockMovement>> fetchMovements({
     required String salonId,
     required DateTime from,
     required DateTime to,
     String? reason,
   }) async {
-    var query = _client
-        .from(SupabaseTables.stockMovements)
-        .select('*, products(name)')
-        .eq('salon_id', salonId)
-        .gte('occurred_at', from.toUtc().toIso8601String())
-        .lt('occurred_at', to.toUtc().toIso8601String());
+    try {
+      var query = _client
+          .from(SupabaseTables.stockMovements)
+          .select('*, products(name)')
+          .eq('salon_id', salonId)
+          .gte('occurred_at', from.toUtc().toIso8601String())
+          .lt('occurred_at', to.toUtc().toIso8601String());
 
-    if (reason != null) query = query.eq('reason', reason);
+      if (reason != null) query = query.eq('reason', reason);
 
-    final data = await query.order('occurred_at', ascending: false);
-    return data.map((row) => StockMovement.fromMap(row)).toList();
+      final data = await query.order('occurred_at', ascending: false);
+      return data.map((row) => StockMovement.fromMap(row)).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 }

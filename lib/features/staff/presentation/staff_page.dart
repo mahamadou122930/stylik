@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
 import 'staff_detail_page.dart';
+import 'staff_form_page.dart';
 import 'staff_providers.dart';
 import 'time_off_page.dart';
 
@@ -29,9 +30,8 @@ class StaffPage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.add_rounded,
         filled: true,
-        onTap: () {
-          // TODO(staff): inviter un nouveau membre par email.
-        },
+        onTap: () =>
+            Navigator.of(context).pushNamed(StaffFormPage.routeName),
       ),
       header: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),

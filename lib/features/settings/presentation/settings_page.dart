@@ -175,7 +175,10 @@ class SettingsPage extends ConsumerWidget {
             label: 'Se déconnecter',
             variant: AppButtonVariant.danger,
             icon: Icons.logout_rounded,
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () async {
+              Navigator.of(context).popUntil((route) => route.isFirst);
+              await ref.read(authControllerProvider.notifier).signOut();
+            },
           ),
         ],
       ),

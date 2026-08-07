@@ -6,8 +6,13 @@ import '../data/agenda_repository.dart';
 import '../domain/appointment.dart';
 import '../domain/walk_in_entry.dart';
 
+import '../../../core/services/local_db_service.dart';
+
 final agendaRepositoryProvider = Provider<AgendaRepository>(
-  (ref) => AgendaRepository(ref.watch(supabaseClientProvider)),
+  (ref) => AgendaRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(localDbServiceProvider),
+  ),
 );
 
 /// Jour affiché dans l'agenda.

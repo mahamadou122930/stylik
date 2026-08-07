@@ -17,7 +17,7 @@ class StaffRepository {
 
     if (role != null) query = query.eq('role', role.value);
 
-    final data = await query.order('full_name');
+    final data = await query.order('full_name', ascending: true);
     return data.map((row) => Profile.fromMap(row)).toList();
   }
 
@@ -32,6 +32,39 @@ class StaffRepository {
         .eq('id', profileId)
         .maybeSingle();
     return data == null ? null : Profile.fromMap(data);
+  }
+
+  /// Ajoute un membre à l'équipe (écran « Nouvel employé »).
+  ///
+  /// Aucun compte Supabase Auth n'est créé ici : le profil vit seul et sera
+  /// rattaché automatiquement si la personne s'inscrit un jour avec [email].
+  /// Un coiffeur sans compte est pleinement utilisable — planning, commissions,
+  /// encaissement à son nom — il ne peut simplement pas se connecter.
+  Future<Profile> create({
+    required String salonId,
+    required String fullName,
+    required UserRole role,
+    List<String> specialties = const [],
+    double commissionRate = 0,
+    String? phone,
+    String? email,
+  }) async {
+    final data = await _client
+        .from(SupabaseTables.profiles)
+        .insert({
+          'salon_id': salonId,
+          'full_name': fullName,
+          'role': role.value,
+          'specialties': specialties,
+          'commission_rate': commissionRate,
+          'phone': phone,
+          'email': email,
+          'is_active': true,
+        })
+        .select()
+        .single();
+
+    return Profile.fromMap(data);
   }
 
   Future<Profile> update(Profile profile) async {
@@ -92,7 +125,7 @@ class StaffRepository {
     if (status != null) query = query.eq('status', status.value);
     if (profileId != null) query = query.eq('profile_id', profileId);
 
-    final data = await query.order('start_date');
+    final data = await query.order('start_date', ascending: true);
     return data.map((row) => TimeOff.fromMap(row)).toList();
   }
 

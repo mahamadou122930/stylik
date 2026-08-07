@@ -5,8 +5,13 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/catalog_repository.dart';
 import '../domain/salon_service.dart';
 
+import '../../../core/services/local_db_service.dart';
+
 final catalogRepositoryProvider = Provider<CatalogRepository>(
-  (ref) => CatalogRepository(ref.watch(supabaseClientProvider)),
+  (ref) => CatalogRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(localDbServiceProvider),
+  ),
 );
 
 /// Prestations actives du salon (forfaits inclus).

@@ -45,15 +45,22 @@ import 'features/pos/presentation/pos_page.dart';
 import 'features/pos/presentation/receipt_page.dart';
 import 'features/pos/presentation/refund_page.dart';
 import 'features/pos/presentation/transactions_page.dart';
+import 'features/settings/domain/subscription_plan.dart';
 import 'features/settings/presentation/notifications_page.dart';
+import 'features/settings/presentation/plan_checkout_page.dart';
+import 'features/settings/presentation/plan_selection_page.dart';
 import 'features/settings/presentation/roles_page.dart';
 import 'features/settings/presentation/salon_info_page.dart';
 import 'features/settings/presentation/settings_page.dart';
 import 'features/settings/presentation/subscription_page.dart';
 import 'features/staff/presentation/staff_detail_page.dart';
+import 'features/staff/presentation/staff_form_page.dart';
 import 'features/staff/presentation/staff_page.dart';
 import 'features/staff/presentation/staff_schedule_page.dart';
 import 'features/staff/presentation/time_off_page.dart';
+
+import 'core/services/sync_engine.dart';
+import 'core/widgets/offline_banner.dart';
 
 /// Racine de l'application L'Atelier.
 class AtelierApp extends ConsumerWidget {
@@ -61,10 +68,16 @@ class AtelierApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Initialiser/démarrer l'écouteur du SyncEngine
+    ref.listen(syncEngineProvider, (previous, next) {});
+
     return MaterialApp(
       title: 'L\'Atelier',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      builder: (context, child) {
+        return OfflineBanner(child: child ?? const SizedBox.shrink());
+      },
       home: const _AuthGate(),
       routes: {
         WelcomePage.routeName: (_) => const WelcomePage(),
@@ -95,12 +108,14 @@ class AtelierApp extends ConsumerWidget {
         PromotionsPage.routeName: (_) => const PromotionsPage(),
         RemindersPage.routeName: (_) => const RemindersPage(),
         StaffPage.routeName: (_) => const StaffPage(),
+        StaffFormPage.routeName: (_) => const StaffFormPage(),
         TimeOffPage.routeName: (_) => const TimeOffPage(),
         SettingsPage.routeName: (_) => const SettingsPage(),
         SalonInfoPage.routeName: (_) => const SalonInfoPage(),
         RolesPage.routeName: (_) => const RolesPage(),
         NotificationsPage.routeName: (_) => const NotificationsPage(),
         SubscriptionPage.routeName: (_) => const SubscriptionPage(),
+        PlanSelectionPage.routeName: (_) => const PlanSelectionPage(),
       },
       onGenerateRoute: _onGenerateRoute,
     );
@@ -136,6 +151,8 @@ class AtelierApp extends ConsumerWidget {
         page(ServiceEditPage(service: settings.arguments as SalonService?)),
       RefundPage.routeName =>
         page(RefundPage(transaction: settings.arguments! as SalonTransaction)),
+      PlanCheckoutPage.routeName =>
+        page(PlanCheckoutPage(plan: settings.arguments! as SubscriptionPlan)),
       _ => null,
     };
   }
@@ -152,8 +169,12 @@ class _AuthGate extends ConsumerWidget {
 
     final profile = ref.watch(currentProfileProvider);
     return profile.when(
-      loading: () => const Scaffold(body: AppLoader()),
+      loading: () => const Scaffold(
+        backgroundColor: AppColors.background,
+        body: AppLoader(),
+      ),
       error: (error, _) => Scaffold(
+        backgroundColor: AppColors.background,
         body: AppErrorState(
           message: '$error',
           onRetry: () => ref.invalidate(currentProfileProvider),
@@ -163,6 +184,7 @@ class _AuthGate extends ConsumerWidget {
       // (ou pas) créé la fiche. Rien d'utile à afficher — on laisse réessayer.
       data: (data) => data == null
           ? Scaffold(
+              backgroundColor: AppColors.background,
               body: AppErrorState(
                 message: 'Profil introuvable pour ce compte.',
                 onRetry: () => ref.invalidate(currentProfileProvider),
@@ -183,6 +205,7 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
+  final Set<int> _visitedIndices = {0};
 
   static const List<_Tab> _tabs = [
     _Tab('Accueil', Icons.home_outlined, Icons.home_rounded, HomePage()),
@@ -207,11 +230,25 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     _Tab('Plus', Icons.grid_view_outlined, Icons.grid_view_rounded, MorePage()),
   ];
 
+  void _onTabSelected(int index) {
+    if (!_visitedIndices.contains(index)) {
+      setState(() {
+        _visitedIndices.add(index);
+        _index = index;
+      });
+    } else {
+      setState(() => _index = index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final body = IndexedStack(
       index: _index,
-      children: [for (final tab in _tabs) tab.page],
+      children: [
+        for (var i = 0; i < _tabs.length; i++)
+          _visitedIndices.contains(i) ? _tabs[i].page : const SizedBox.shrink(),
+      ],
     );
 
     if (MediaQuery.sizeOf(context).width >= 720) {
@@ -222,7 +259,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             NavigationRail(
               selectedIndex: _index,
               labelType: NavigationRailLabelType.all,
-              onDestinationSelected: (value) => setState(() => _index = value),
+              onDestinationSelected: _onTabSelected,
               destinations: [
                 for (final tab in _tabs)
                   NavigationRailDestination(
@@ -258,7 +295,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                     child: _TabButton(
                       tab: _tabs[i],
                       selected: i == _index,
-                      onTap: () => setState(() => _index = i),
+                      onTap: () => _onTabSelected(i),
                     ),
                   ),
               ],

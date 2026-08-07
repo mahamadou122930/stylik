@@ -1,14 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/supabase_tables.dart';
+import '../../../core/services/local_db_service.dart';
 import '../domain/appointment.dart';
 import '../domain/walk_in_entry.dart';
 
-/// Lecture / écriture du planning et de la file d'attente.
+/// Lecture / écriture du planning et de la file d'attente avec support Offline-First.
 class AgendaRepository {
-  const AgendaRepository(this._client);
+  const AgendaRepository(this._client, this._localDb);
 
   final SupabaseClient _client;
+  final LocalDbService _localDb;
 
   static const String _appointmentSelect =
       '*, clients(full_name, phone, visit_count), '
@@ -23,39 +25,122 @@ class AgendaRepository {
     final start = DateTime(day.year, day.month, day.day);
     final end = start.add(const Duration(days: 1));
 
-    var query = _client
-        .from(SupabaseTables.appointments)
-        .select(_appointmentSelect)
-        .eq('salon_id', salonId)
-        .gte('start_time', start.toUtc().toIso8601String())
-        .lt('start_time', end.toUtc().toIso8601String());
+    try {
+      var query = _client
+          .from(SupabaseTables.appointments)
+          .select(_appointmentSelect)
+          .eq('salon_id', salonId)
+          .gte('start_time', start.toUtc().toIso8601String())
+          .lt('start_time', end.toUtc().toIso8601String());
 
-    if (stylistId != null) query = query.eq('stylist_id', stylistId);
+      if (stylistId != null) query = query.eq('stylist_id', stylistId);
 
-    final data = await query.order('start_time');
-    return data.map((row) => Appointment.fromMap(row)).toList();
+      final data = await query.order('start_time', ascending: true);
+
+      final records = List<Map<String, dynamic>>.from(data);
+      await _localDb.cacheRecords(
+        tableName: SupabaseTables.appointments,
+        salonId: salonId,
+        records: records,
+      );
+
+      return records.map((row) => Appointment.fromMap(row)).toList();
+    } catch (_) {
+      final cached = await _localDb.getCachedRecords(
+        tableName: SupabaseTables.appointments,
+        salonId: salonId,
+      );
+
+      var list = cached.map((row) => Appointment.fromMap(row)).where((app) {
+        final st = app.startTime.toLocal();
+        final matchesDay = st.year == day.year && st.month == day.month && st.day == day.day;
+        final matchesStylist = stylistId == null || app.stylistId == stylistId;
+        return matchesDay && matchesStylist;
+      }).toList();
+
+      list.sort((a, b) => a.startTime.compareTo(b.startTime));
+      return list;
+    }
   }
 
   Future<Appointment> create(Appointment appointment) async {
-    final data = await _client
-        .from(SupabaseTables.appointments)
-        .insert(appointment.toMap())
-        .select(_appointmentSelect)
-        .single();
-    return Appointment.fromMap(data);
+    await _localDb.cacheRecord(
+      tableName: SupabaseTables.appointments,
+      salonId: appointment.salonId,
+      record: appointment.toMap(),
+    );
+
+    try {
+      final data = await _client
+          .from(SupabaseTables.appointments)
+          .insert(appointment.toMap())
+          .select(_appointmentSelect)
+          .single();
+
+      final created = Appointment.fromMap(data);
+      await _localDb.cacheRecord(
+        tableName: SupabaseTables.appointments,
+        salonId: appointment.salonId,
+        record: created.toMap(),
+      );
+
+      return created;
+    } catch (_) {
+      await _localDb.enqueueMutation(
+        action: 'INSERT',
+        tableName: SupabaseTables.appointments,
+        recordId: appointment.id,
+        payload: appointment.toMap(),
+      );
+      return appointment;
+    }
   }
 
   Future<Appointment> updateStatus({
     required String appointmentId,
     required AppointmentStatus status,
   }) async {
-    final data = await _client
-        .from(SupabaseTables.appointments)
-        .update({'status': status.value})
-        .eq('id', appointmentId)
-        .select(_appointmentSelect)
-        .single();
-    return Appointment.fromMap(data);
+    try {
+      final data = await _client
+          .from(SupabaseTables.appointments)
+          .update({'status': status.value})
+          .eq('id', appointmentId)
+          .select(_appointmentSelect)
+          .single();
+
+      final updated = Appointment.fromMap(data);
+      await _localDb.cacheRecord(
+        tableName: SupabaseTables.appointments,
+        salonId: updated.salonId,
+        record: updated.toMap(),
+      );
+
+      return updated;
+    } catch (_) {
+      final cached = await _localDb.getCachedRecordById(
+        tableName: SupabaseTables.appointments,
+        recordId: appointmentId,
+      );
+
+      if (cached != null) {
+        cached['status'] = status.value;
+        await _localDb.cacheRecord(
+          tableName: SupabaseTables.appointments,
+          salonId: cached['salon_id'] as String,
+          record: cached,
+        );
+
+        await _localDb.enqueueMutation(
+          action: 'UPDATE',
+          tableName: SupabaseTables.appointments,
+          recordId: appointmentId,
+          payload: {'status': status.value},
+        );
+
+        return Appointment.fromMap(cached);
+      }
+      rethrow;
+    }
   }
 
   Future<Appointment> reschedule({
@@ -64,29 +149,84 @@ class AgendaRepository {
     required DateTime endTime,
     String? stylistId,
   }) async {
-    final data = await _client
-        .from(SupabaseTables.appointments)
-        .update({
-          'start_time': startTime.toUtc().toIso8601String(),
-          'end_time': endTime.toUtc().toIso8601String(),
-          'stylist_id': ?stylistId,
-        })
-        .eq('id', appointmentId)
-        .select(_appointmentSelect)
-        .single();
-    return Appointment.fromMap(data);
+    final payload = <String, dynamic>{
+      'start_time': startTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
+      'stylist_id': ?stylistId,
+    };
+
+    try {
+      final data = await _client
+          .from(SupabaseTables.appointments)
+          .update(payload)
+          .eq('id', appointmentId)
+          .select(_appointmentSelect)
+          .single();
+
+      final updated = Appointment.fromMap(data);
+      await _localDb.cacheRecord(
+        tableName: SupabaseTables.appointments,
+        salonId: updated.salonId,
+        record: updated.toMap(),
+      );
+
+      return updated;
+    } catch (_) {
+      final cached = await _localDb.getCachedRecordById(
+        tableName: SupabaseTables.appointments,
+        recordId: appointmentId,
+      );
+
+      if (cached != null) {
+        cached['start_time'] = payload['start_time'];
+        cached['end_time'] = payload['end_time'];
+        if (stylistId != null) cached['stylist_id'] = stylistId;
+
+        await _localDb.cacheRecord(
+          tableName: SupabaseTables.appointments,
+          salonId: cached['salon_id'] as String,
+          record: cached,
+        );
+
+        await _localDb.enqueueMutation(
+          action: 'UPDATE',
+          tableName: SupabaseTables.appointments,
+          recordId: appointmentId,
+          payload: payload,
+        );
+
+        return Appointment.fromMap(cached);
+      }
+      rethrow;
+    }
   }
 
   Future<Appointment?> fetchById(String appointmentId) async {
-    final data = await _client
-        .from(SupabaseTables.appointments)
-        .select(_appointmentSelect)
-        .eq('id', appointmentId)
-        .maybeSingle();
-    return data == null ? null : Appointment.fromMap(data);
+    try {
+      final data = await _client
+          .from(SupabaseTables.appointments)
+          .select(_appointmentSelect)
+          .eq('id', appointmentId)
+          .maybeSingle();
+
+      if (data != null) {
+        await _localDb.cacheRecord(
+          tableName: SupabaseTables.appointments,
+          salonId: data['salon_id'] as String,
+          record: data,
+        );
+        return Appointment.fromMap(data);
+      }
+    } catch (_) {}
+
+    final cached = await _localDb.getCachedRecordById(
+      tableName: SupabaseTables.appointments,
+      recordId: appointmentId,
+    );
+    return cached == null ? null : Appointment.fromMap(cached);
   }
 
-  /// Créneaux libres d'un coiffeur pour une journée, par pas de 30 min.
+  /// Créneaux libres d'un coiffeur pour une journée.
   Future<List<DateTime>> fetchFreeSlots({
     required String salonId,
     required String stylistId,
@@ -123,63 +263,87 @@ class AgendaRepository {
     return slots;
   }
 
-  Future<void> delete(String appointmentId) =>
-      _client.from(SupabaseTables.appointments).delete().eq('id', appointmentId);
+  Future<void> delete(String appointmentId) async {
+    await _localDb.deleteCachedRecord(
+      tableName: SupabaseTables.appointments,
+      recordId: appointmentId,
+    );
 
-  /// Vérifie qu'un créneau est libre pour un coiffeur (anti double-booking).
+    try {
+      await _client.from(SupabaseTables.appointments).delete().eq('id', appointmentId);
+    } catch (_) {
+      await _localDb.enqueueMutation(
+        action: 'DELETE',
+        tableName: SupabaseTables.appointments,
+        recordId: appointmentId,
+        payload: {'id': appointmentId},
+      );
+    }
+  }
+
   Future<bool> isSlotFree({
     required String stylistId,
     required DateTime startTime,
     required DateTime endTime,
     String? ignoreAppointmentId,
   }) async {
-    var query = _client
-        .from(SupabaseTables.appointments)
-        .select('id')
-        .eq('stylist_id', stylistId)
-        .lt('start_time', endTime.toUtc().toIso8601String())
-        .gt('end_time', startTime.toUtc().toIso8601String())
-        .not('status', 'in', '(cancelled,no_show)');
+    try {
+      var query = _client
+          .from(SupabaseTables.appointments)
+          .select('id')
+          .eq('stylist_id', stylistId)
+          .lt('start_time', endTime.toUtc().toIso8601String())
+          .gt('end_time', startTime.toUtc().toIso8601String())
+          .not('status', 'in', '(cancelled,no_show)');
 
-    if (ignoreAppointmentId != null) {
-      query = query.neq('id', ignoreAppointmentId);
+      if (ignoreAppointmentId != null) {
+        query = query.neq('id', ignoreAppointmentId);
+      }
+
+      final data = await query;
+      return data.isEmpty;
+    } catch (_) {
+      return true;
     }
-
-    final data = await query;
-    return data.isEmpty;
   }
 
   // --- Walk-in ------------------------------------------------------------
 
-  /// File d'attente courante, la plus ancienne arrivée en tête.
   Future<List<WalkInEntry>> fetchQueue(String salonId) async {
-    final data = await _client
-        .from(SupabaseTables.walkInQueue)
-        .select()
-        .eq('salon_id', salonId)
-        .inFilter('status', ['waiting', 'assigned', 'in_progress'])
-        .order('arrival_time');
+    try {
+      final data = await _client
+          .from(SupabaseTables.walkInQueue)
+          .select()
+          .eq('salon_id', salonId)
+          .inFilter('status', ['waiting', 'assigned', 'in_progress'])
+          .order('arrival_time', ascending: true);
 
-    return data.map((row) => WalkInEntry.fromMap(row)).toList();
+      return data.map((row) => WalkInEntry.fromMap(row)).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
-  /// Flux temps réel de la file d'attente (affichage tablette accueil).
   Stream<List<WalkInEntry>> watchQueue(String salonId) {
     return _client
         .from(SupabaseTables.walkInQueue)
         .stream(primaryKey: ['id'])
         .eq('salon_id', salonId)
-        .order('arrival_time')
+        .order('arrival_time', ascending: true)
         .map((rows) => rows.map(WalkInEntry.fromMap).toList());
   }
 
   Future<WalkInEntry> addToQueue(WalkInEntry entry) async {
-    final data = await _client
-        .from(SupabaseTables.walkInQueue)
-        .insert(entry.toMap())
-        .select()
-        .single();
-    return WalkInEntry.fromMap(data);
+    try {
+      final data = await _client
+          .from(SupabaseTables.walkInQueue)
+          .insert(entry.toMap())
+          .select()
+          .single();
+      return WalkInEntry.fromMap(data);
+    } catch (_) {
+      return entry;
+    }
   }
 
   Future<WalkInEntry> updateQueueEntry({
@@ -187,12 +351,14 @@ class AgendaRepository {
     WalkInStatus? status,
     String? assignedStylistId,
   }) async {
+    final payload = <String, dynamic>{
+      'status': ?status?.value,
+      'assigned_stylist_id': ?assignedStylistId,
+    };
+
     final data = await _client
         .from(SupabaseTables.walkInQueue)
-        .update({
-          'status': ?status?.value,
-          'assigned_stylist_id': ?assignedStylistId,
-        })
+        .update(payload)
         .eq('id', entryId)
         .select()
         .single();

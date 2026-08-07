@@ -20,8 +20,12 @@ CREATE TABLE IF NOT EXISTS public.salons (
 );
 
 -- 2. Table `profiles` (Personnel / Utilisateurs)
+-- Le profil est autonome : le gérant crée un employé sans compte Auth. Le
+-- rattachement se fait par `user_id` si la personne s'inscrit un jour.
 CREATE TABLE IF NOT EXISTS public.profiles (
-    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE SET NULL,
+    email TEXT,                   -- sert au rattachement à l'inscription
     salon_id UUID REFERENCES public.salons(id) ON DELETE CASCADE,
     full_name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'stylist', -- 'owner', 'manager', 'receptionist', 'stylist'
@@ -31,6 +35,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     avatar_url TEXT,
     phone TEXT,
     is_active BOOLEAN DEFAULT true,
+    leave_balance_days INTEGER DEFAULT 0, -- solde de congés (fiche employé 4.2)
     working_hours JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -231,12 +236,35 @@ CREATE TABLE IF NOT EXISTS public.campaigns (
 CREATE TABLE IF NOT EXISTS public.subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     salon_id UUID REFERENCES public.salons(id) ON DELETE CASCADE,
+    plan_code TEXT,               -- référence `subscription_plans.code`
     plan_name TEXT DEFAULT 'Formule',
     price_per_month_fcfa INTEGER DEFAULT 0,
+    billing_cycle TEXT DEFAULT 'monthly', -- 'monthly', 'annual'
     status TEXT DEFAULT 'active', -- 'active', 'trialing', 'past_due', 'canceled'
     features TEXT[] DEFAULT '{}',
     payment_label TEXT,
     next_charge_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Un seul abonnement par salon (nécessaire à l'upsert du changement de formule)
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_subscriptions_salon ON public.subscriptions(salon_id);
+
+-- 17. Table `subscription_plans` (Catalogue des formules SaaS)
+-- Table globale, sans `salon_id` : elle décrit l'offre commerciale affichée sur
+-- les écrans « Choisir un abonnement » et « Comparatif & paiement ».
+CREATE TABLE IF NOT EXISTS public.subscription_plans (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    code TEXT UNIQUE NOT NULL,    -- 'solo', 'pro', 'multi'
+    name TEXT NOT NULL,
+    tagline TEXT,                 -- « Salon avec équipe »
+    summary TEXT,                 -- ligne descriptive sous le prix
+    price_per_month_fcfa INTEGER NOT NULL DEFAULT 0,
+    -- Fonctions comparées : 'agenda', 'pos', 'team', 'reports', 'messaging'
+    capabilities TEXT[] DEFAULT '{}',
+    features TEXT[] DEFAULT '{}', -- puces « Inclus dans … »
+    is_popular BOOLEAN DEFAULT false,
+    sort_order INTEGER DEFAULT 0,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -273,9 +301,38 @@ ALTER TABLE public.promotions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reminder_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
 
--- Autoriser la lecture / écriture aux utilisateurs authentifiés
-CREATE POLICY "Authenticated users full access to salons" ON public.salons FOR ALL TO authenticated USING (true);
+-- Le salon est créé avant le compte du gérant (inscription 1.3 → 1.4) : l'INSERT
+-- doit donc être ouvert aux anonymes, le reste reste réservé aux authentifiés.
+CREATE POLICY "Anyone can create a salon during signup" ON public.salons FOR INSERT TO anon, authenticated WITH CHECK (true);
+CREATE POLICY "Authenticated users can read salons" ON public.salons FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Authenticated users can update salons" ON public.salons FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Authenticated users can delete salons" ON public.salons FOR DELETE TO authenticated USING (true);
+
+-- Création du salon par un utilisateur encore anonyme, sans ouvrir la lecture.
+CREATE OR REPLACE FUNCTION public.create_salon_for_signup(
+  p_name TEXT,
+  p_phone TEXT,
+  p_address TEXT
+)
+RETURNS public.salons
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_salon public.salons;
+BEGIN
+  INSERT INTO public.salons (name, phone, address)
+  VALUES (p_name, p_phone, p_address)
+  RETURNING * INTO v_salon;
+  RETURN v_salon;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_salon_for_signup(TEXT, TEXT, TEXT) TO anon, authenticated;
+
 CREATE POLICY "Authenticated users full access to profiles" ON public.profiles FOR ALL TO authenticated USING (true);
 CREATE POLICY "Authenticated users full access to clients" ON public.clients FOR ALL TO authenticated USING (true);
 CREATE POLICY "Authenticated users full access to services" ON public.services FOR ALL TO authenticated USING (true);
@@ -291,6 +348,53 @@ CREATE POLICY "Authenticated users full access to promotions" ON public.promotio
 CREATE POLICY "Authenticated users full access to reminder_rules" ON public.reminder_rules FOR ALL TO authenticated USING (true);
 CREATE POLICY "Authenticated users full access to campaigns" ON public.campaigns FOR ALL TO authenticated USING (true);
 CREATE POLICY "Authenticated users full access to subscriptions" ON public.subscriptions FOR ALL TO authenticated USING (true);
+
+-- Le catalogue des formules est public en lecture, modifiable seulement côté admin.
+CREATE POLICY "Anyone can read subscription plans" ON public.subscription_plans FOR SELECT TO anon, authenticated USING (true);
+
+-- Trigger pour la création automatique du profil après inscription Supabase Auth
+-- À l'inscription : réclamer la fiche pré-créée par le gérant (même email et
+-- même salon) plutôt que d'en créer une seconde en doublon.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_salon_id UUID := (NEW.raw_user_meta_data->>'salon_id')::uuid;
+  v_claimed  UUID;
+BEGIN
+  SELECT id INTO v_claimed
+    FROM public.profiles
+   WHERE user_id IS NULL
+     AND email IS NOT NULL
+     AND lower(email) = lower(NEW.email)
+     AND (v_salon_id IS NULL OR salon_id = v_salon_id)
+   LIMIT 1;
+
+  IF v_claimed IS NOT NULL THEN
+    UPDATE public.profiles
+       SET user_id   = NEW.id,
+           full_name = COALESCE(
+             NULLIF(NEW.raw_user_meta_data->>'full_name', ''),
+             full_name
+           )
+     WHERE id = v_claimed;
+  ELSE
+    INSERT INTO public.profiles (user_id, salon_id, full_name, email, role)
+    VALUES (
+      NEW.id,
+      v_salon_id,
+      COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+      NEW.email,
+      COALESCE(NEW.raw_user_meta_data->>'role', 'coiffeur')
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ==========================================
 -- STORAGE BUCKETS
@@ -311,3 +415,107 @@ CREATE POLICY "Authenticated Upload client-photos" ON storage.objects FOR INSERT
 
 CREATE POLICY "Public Read product-photos" ON storage.objects FOR SELECT USING (bucket_id = 'product-photos');
 CREATE POLICY "Authenticated Upload product-photos" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'product-photos');
+
+-- ==========================================
+-- FONCTIONS DU RAPPORT FINANCIER & CAISSE
+-- ==========================================
+
+-- Rapport de performance par service
+CREATE OR REPLACE FUNCTION public.service_performance(
+  p_salon_id UUID,
+  p_from TIMESTAMPTZ,
+  p_to TIMESTAMPTZ
+)
+RETURNS TABLE (
+  service_id TEXT,
+  name TEXT,
+  category TEXT,
+  count BIGINT,
+  revenue_fcfa BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH expanded_lines AS (
+    SELECT 
+      (line->>'refId')::TEXT as s_id,
+      (line->>'label')::TEXT as s_name,
+      COALESCE(line->>'category', 'Autre')::TEXT as s_category,
+      COALESCE((line->>'quantity')::BIGINT, 1) as s_qty,
+      COALESCE((line->>'unitPriceFcfa')::BIGINT, 0) * COALESCE((line->>'quantity')::BIGINT, 1) as s_amount
+    FROM public.transactions t,
+         jsonb_array_elements(t.lines) as line
+    WHERE t.salon_id = p_salon_id
+      AND t.created_at >= p_from
+      AND t.created_at < p_to
+      AND t.status = 'paid'
+      AND COALESCE((line->>'isProduct')::BOOLEAN, false) = false
+  )
+  SELECT 
+    el.s_id as service_id,
+    el.s_name as name,
+    el.s_category as category,
+    SUM(el.s_qty) as count,
+    SUM(el.s_amount) as revenue_fcfa
+  FROM expanded_lines el
+  GROUP BY el.s_id, el.s_name, el.s_category
+  ORDER BY revenue_fcfa DESC;
+END;
+$$;
+
+-- Rapport de commissions par coiffeur
+CREATE OR REPLACE FUNCTION public.stylist_commissions(
+  p_salon_id UUID,
+  p_from TIMESTAMPTZ,
+  p_to TIMESTAMPTZ
+)
+RETURNS TABLE (
+  stylist_id TEXT,
+  stylist_name TEXT,
+  revenue_fcfa BIGINT,
+  commission_fcfa BIGINT,
+  service_count BIGINT,
+  commission_rate NUMERIC,
+  speciality TEXT,
+  client_count BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH expanded_lines AS (
+    SELECT 
+      p.id::TEXT as st_id,
+      p.full_name as st_name,
+      p.speciality as st_spec,
+      COALESCE(p.commission_rate, 0)::NUMERIC as st_rate,
+      COALESCE((line->>'unitPriceFcfa')::BIGINT, 0) * COALESCE((line->>'quantity')::BIGINT, 1) as line_amount,
+      COALESCE((line->>'quantity')::BIGINT, 1) as line_qty,
+      t.client_id
+    FROM public.transactions t
+    CROSS JOIN jsonb_array_elements(t.lines) as line
+    JOIN public.profiles p ON p.id::TEXT = COALESCE(line->>'stylistId', t.cashier_id::TEXT)
+    WHERE t.salon_id = p_salon_id
+      AND t.created_at >= p_from
+      AND t.created_at < p_to
+      AND t.status = 'paid'
+  )
+  SELECT 
+    el.st_id as stylist_id,
+    el.st_name as stylist_name,
+    SUM(el.line_amount) as revenue_fcfa,
+    ROUND(SUM(el.line_amount) * (MAX(el.st_rate) / 100.0))::BIGINT as commission_fcfa,
+    SUM(el.line_qty) as service_count,
+    MAX(el.st_rate) as commission_rate,
+    MAX(el.st_spec) as speciality,
+    COUNT(DISTINCT el.client_id) as client_count
+  FROM expanded_lines el
+  GROUP BY el.st_id, el.st_name;
+END;
+$$;
+

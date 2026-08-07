@@ -52,10 +52,13 @@ class AuthRepository {
     final userId = currentUserId;
     if (userId == null) return null;
 
+    // Le profil est retrouvé par `user_id`, pas par `id` : depuis la migration
+    // `20260807_standalone_staff_profiles`, un profil créé par le gérant a son
+    // propre identifiant et n'est rattaché à un compte qu'à l'inscription.
     final data = await _client
         .from(SupabaseTables.profiles)
         .select()
-        .eq('id', userId)
+        .eq('user_id', userId)
         .maybeSingle();
 
     return data == null ? null : Profile.fromMap(data);

@@ -12,11 +12,25 @@ class Profile {
     this.pinCode,
     this.avatarUrl,
     this.phone,
+    this.email,
+    this.userId,
     this.isActive = true,
+    this.leaveBalanceDays = 0,
   });
 
   final String id;
   final String salonId;
+
+  /// Compte Supabase Auth rattaché, `null` tant que l'employé ne s'est pas
+  /// inscrit. Un membre sans compte figure au planning mais ne se connecte pas.
+  final String? userId;
+
+  /// Email de rattachement : à l'inscription, le déclencheur `handle_new_user`
+  /// réclame la fiche portant cet email au lieu d'en créer une seconde.
+  final String? email;
+
+  /// `true` si l'employé peut se connecter à l'application.
+  bool get hasAccount => userId != null;
   final String fullName;
   final UserRole role;
 
@@ -33,6 +47,9 @@ class Profile {
   final String? phone;
   final bool isActive;
 
+  /// Jours de congés restants, affichés sur la fiche employé (4.2).
+  final int leaveBalanceDays;
+
   factory Profile.fromMap(Map<String, dynamic> map) => Profile(
         id: map['id'] as String,
         salonId: map['salon_id'] as String,
@@ -45,7 +62,10 @@ class Profile {
         pinCode: map['pin_code'] as String?,
         avatarUrl: map['avatar_url'] as String?,
         phone: map['phone'] as String?,
+        email: map['email'] as String?,
+        userId: map['user_id'] as String?,
         isActive: (map['is_active'] as bool?) ?? true,
+        leaveBalanceDays: (map['leave_balance_days'] as num?)?.toInt() ?? 0,
       );
 
   Map<String, dynamic> toMap() => {
@@ -58,7 +78,11 @@ class Profile {
         'pin_code': pinCode,
         'avatar_url': avatarUrl,
         'phone': phone,
+        'email': email,
         'is_active': isActive,
+        'leave_balance_days': leaveBalanceDays,
+        // `user_id` est volontairement absent : il n'est écrit que par le
+        // déclencheur `handle_new_user`, au rattachement du compte.
       };
 
   Profile copyWith({
@@ -69,7 +93,9 @@ class Profile {
     String? pinCode,
     String? avatarUrl,
     String? phone,
+    String? email,
     bool? isActive,
+    int? leaveBalanceDays,
   }) =>
       Profile(
         id: id,
@@ -81,6 +107,9 @@ class Profile {
         pinCode: pinCode ?? this.pinCode,
         avatarUrl: avatarUrl ?? this.avatarUrl,
         phone: phone ?? this.phone,
+        email: email ?? this.email,
+        userId: userId,
         isActive: isActive ?? this.isActive,
+        leaveBalanceDays: leaveBalanceDays ?? this.leaveBalanceDays,
       );
 }

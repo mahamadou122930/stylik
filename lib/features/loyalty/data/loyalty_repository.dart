@@ -50,7 +50,7 @@ class LoyaltyRepository {
         .select()
         .eq('salon_id', salonId)
         .eq('is_active', true)
-        .order('points_cost');
+        .order('points_cost', ascending: true);
 
     return data.map((row) => LoyaltyReward.fromMap(row)).toList();
   }
@@ -83,7 +83,7 @@ class LoyaltyRepository {
         .from(SupabaseTables.reminderRules)
         .select()
         .eq('salon_id', salonId)
-        .order('created_at');
+        .order('created_at', ascending: true);
 
     return data.map((row) => ReminderRule.fromMap(row)).toList();
   }
@@ -118,7 +118,7 @@ class LoyaltyRepository {
 
     if (tags.isNotEmpty) query = query.overlaps('tags', tags);
 
-    final data = await query.order('full_name');
+    final data = await query.order('full_name', ascending: true);
     return data.map((row) => Client.fromMap(row)).toList();
   }
 

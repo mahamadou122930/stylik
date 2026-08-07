@@ -5,10 +5,13 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/clients_repository.dart';
 import '../domain/client.dart';
 
+import '../../../core/services/local_db_service.dart';
+
 final clientsRepositoryProvider = Provider<ClientsRepository>(
   (ref) => ClientsRepository(
     ref.watch(supabaseClientProvider),
     ref.watch(storageServiceProvider),
+    ref.watch(localDbServiceProvider),
   ),
 );
 

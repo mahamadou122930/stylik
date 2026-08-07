@@ -8,8 +8,13 @@ import '../data/pos_repository.dart';
 import '../domain/payment_method.dart';
 import '../domain/ticket.dart';
 
+import '../../../core/services/local_db_service.dart';
+
 final posRepositoryProvider = Provider<PosRepository>(
-  (ref) => PosRepository(ref.watch(supabaseClientProvider)),
+  (ref) => PosRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(localDbServiceProvider),
+  ),
 );
 
 /// Ticket en cours de composition en caisse.

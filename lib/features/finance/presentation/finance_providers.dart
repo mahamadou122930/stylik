@@ -5,8 +5,13 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/finance_repository.dart';
 import '../domain/finance_summary.dart';
 
+import '../../../core/services/local_db_service.dart';
+
 final financeRepositoryProvider = Provider<FinanceRepository>(
-  (ref) => FinanceRepository(ref.watch(supabaseClientProvider)),
+  (ref) => FinanceRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(localDbServiceProvider),
+  ),
 );
 
 /// Périodes de l'écran Chiffre d'affaires (jour / semaine / mois).

@@ -21,6 +21,7 @@ abstract final class SupabaseTables {
   static const String reminderRules = 'reminder_rules';
   static const String campaigns = 'campaigns';
   static const String subscriptions = 'subscriptions';
+  static const String subscriptionPlans = 'subscription_plans';
 }
 
 /// Buckets Supabase Storage.

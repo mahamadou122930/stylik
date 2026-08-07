@@ -5,8 +5,13 @@ import '../../auth/presentation/auth_providers.dart';
 import '../data/inventory_repository.dart';
 import '../domain/product.dart';
 
+import '../../../core/services/local_db_service.dart';
+
 final inventoryRepositoryProvider = Provider<InventoryRepository>(
-  (ref) => InventoryRepository(ref.watch(supabaseClientProvider)),
+  (ref) => InventoryRepository(
+    ref.watch(supabaseClientProvider),
+    ref.watch(localDbServiceProvider),
+  ),
 );
 
 /// Tous les produits actifs du salon.

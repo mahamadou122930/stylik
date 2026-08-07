@@ -253,6 +253,24 @@ class _StaffBody extends ConsumerWidget {
               ),
             ),
             AppListRow(
+              label: 'Solde congés',
+              strong: true,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              leading: const AppIconTile(
+                icon: Icons.beach_access_rounded,
+                size: 36,
+                radius: 11,
+              ),
+              trailing: Text(
+                '${member.leaveBalanceDays} j',
+                style: AppTypography.sora(
+                  14,
+                  FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            AppListRow(
               label: 'Prochain congé',
               strong: true,
               padding: const EdgeInsets.symmetric(vertical: 12),

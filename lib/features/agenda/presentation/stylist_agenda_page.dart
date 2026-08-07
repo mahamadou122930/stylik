@@ -119,23 +119,118 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
                         onAction: () => Navigator.of(context)
                             .pushNamed(AppointmentFormPage.routeName),
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
-                        itemCount: mine.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) => _TimelineRow(
-                          appointment: mine[index],
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppointmentDetailPage.routeName,
-                            arguments: mine[index].id,
-                          ),
-                        ),
-                      ),
+                    : _Timeline(appointments: mine),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Journée du coiffeur : les rendez-vous, entrecoupés des créneaux libres
+/// laissés entre deux prestations (maquette 2.2).
+class _Timeline extends StatelessWidget {
+  const _Timeline({required this.appointments});
+
+  /// Trou minimum pour qu'un blanc mérite d'être proposé à la réservation.
+  static const Duration _minimumGap = Duration(minutes: 30);
+
+  final List<Appointment> appointments;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+
+    for (var i = 0; i < appointments.length; i++) {
+      final appointment = appointments[i];
+      rows.add(
+        _TimelineRow(
+          appointment: appointment,
+          onTap: () => Navigator.of(context).pushNamed(
+            AppointmentDetailPage.routeName,
+            arguments: appointment.id,
+          ),
+        ),
+      );
+
+      if (i + 1 >= appointments.length) continue;
+      final gap = appointments[i + 1].startTime.difference(appointment.endTime);
+      if (gap >= _minimumGap) {
+        rows.add(_FreeSlotRow(start: appointment.endTime));
+      }
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 24),
+      itemCount: rows.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => rows[index],
+    );
+  }
+}
+
+/// Blanc entre deux rendez-vous — bloc pointillé « Créneau libre ».
+class _FreeSlotRow extends StatelessWidget {
+  const _FreeSlotRow({required this.start});
+
+  final DateTime start;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 44,
+          child: Text(
+            Formatters.time(start),
+            style: AppTypography.sora(
+              13,
+              FontWeight.w700,
+              color: AppColors.textFaint,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.of(context)
+                .pushNamed(AppointmentFormPage.routeName),
+            behavior: HitTestBehavior.opaque,
+            child: CustomPaint(
+              painter: const DashedBorderPainter(
+                color: AppColors.borderStrong,
+                radius: 14,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 11,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.add_rounded,
+                      size: 16,
+                      color: AppColors.textFaint,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Créneau libre',
+                      style: AppTypography.manrope(
+                        12.5,
+                        FontWeight.w600,
+                        color: AppColors.textFaint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

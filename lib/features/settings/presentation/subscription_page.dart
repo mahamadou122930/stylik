@@ -6,6 +6,8 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/subscription.dart';
+import '../domain/subscription_plan.dart';
+import 'plan_selection_page.dart';
 import 'settings_providers.dart';
 
 /// 10.4 — Abonnement : formule en cours, contenu et facturation.
@@ -27,12 +29,14 @@ class SubscriptionPage extends ConsumerWidget {
           onRetry: () => ref.invalidate(subscriptionProvider),
         ),
         data: (data) => data == null
-            ? const AppEmptyState(
+            ? AppEmptyState(
                 title: 'Aucun abonnement',
-                message:
-                    'Ce salon n\'a pas encore de formule active. Contactez '
-                    'le support pour en activer une.',
+                message: 'Ce salon n\'a pas encore de formule active. '
+                    'Comparez les formules pour en activer une.',
                 icon: Icons.workspace_premium_outlined,
+                actionLabel: 'Choisir un abonnement',
+                onAction: () => Navigator.of(context)
+                    .pushNamed(PlanSelectionPage.routeName),
               )
             : _SubscriptionBody(subscription: data),
       ),
@@ -112,8 +116,27 @@ class _SubscriptionBody extends StatelessWidget {
                   ),
                 ],
               ),
+              if (subscription.billingCycle == BillingCycle.annual) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Facturé ${Formatters.fcfa(subscription.chargeAmountFcfa)} '
+                  'par an',
+                  style: AppTypography.manrope(
+                    12,
+                    FontWeight.w600,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ],
           ),
+        ),
+        const SizedBox(height: 12),
+        AppButton.outline(
+          label: 'Changer de formule',
+          icon: Icons.swap_horiz_rounded,
+          onPressed: () =>
+              Navigator.of(context).pushNamed(PlanSelectionPage.routeName),
         ),
         if (subscription.features.isNotEmpty) ...[
           const SizedBox(height: 12),

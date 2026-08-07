@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/providers.dart';
 import '../../../core/widgets/widgets.dart';
+import '../domain/auth_error_message.dart';
 import '../domain/registration_draft.dart';
 import '../domain/user_role.dart';
 import 'auth_providers.dart';
@@ -166,7 +167,7 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     if (!success) {
       final error = ref.read(authControllerProvider).error;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Inscription impossible : $error')),
+        SnackBar(content: Text(authErrorMessage(error))),
       );
       return;
     }

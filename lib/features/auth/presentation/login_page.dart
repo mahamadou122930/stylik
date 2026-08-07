@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
+import '../domain/auth_error_message.dart';
 import 'auth_providers.dart';
 import 'register_page.dart';
 
@@ -33,16 +34,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final navigator = Navigator.of(context);
     final success = await ref.read(authControllerProvider.notifier).signIn(
           email: _email.text.trim(),
           password: _password.text,
         );
 
-    if (!mounted || success) return;
-    final error = ref.read(authControllerProvider).error;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Connexion impossible : $error')),
-    );
+    if (!mounted) return;
+
+    if (!success) {
+      final error = ref.read(authControllerProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authErrorMessage(error))),
+      );
+      return;
+    }
+
+    navigator.popUntil((route) => route.isFirst);
   }
 
   /// Envoie le lien de réinitialisation à l'adresse déjà saisie.
@@ -90,25 +98,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Icon(
-                          Icons.content_cut_rounded,
-                          color: Colors.white,
-                          size: 30,
-                        ),
-                      ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: const AppLogo(size: 84, radius: 22),
                     ),
-                    const SizedBox(height: 26),
+                    const SizedBox(height: 20),
                     Text(
                       'Bon retour',
+                      textAlign: TextAlign.center,
                       style: AppTypography.sora(
                         28,
                         FontWeight.w800,
@@ -118,13 +115,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     const SizedBox(height: 6),
                     Text(
                       'Connectez-vous pour gérer votre salon.',
+                      textAlign: TextAlign.center,
                       style: AppTypography.manrope(
                         14.5,
                         FontWeight.w500,
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 32),
                     AppInput(
                       label: 'Email ou téléphone',
                       hint: 'lea@latelier.sn',
