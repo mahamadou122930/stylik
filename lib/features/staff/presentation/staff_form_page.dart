@@ -4,18 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../auth/domain/profile.dart';
 import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'staff_providers.dart';
 
-/// Nouvel employé : identité, rôle, spécialités et commission.
-///
-/// Aucun compte n'est créé ici — voir le bandeau explicatif en bas d'écran et
-/// `StaffRepository.create`.
+/// Nouvel employé ou édition d'un membre de l'équipe.
 class StaffFormPage extends ConsumerStatefulWidget {
-  const StaffFormPage({super.key});
+  const StaffFormPage({super.key, this.member});
 
   static const routeName = '/staff/new';
+
+  /// Membre à modifier, ou `null` pour une création.
+  final Profile? member;
 
   /// Spécialités proposées, reprises des fiches employé de la maquette (4.2).
   static const List<String> suggestedSpecialties = [
@@ -35,14 +36,28 @@ class StaffFormPage extends ConsumerStatefulWidget {
 
 class _StaffFormPageState extends ConsumerState<StaffFormPage> {
   final _formKey = GlobalKey<FormState>();
-  final _fullName = TextEditingController();
-  final _phone = TextEditingController();
-  final _email = TextEditingController();
-  final _commission = TextEditingController(text: '30');
+  late final TextEditingController _fullName;
+  late final TextEditingController _phone;
+  late final TextEditingController _email;
+  late final TextEditingController _commission;
 
-  UserRole _role = UserRole.coiffeur;
-  final Set<String> _specialties = {};
+  late UserRole _role;
+  late Set<String> _specialties;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final m = widget.member;
+    _fullName = TextEditingController(text: m?.fullName ?? '');
+    _phone = TextEditingController(text: m?.phone ?? '');
+    _email = TextEditingController(text: m?.email ?? '');
+    _commission = TextEditingController(
+      text: m != null ? m.commissionRate.toStringAsFixed(0) : '30',
+    );
+    _role = m?.role ?? UserRole.coiffeur;
+    _specialties = m != null ? Set.from(m.specialties) : {};
+  }
 
   @override
   void dispose() {
@@ -62,19 +77,34 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
     try {
       final email = _email.text.trim();
       final phone = _phone.text.trim();
+      final commissionRate = double.tryParse(
+            _commission.text.trim().replaceAll(',', '.'),
+          ) ??
+          0;
+      final repository = ref.read(staffRepositoryProvider);
 
-      await ref.read(staffRepositoryProvider).create(
-            salonId: salonId,
-            fullName: _fullName.text.trim(),
-            role: _role,
-            specialties: _specialties.toList(),
-            commissionRate: double.tryParse(
-                  _commission.text.trim().replaceAll(',', '.'),
-                ) ??
-                0,
-            phone: phone.isEmpty ? null : phone,
-            email: email.isEmpty ? null : email,
-          );
+      if (widget.member == null) {
+        await repository.create(
+          salonId: salonId,
+          fullName: _fullName.text.trim(),
+          role: _role,
+          specialties: _specialties.toList(),
+          commissionRate: commissionRate,
+          phone: phone.isEmpty ? null : phone,
+          email: email.isEmpty ? null : email,
+        );
+      } else {
+        final updated = widget.member!.copyWith(
+          fullName: _fullName.text.trim(),
+          role: _role,
+          specialties: _specialties.toList(),
+          commissionRate: commissionRate,
+          phone: phone.isEmpty ? null : phone,
+          email: email.isEmpty ? null : email,
+        );
+        await repository.update(updated);
+        ref.invalidate(staffDetailProvider(widget.member!.id));
+      }
 
       // La liste, les coiffeurs affectables et le compteur de présence
       // dérivent tous de `teamProvider`.
@@ -84,7 +114,13 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
       if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${_fullName.text.trim()} a rejoint l\'équipe.')),
+        SnackBar(
+          content: Text(
+            widget.member == null
+                ? '${_fullName.text.trim()} a rejoint l\'équipe.'
+                : 'Fiche de ${_fullName.text.trim()} mise à jour.',
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -98,10 +134,12 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.member != null;
+
     return AppScreen(
-      title: 'Nouvel employé',
+      title: isEditing ? 'Éditer l\'employé' : 'Nouvel employé',
       footer: AppButton(
-        label: 'Ajouter à l\'équipe',
+        label: isEditing ? 'Enregistrer les modifications' : 'Ajouter à l\'équipe',
         isLoading: _isSaving,
         onPressed: _save,
       ),
@@ -204,12 +242,13 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
               ),
             ],
             const SizedBox(height: 18),
-            const AppCallout(
-              message: 'Aucun compte n\'est créé : le membre apparaît au '
-                  'planning et touche ses commissions sans se connecter. '
-                  'S\'il s\'inscrit un jour avec l\'email renseigné, son '
-                  'compte rejoindra automatiquement cette fiche.',
-            ),
+            if (!isEditing)
+              const AppCallout(
+                message: 'Aucun compte n\'est créé : le membre apparaît au '
+                    'planning et touche ses commissions sans se connecter. '
+                    'S\'il s\'inscrit un jour avec l\'email renseigné, son '
+                    'compte rejoindra automatiquement cette fiche.',
+              ),
           ],
         ),
       ),

@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
 import '../domain/staff_schedule.dart';
+import 'staff_form_page.dart';
 import 'staff_providers.dart';
 import 'staff_schedule_page.dart';
 
@@ -26,8 +27,16 @@ class StaffDetailPage extends ConsumerWidget {
       title: 'Fiche employé',
       action: AppIconButton(
         icon: Icons.edit_outlined,
-        onTap: () {
-          // TODO(staff): édition de la fiche employé.
+        onTap: () async {
+          final profile = member.valueOrNull;
+          if (profile == null) return;
+          await Navigator.of(context).pushNamed(
+            StaffFormPage.routeName,
+            arguments: profile,
+          );
+          ref.invalidate(staffDetailProvider(profileId));
+          ref.invalidate(teamProvider);
+          ref.invalidate(stylistsProvider);
         },
       ),
       child: member.when(

@@ -37,12 +37,112 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
   late bool _bookableOnline = widget.service?.isBookableOnline ?? true;
   bool _isSaving = false;
 
+  late Set<String> _availableCategories;
+
+  static const List<String> _defaultCategories = [
+    'Coiffure',
+    'Coupe & Brushing',
+    'Coloration & Mèches',
+    'Soins Capillaires',
+    'Tresses & Tissages',
+    'Barbe & Rasage',
+    'Esthétique',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _initCategories();
+  }
+
+  void _initCategories() {
+    final existingFromRef = ref
+        .read(serviceCategoriesProvider)
+        .where((c) => c != 'Toutes')
+        .toList();
+
+    _availableCategories = {
+      ...existingFromRef,
+      ..._defaultCategories,
+      if (widget.service?.category.isNotEmpty ?? false)
+        widget.service!.category,
+    };
+
+    if (_category.isEmpty && _availableCategories.isNotEmpty) {
+      _category = _availableCategories.first;
+    }
+  }
+
   @override
   void dispose() {
     _name.dispose();
     _price.dispose();
     _description.dispose();
     super.dispose();
+  }
+
+  Future<void> _showAddCategoryDialog() async {
+    final controller = TextEditingController();
+    final newCategory = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Nouvelle catégorie',
+          style: AppTypography.sora(17, FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Créez une catégorie pour regrouper vos prestations (ex: Coloration, Tresses, Soins...).',
+              style: AppTypography.manrope(
+                13,
+                FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppInput(
+              controller: controller,
+              hint: 'Ex: Soins Visage, Extension...',
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Annuler',
+              style: AppTypography.manrope(
+                13,
+                FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          AppButton(
+            label: 'Ajouter',
+            onPressed: () {
+              final text = controller.text.trim();
+              if (text.isNotEmpty) {
+                Navigator.pop(dialogContext, text);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+
+    if (newCategory != null && newCategory.isNotEmpty) {
+      setState(() {
+        _availableCategories.add(newCategory);
+        _category = newCategory;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -114,13 +214,12 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = ref
-        .watch(serviceCategoriesProvider)
-        .where((category) => category != 'Toutes')
-        .toList();
+    final categoriesList = _availableCategories.toList();
 
     return AppScreen(
-      title: widget.service?.name ?? 'Nouveau service',
+      title: widget.service?.name.isEmpty ?? true
+          ? 'Nouveau service'
+          : widget.service!.name,
       action: widget.service == null
           ? null
           : TextButton(
@@ -152,7 +251,7 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
           AppInput(
             label: 'Nom du service',
             controller: _name,
-            hint: 'Balayage',
+            hint: 'Ex: Balayage, Brushing, Coupe Homme...',
           ),
           const SizedBox(height: 15),
           Row(
@@ -173,22 +272,27 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
             ],
           ),
           const SizedBox(height: 15),
-          Padding(
-            padding: const EdgeInsets.only(left: 2, bottom: 7),
-            child: Text(
-              'Catégorie',
-              style: AppTypography.sora(
-                12.5,
-                FontWeight.w600,
-                color: AppColors.textBody,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 2, bottom: 7),
+                child: Text(
+                  'Catégorie / Groupe',
+                  style: AppTypography.sora(
+                    12.5,
+                    FontWeight.w600,
+                    color: AppColors.textBody,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final category in categories)
+              for (final category in categoriesList)
                 GestureDetector(
                   onTap: () => setState(() => _category = category),
                   child: Container(
@@ -217,6 +321,43 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
                     ),
                   ),
                 ),
+              // Bouton pour ajouter une nouvelle catégorie
+              GestureDetector(
+                onTap: _showAddCategoryDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: AppColors.accent,
+                      style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.add_rounded,
+                        size: 16,
+                        color: AppColors.accent,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Nouvelle catégorie',
+                        style: AppTypography.manrope(
+                          12.5,
+                          FontWeight.w700,
+                          color: AppColors.accent,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 15),
@@ -224,7 +365,7 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
             label: 'Description',
             controller: _description,
             maxLines: 3,
-            hint: 'Éclaircissement mèche par mèche…',
+            hint: 'Détails ou conseils sur la prestation…',
           ),
           const SizedBox(height: 15),
           AppListCard(

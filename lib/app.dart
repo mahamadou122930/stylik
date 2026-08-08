@@ -15,6 +15,7 @@ import 'features/auth/domain/profile.dart';
 import 'features/auth/domain/registration_draft.dart';
 import 'features/auth/presentation/auth_providers.dart';
 import 'features/auth/presentation/login_page.dart';
+import 'features/auth/presentation/profile_page.dart';
 import 'features/auth/presentation/register_page.dart';
 import 'features/auth/presentation/role_selection_page.dart';
 import 'features/auth/presentation/welcome_page.dart';
@@ -108,7 +109,6 @@ class AtelierApp extends ConsumerWidget {
         PromotionsPage.routeName: (_) => const PromotionsPage(),
         RemindersPage.routeName: (_) => const RemindersPage(),
         StaffPage.routeName: (_) => const StaffPage(),
-        StaffFormPage.routeName: (_) => const StaffFormPage(),
         TimeOffPage.routeName: (_) => const TimeOffPage(),
         SettingsPage.routeName: (_) => const SettingsPage(),
         SalonInfoPage.routeName: (_) => const SalonInfoPage(),
@@ -116,6 +116,7 @@ class AtelierApp extends ConsumerWidget {
         NotificationsPage.routeName: (_) => const NotificationsPage(),
         SubscriptionPage.routeName: (_) => const SubscriptionPage(),
         PlanSelectionPage.routeName: (_) => const PlanSelectionPage(),
+        ProfilePage.routeName: (_) => const ProfilePage(),
       },
       onGenerateRoute: _onGenerateRoute,
     );
@@ -143,6 +144,8 @@ class AtelierApp extends ConsumerWidget {
         page(StylistAgendaPage(stylist: settings.arguments! as Profile)),
       StaffDetailPage.routeName =>
         page(StaffDetailPage(profileId: settings.arguments! as String)),
+      StaffFormPage.routeName =>
+        page(StaffFormPage(member: settings.arguments as Profile?)),
       StaffSchedulePage.routeName =>
         page(StaffSchedulePage(member: settings.arguments! as Profile)),
       ProductDetailPage.routeName =>

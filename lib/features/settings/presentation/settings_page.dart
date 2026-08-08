@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../auth/presentation/profile_page.dart';
 import '../../staff/presentation/staff_page.dart';
 import 'notifications_page.dart';
 import 'roles_page.dart';
@@ -133,6 +134,19 @@ class SettingsPage extends ConsumerWidget {
           const AppSectionTitle('Application'),
           AppListCard(
             children: [
+              AppListRow(
+                label: 'Mon profil',
+                subtitle: 'Compte, préférences, déconnexion',
+                leading: const AppIconTile(
+                  icon: Icons.person_rounded,
+                  color: AppColors.primary,
+                  background: AppColors.tintGreen,
+                ),
+                trailing: const AppChevron(),
+                strong: true,
+                onTap: () => Navigator.of(context)
+                    .pushNamed(ProfilePage.routeName),
+              ),
               AppListRow(
                 label: 'Notifications',
                 subtitle: 'Ce que l\'app vous signale',

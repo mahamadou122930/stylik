@@ -10,6 +10,7 @@ import '../../agenda/presentation/agenda_providers.dart';
 import '../../agenda/presentation/appointment_detail_page.dart';
 import '../../agenda/presentation/walk_in_queue_page.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../auth/presentation/profile_page.dart';
 import '../../inventory/presentation/inventory_page.dart';
 import '../../inventory/presentation/inventory_providers.dart';
 import '../../pos/presentation/pos_providers.dart';
@@ -47,11 +48,14 @@ class HomePage extends ConsumerWidget {
       subtitle: Formatters.day(DateTime.now()),
       showBack: false,
       largeTitle: true,
-      action: AppAvatar(
-        initials: Formatters.initials(profile?.fullName ?? '?'),
-        size: 40,
-        background: AppColors.primary,
-        color: Colors.white,
+      action: GestureDetector(
+        onTap: () => Navigator.of(context).pushNamed(ProfilePage.routeName),
+        child: AppAvatar(
+          initials: Formatters.initials(profile?.fullName ?? '?'),
+          size: 40,
+          background: AppColors.primary,
+          color: Colors.white,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
