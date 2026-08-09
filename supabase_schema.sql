@@ -333,21 +333,64 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.create_salon_for_signup(TEXT, TEXT, TEXT) TO anon, authenticated;
 
-CREATE POLICY "Authenticated users full access to profiles" ON public.profiles FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to clients" ON public.clients FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to services" ON public.services FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to appointments" ON public.appointments FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to walk_in_queue" ON public.walk_in_queue FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to products" ON public.products FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to stock_movements" ON public.stock_movements FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to transactions" ON public.transactions FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to time_off" ON public.time_off FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to expenses" ON public.expenses FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to loyalty_rewards" ON public.loyalty_rewards FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to promotions" ON public.promotions FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to reminder_rules" ON public.reminder_rules FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to campaigns" ON public.campaigns FOR ALL TO authenticated USING (true);
-CREATE POLICY "Authenticated users full access to subscriptions" ON public.subscriptions FOR ALL TO authenticated USING (true);
+CREATE OR REPLACE FUNCTION public.get_auth_salon_id()
+RETURNS UUID
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT salon_id FROM public.profiles WHERE user_id = auth.uid() LIMIT 1;
+$$;
+
+-- Politiques RLS strictes multi-tenant par salon_id
+CREATE POLICY "Tenant isolation for salons" ON public.salons
+  FOR ALL TO authenticated USING (id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for profiles" ON public.profiles
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for clients" ON public.clients
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for services" ON public.services
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for appointments" ON public.appointments
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for walk_in_queue" ON public.walk_in_queue
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for products" ON public.products
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for stock_movements" ON public.stock_movements
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for transactions" ON public.transactions
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for time_off" ON public.time_off
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for expenses" ON public.expenses
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for loyalty_rewards" ON public.loyalty_rewards
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for promotions" ON public.promotions
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for reminder_rules" ON public.reminder_rules
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for campaigns" ON public.campaigns
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+CREATE POLICY "Tenant isolation for subscriptions" ON public.subscriptions
+  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
 
 -- Le catalogue des formules est public en lecture, modifiable seulement côté admin.
 CREATE POLICY "Anyone can read subscription plans" ON public.subscription_plans FOR SELECT TO anon, authenticated USING (true);
@@ -516,5 +559,226 @@ BEGIN
     COUNT(DISTINCT el.client_id) as client_count
   FROM expanded_lines el
   GROUP BY el.st_id, el.st_name;
+END;
+$$;
+
+-- Verification du PIN utilisateur (sécurisé via pgcrypto)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE OR REPLACE FUNCTION public.verify_pin(
+  p_profile_id UUID,
+  p_pin TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_stored_pin TEXT;
+BEGIN
+  SELECT pin_code INTO v_stored_pin
+  FROM public.profiles
+  WHERE id = p_profile_id;
+
+  IF v_stored_pin IS NULL OR v_stored_pin = '' THEN
+    RETURN FALSE;
+  END IF;
+
+  IF v_stored_pin = p_pin OR v_stored_pin = crypt(p_pin, v_stored_pin) THEN
+    RETURN TRUE;
+  END IF;
+
+  RETURN FALSE;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.verify_pin(UUID, TEXT) TO authenticated;
+
+-- Synthèse financière de la période
+CREATE OR REPLACE FUNCTION public.finance_summary(
+  p_salon_id UUID,
+  p_from TIMESTAMPTZ,
+  p_to TIMESTAMPTZ,
+  p_bucket_count INT DEFAULT 4
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_revenue BIGINT := 0;
+  v_collected BIGINT := 0;
+  v_pending BIGINT := 0;
+  v_count INT := 0;
+BEGIN
+  SELECT 
+    COALESCE(SUM(total_amount_fcfa), 0),
+    COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount_fcfa ELSE 0 END), 0),
+    COALESCE(SUM(CASE WHEN status != 'paid' AND status != 'cancelled' AND status != 'refunded' THEN total_amount_fcfa ELSE 0 END), 0),
+    COUNT(*)
+  INTO v_revenue, v_collected, v_pending, v_count
+  FROM public.transactions
+  WHERE salon_id = p_salon_id
+    AND created_at >= p_from
+    AND created_at < p_to
+    AND status NOT IN ('cancelled', 'refunded');
+
+  RETURN jsonb_build_object(
+    'revenue_fcfa', v_revenue,
+    'collected_fcfa', v_collected,
+    'pending_fcfa', v_pending,
+    'ticket_count', v_count
+  );
+END;
+$$;
+
+-- Ajustement du stock produit
+CREATE OR REPLACE FUNCTION public.adjust_stock(
+  p_product_id UUID,
+  p_delta INT,
+  p_reason TEXT DEFAULT 'ajustement',
+  p_created_by UUID DEFAULT NULL,
+  p_context TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_salon_id UUID;
+BEGIN
+  SELECT salon_id INTO v_salon_id FROM public.products WHERE id = p_product_id;
+  IF v_salon_id IS NULL THEN
+    RAISE EXCEPTION 'Produit introuvable';
+  END IF;
+
+  UPDATE public.products
+  SET stock_quantity = GREATEST(0, stock_quantity + p_delta)
+  WHERE id = p_product_id;
+
+  INSERT INTO public.stock_movements (
+    salon_id,
+    product_id,
+    quantity,
+    type,
+    reason,
+    created_by
+  ) VALUES (
+    v_salon_id,
+    p_product_id,
+    ABS(p_delta),
+    CASE WHEN p_delta >= 0 THEN 'in' ELSE 'out' END,
+    COALESCE(p_context, p_reason),
+    p_created_by
+  );
+END;
+$$;
+
+-- Crédit / Débit de points de fidélité client
+CREATE OR REPLACE FUNCTION public.add_loyalty_points(
+  p_client_id UUID,
+  p_points INT
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.clients
+  SET loyalty_points = GREATEST(0, COALESCE(loyalty_points, 0) + p_points)
+  WHERE id = p_client_id;
+END;
+$$;
+
+-- Remboursement d'une transaction
+CREATE OR REPLACE FUNCTION public.refund_transaction(
+  p_transaction_id UUID,
+  p_reason TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.transactions
+  SET status = 'refunded',
+      notes = CASE 
+                WHEN p_reason IS NOT NULL AND p_reason != '' 
+                THEN COALESCE(notes, '') || ' [Remboursé: ' || p_reason || ']'
+                ELSE COALESCE(notes, '')
+              END
+  WHERE id = p_transaction_id;
+END;
+$$;
+
+-- Statistiques des rappels & automatisations
+CREATE OR REPLACE FUNCTION public.reminder_stats(
+  p_salon_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_sent INT := 0;
+  v_confirmed INT := 0;
+BEGIN
+  SELECT 
+    COALESCE(SUM(sent_count), 0),
+    COALESCE(SUM(converted_count), 0)
+  INTO v_sent, v_confirmed
+  FROM public.campaigns
+  WHERE salon_id = p_salon_id;
+
+  RETURN jsonb_build_object(
+    'sent_count', v_sent,
+    'confirmed_count', v_confirmed
+  );
+END;
+$$;
+
+-- Statistiques de performance d'un membre d'équipe
+CREATE OR REPLACE FUNCTION public.stylist_stats(
+  p_profile_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_salon_id UUID;
+  v_revenue BIGINT := 0;
+  v_count INT := 0;
+  v_rate NUMERIC := 0;
+BEGIN
+  SELECT salon_id, COALESCE(commission_rate, 0) INTO v_salon_id, v_rate
+  FROM public.profiles WHERE id = p_profile_id;
+
+  IF v_salon_id IS NULL THEN
+    RETURN jsonb_build_object('revenue_fcfa', 0, 'service_count', 0, 'commission_fcfa', 0);
+  END IF;
+
+  SELECT 
+    COALESCE(SUM((COALESCE(line->>'unit_price_fcfa', line->>'unitPriceFcfa'))::BIGINT * COALESCE((line->>'quantity')::BIGINT, 1)), 0),
+    COALESCE(SUM(COALESCE((line->>'quantity')::BIGINT, 1)), 0)
+  INTO v_revenue, v_count
+  FROM public.transactions t
+  CROSS JOIN jsonb_array_elements(t.lines) as line
+  WHERE t.salon_id = v_salon_id
+    AND t.status = 'paid'
+    AND COALESCE(line->>'stylist_id', line->>'stylistId', t.cashier_id::TEXT) = p_profile_id::TEXT;
+
+  RETURN jsonb_build_object(
+    'revenue_fcfa', v_revenue,
+    'service_count', v_count,
+    'commission_fcfa', ROUND(v_revenue * (v_rate / 100.0))
+  );
 END;
 $$;

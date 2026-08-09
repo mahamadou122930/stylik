@@ -77,13 +77,24 @@ class AuthRepository {
 
   /// Vérifie le code PIN d'un membre (déverrouillage rapide en caisse).
   Future<bool> verifyPin({required String profileId, required String pin}) async {
-    final data = await _client
-        .from(SupabaseTables.profiles)
-        .select('id')
-        .eq('id', profileId)
-        .eq('pin_code', pin)
-        .maybeSingle();
+    try {
+      final res = await _client.rpc<bool>(
+        'verify_pin',
+        params: {
+          'p_profile_id': profileId,
+          'p_pin': pin,
+        },
+      );
+      return res;
+    } catch (_) {
+      final data = await _client
+          .from(SupabaseTables.profiles)
+          .select('id')
+          .eq('id', profileId)
+          .eq('pin_code', pin)
+          .maybeSingle();
 
-    return data != null;
+      return data != null;
+    }
   }
 }

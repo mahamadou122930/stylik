@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/supabase_tables.dart';
 import '../../../core/services/local_db_service.dart';
@@ -19,11 +20,12 @@ class PosRepository {
     required Ticket ticket,
     required PaymentMethod paymentMethod,
     String? cashierId,
+    String? customTransactionId,
   }) async {
-    final localId = 'tx_${DateTime.now().millisecondsSinceEpoch}';
+    final transactionId = customTransactionId ?? const Uuid().v4();
 
     final transaction = SalonTransaction(
-      id: localId,
+      id: transactionId,
       salonId: salonId,
       appointmentId:
           (ticket.appointmentId?.isNotEmpty ?? false) ? ticket.appointmentId : null,
@@ -37,30 +39,20 @@ class PosRepository {
       lines: ticket.lines,
     );
 
-    final map = transaction.toMap();
-    final localMap = Map<String, dynamic>.from(map);
-    localMap['id'] = localId;
+    final payload = transaction.toMap();
 
     // 1. Sauvegarder dans le cache local SQLite
     await _localDb.cacheRecord(
       tableName: SupabaseTables.transactions,
       salonId: salonId,
-      record: localMap,
+      record: payload,
     );
 
-    // Payload pour Supabase : sans l'id temporaire 'tx_...' (Postgres générera le UUID)
-    final insertPayload = Map<String, dynamic>.from(map);
-    if (insertPayload['id']?.toString().startsWith('tx_') ?? false) {
-      insertPayload.remove('id');
-    } else if (insertPayload['id'] == null || insertPayload['id'] == '') {
-      insertPayload.remove('id');
-    }
-
     try {
-      // 2. Tenter l'envoi vers Supabase
+      // 2. Envoi idempotent vers Supabase (upsert sur l'UUID v4 client)
       final data = await _client
           .from(SupabaseTables.transactions)
-          .insert(insertPayload)
+          .upsert(payload, onConflict: 'id')
           .select()
           .single();
 
@@ -74,12 +66,12 @@ class PosRepository {
       return created;
     } catch (e) {
       debugPrint('Erreur lors de l\'encaissement Supabase: $e');
-      // 3. En cas d'échec réseau, mettre en file d'attente
+      // 3. En cas d'échec réseau, mise en file d'attente pour rejeu idempotent avec le même UUID v4
       await _localDb.enqueueMutation(
-        action: 'INSERT',
+        action: 'UPSERT',
         tableName: SupabaseTables.transactions,
-        recordId: localId,
-        payload: insertPayload,
+        recordId: transactionId,
+        payload: payload,
       );
       return transaction;
     }
@@ -187,16 +179,41 @@ class PosRepository {
     required int amountFcfa,
     required RefundReason reason,
   }) async {
+    final cached = await _localDb.getCachedRecordById(
+      tableName: SupabaseTables.transactions,
+      recordId: transactionId,
+    );
+
+    if (cached != null) {
+      cached['status'] = TransactionStatus.refunded.value;
+      final currentNotes = (cached['notes'] as String?) ?? '';
+      cached['notes'] = '$currentNotes [Remboursé: ${reason.label}]';
+      await _localDb.cacheRecord(
+        tableName: SupabaseTables.transactions,
+        salonId: cached['salon_id'] as String,
+        record: cached,
+      );
+    }
+
     try {
       await _client.rpc<void>(
         'refund_transaction',
         params: {
           'p_transaction_id': transactionId,
-          'p_amount_fcfa': amountFcfa,
           'p_reason': reason.value,
         },
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Erreur lors du remboursement Supabase: $e');
+      await _localDb.enqueueMutation(
+        action: 'UPDATE',
+        tableName: SupabaseTables.transactions,
+        recordId: transactionId,
+        payload: {
+          'status': TransactionStatus.refunded.value,
+        },
+      );
+    }
   }
 
   Future<void> sendReceipt({

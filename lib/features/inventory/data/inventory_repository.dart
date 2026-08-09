@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/supabase_tables.dart';
@@ -166,8 +167,18 @@ class InventoryRepository {
           'p_context': contextLabel,
         },
       );
-    } catch (_) {
-      // Enregistré localement
+    } catch (e) {
+      debugPrint('Erreur lors de l\'ajustement du stock Supabase: $e');
+      if (cached != null) {
+        await _localDb.enqueueMutation(
+          action: 'UPDATE',
+          tableName: SupabaseTables.products,
+          recordId: productId,
+          payload: {
+            'stock_quantity': cached['stock_quantity'],
+          },
+        );
+      }
     }
   }
 

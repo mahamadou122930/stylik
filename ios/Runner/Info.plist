@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Permet de prendre des photos de coiffure avant et après la prestation.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Permet de sélectionner des photos dans la galerie du salon.</string>
 </dict>
 </plist>
