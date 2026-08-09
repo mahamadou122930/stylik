@@ -420,7 +420,7 @@ CREATE POLICY "Authenticated Upload product-photos" ON storage.objects FOR INSER
 -- FONCTIONS DU RAPPORT FINANCIER & CAISSE
 -- ==========================================
 
--- Rapport de performance par service
+-- Rapport de ventes par prestation
 CREATE OR REPLACE FUNCTION public.service_performance(
   p_salon_id UUID,
   p_from TIMESTAMPTZ,
@@ -441,18 +441,18 @@ BEGIN
   RETURN QUERY
   WITH expanded_lines AS (
     SELECT 
-      (line->>'refId')::TEXT as s_id,
-      (line->>'label')::TEXT as s_name,
+      COALESCE(line->>'ref_id', line->>'refId')::TEXT as s_id,
+      COALESCE(line->>'label', 'Prestation')::TEXT as s_name,
       COALESCE(line->>'category', 'Autre')::TEXT as s_category,
       COALESCE((line->>'quantity')::BIGINT, 1) as s_qty,
-      COALESCE((line->>'unitPriceFcfa')::BIGINT, 0) * COALESCE((line->>'quantity')::BIGINT, 1) as s_amount
+      COALESCE((COALESCE(line->>'unit_price_fcfa', line->>'unitPriceFcfa'))::BIGINT, 0) * COALESCE((line->>'quantity')::BIGINT, 1) as s_amount
     FROM public.transactions t,
          jsonb_array_elements(t.lines) as line
     WHERE t.salon_id = p_salon_id
       AND t.created_at >= p_from
       AND t.created_at < p_to
       AND t.status = 'paid'
-      AND COALESCE((line->>'isProduct')::BOOLEAN, false) = false
+      AND COALESCE((COALESCE(line->>'is_product', line->>'isProduct'))::BOOLEAN, false) = false
   )
   SELECT 
     el.s_id as service_id,
@@ -494,12 +494,12 @@ BEGIN
       p.full_name as st_name,
       p.speciality as st_spec,
       COALESCE(p.commission_rate, 0)::NUMERIC as st_rate,
-      COALESCE((line->>'unitPriceFcfa')::BIGINT, 0) * COALESCE((line->>'quantity')::BIGINT, 1) as line_amount,
+      COALESCE((COALESCE(line->>'unit_price_fcfa', line->>'unitPriceFcfa'))::BIGINT, 0) * COALESCE((line->>'quantity')::BIGINT, 1) as line_amount,
       COALESCE((line->>'quantity')::BIGINT, 1) as line_qty,
       t.client_id
     FROM public.transactions t
     CROSS JOIN jsonb_array_elements(t.lines) as line
-    JOIN public.profiles p ON p.id::TEXT = COALESCE(line->>'stylistId', t.cashier_id::TEXT)
+    JOIN public.profiles p ON p.id::TEXT = COALESCE(line->>'stylist_id', line->>'stylistId', t.cashier_id::TEXT)
     WHERE t.salon_id = p_salon_id
       AND t.created_at >= p_from
       AND t.created_at < p_to
@@ -518,4 +518,3 @@ BEGIN
   GROUP BY el.st_id, el.st_name;
 END;
 $$;
-

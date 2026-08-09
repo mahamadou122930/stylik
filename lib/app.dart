@@ -36,6 +36,7 @@ import 'features/home/presentation/more_page.dart';
 import 'features/inventory/presentation/consumption_page.dart';
 import 'features/inventory/presentation/inventory_page.dart';
 import 'features/inventory/presentation/product_detail_page.dart';
+import 'features/inventory/presentation/product_form_page.dart';
 import 'features/inventory/presentation/stock_reception_page.dart';
 import 'features/loyalty/presentation/loyalty_page.dart';
 import 'features/loyalty/presentation/promotions_page.dart';
@@ -98,6 +99,7 @@ class AtelierApp extends ConsumerWidget {
         ReceiptPage.routeName: (_) => const ReceiptPage(),
         TransactionsPage.routeName: (_) => const TransactionsPage(),
         InventoryPage.routeName: (_) => const InventoryPage(),
+        ProductFormPage.routeName: (_) => const ProductFormPage(),
         StockReceptionPage.routeName: (_) => const StockReceptionPage(),
         ConsumptionPage.routeName: (_) => const ConsumptionPage(),
         FinancePage.routeName: (_) => const FinancePage(),

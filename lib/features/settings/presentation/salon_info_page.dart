@@ -322,26 +322,21 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
           ),
 
           // Section Horaires d'ouverture
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const AppSectionTitle(
-                'Horaires d\'ouverture',
-                padding: EdgeInsets.fromLTRB(2, 2, 2, 8),
+          AppSectionTitle(
+            'Horaires d\'ouverture',
+            padding: const EdgeInsets.fromLTRB(2, 2, 2, 8),
+            trailing: TextButton.icon(
+              onPressed: _copyFirstDayToWeekdays,
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              label: Text(
+                'Appliquer Lun → Sam',
+                style: AppTypography.manrope(12, FontWeight.w700),
               ),
-              TextButton.icon(
-                onPressed: _copyFirstDayToWeekdays,
-                icon: const Icon(Icons.copy_rounded, size: 16),
-                label: Text(
-                  'Appliquer Lun → Sam',
-                  style: AppTypography.manrope(12, FontWeight.w700),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppColors.accent,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-            ],
+            ),
           ),
 
           const SizedBox(height: 4),

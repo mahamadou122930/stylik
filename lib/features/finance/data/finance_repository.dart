@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/supabase_tables.dart';
@@ -19,68 +21,90 @@ class FinanceRepository {
     required DateTime to,
     int bucketCount = 4,
   }) async {
-    final rows = await _fetchTransactions(salonId: salonId, from: from, to: to);
+    try {
+      final data = await _client.rpc<Map<String, dynamic>>(
+        'finance_summary',
+        params: {
+          'p_salon_id': salonId,
+          'p_from': from.toUtc().toIso8601String(),
+          'p_to': to.toUtc().toIso8601String(),
+          'p_bucket_count': bucketCount,
+        },
+      );
 
-    final span = to.difference(from);
-    final previousRows = await _fetchTransactions(
-      salonId: salonId,
-      from: from.subtract(span),
-      to: from,
-    );
+      return FinanceSummary(
+        from: from,
+        to: to,
+        revenueFcfa: (data['revenue_fcfa'] as num?)?.toInt() ?? 0,
+        ticketCount: (data['ticket_count'] as num?)?.toInt() ?? 0,
+        collectedFcfa: (data['collected_fcfa'] as num?)?.toInt() ?? 0,
+        pendingFcfa: (data['pending_fcfa'] as num?)?.toInt() ?? 0,
+      );
+    } catch (_) {
+      // Fallback calcul local à partir des transactions de la période
+      final rows = await _fetchTransactions(salonId: salonId, from: from, to: to);
 
-    var revenue = 0;
-    var collected = 0;
-    var pending = 0;
-    final byMethod = <PaymentMethod, int>{};
-    final bucketTotals = List<int>.filled(bucketCount, 0);
+      final span = to.difference(from);
+      final previousRows = await _fetchTransactions(
+        salonId: salonId,
+        from: from.subtract(span),
+        to: from,
+      );
 
-    for (final row in rows) {
-      final amount = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
-      final status = row['status'] as String?;
-      if (status == 'cancelled' || status == 'refunded') continue;
+      var revenue = 0;
+      var collected = 0;
+      var pending = 0;
+      final byMethod = <PaymentMethod, int>{};
+      final bucketTotals = List<int>.filled(bucketCount, 0);
 
-      revenue += amount;
-      if (status == 'paid') {
-        collected += amount;
-        final method =
-            PaymentMethod.fromValue(row['payment_method'] as String?);
-        byMethod[method] = (byMethod[method] ?? 0) + amount;
-      } else {
-        pending += amount;
+      for (final row in rows) {
+        final amount = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+        final status = row['status'] as String?;
+        if (status == 'cancelled' || status == 'refunded') continue;
+
+        revenue += amount;
+        if (status == 'paid') {
+          collected += amount;
+          final method =
+              PaymentMethod.fromValue(row['payment_method'] as String?);
+          byMethod[method] = (byMethod[method] ?? 0) + amount;
+        } else {
+          pending += amount;
+        }
+
+        final createdAtStr = row['created_at'] as String?;
+        if (createdAtStr != null) {
+          final createdAt = DateTime.parse(createdAtStr).toLocal();
+          final ratio = span.inMicroseconds == 0
+              ? 0.0
+              : createdAt.difference(from).inMicroseconds / span.inMicroseconds;
+          final index = (ratio * bucketCount).floor().clamp(0, bucketCount - 1);
+          bucketTotals[index] += amount;
+        }
       }
 
-      final createdAtStr = row['created_at'] as String?;
-      if (createdAtStr != null) {
-        final createdAt = DateTime.parse(createdAtStr).toLocal();
-        final ratio = span.inMicroseconds == 0
-            ? 0.0
-            : createdAt.difference(from).inMicroseconds / span.inMicroseconds;
-        final index = (ratio * bucketCount).floor().clamp(0, bucketCount - 1);
-        bucketTotals[index] += amount;
-      }
+      final previousRevenue = previousRows.fold<int>(
+        0,
+        (sum, row) => (row['status'] == 'cancelled' || row['status'] == 'refunded')
+            ? sum
+            : sum + ((row['total_amount_fcfa'] as num?)?.toInt() ?? 0),
+      );
+
+      return FinanceSummary(
+        from: from,
+        to: to,
+        revenueFcfa: revenue,
+        ticketCount: rows.length,
+        collectedFcfa: collected,
+        pendingFcfa: pending,
+        previousRevenueFcfa: previousRevenue,
+        revenueByMethod: byMethod,
+        buckets: [
+          for (var i = 0; i < bucketCount; i++)
+            FinanceBucket(label: 'S${i + 1}', revenueFcfa: bucketTotals[i]),
+        ],
+      );
     }
-
-    final previousRevenue = previousRows.fold<int>(
-      0,
-      (sum, row) => (row['status'] == 'cancelled' || row['status'] == 'refunded')
-          ? sum
-          : sum + ((row['total_amount_fcfa'] as num?)?.toInt() ?? 0),
-    );
-
-    return FinanceSummary(
-      from: from,
-      to: to,
-      revenueFcfa: revenue,
-      ticketCount: rows.length,
-      collectedFcfa: collected,
-      pendingFcfa: pending,
-      previousRevenueFcfa: previousRevenue,
-      revenueByMethod: byMethod,
-      buckets: [
-        for (var i = 0; i < bucketCount; i++)
-          FinanceBucket(label: 'S${i + 1}', revenueFcfa: bucketTotals[i]),
-      ],
-    );
   }
 
   /// Rapport par coiffeur — tente l'RPC Supabase, bascule sur le calcul local en cas d'erreur ou hors-ligne.
@@ -105,32 +129,97 @@ class FinanceRepository {
     } catch (_) {
       // Fallback calcul en Dart à partir des transactions de la période
       final rows = await _fetchTransactions(salonId: salonId, from: from, to: to);
+
+      // Charger les profils pour récupérer leurs noms et taux de commission
+      final profilesMap = <String, Map<String, dynamic>>{};
+      try {
+        final staffData = await _client
+            .from(SupabaseTables.profiles)
+            .select()
+            .eq('salon_id', salonId);
+        for (final p in staffData) {
+          profilesMap[p['id'].toString()] = p;
+        }
+      } catch (_) {
+        try {
+          final cachedProfiles = await _localDb.getCachedRecords(
+            tableName: SupabaseTables.profiles,
+            salonId: salonId,
+          );
+          for (final p in cachedProfiles) {
+            profilesMap[p['id'].toString()] = p;
+          }
+        } catch (_) {}
+      }
+
       final map = <String, Map<String, dynamic>>{};
 
       for (final row in rows) {
         if (row['status'] != 'paid') continue;
-        final lines = (row['lines'] as List?) ?? const [];
+
+        final rawLines = row['lines'];
+        List lines = [];
+        if (rawLines is String) {
+          try {
+            lines = (jsonDecode(rawLines) as List?) ?? const [];
+          } catch (_) {}
+        } else if (rawLines is List) {
+          lines = rawLines;
+        }
+
+        final clientId = row['client_id'] as String?;
+
         for (final line in lines) {
           if (line is! Map<String, dynamic>) continue;
-          final stylistId = (line['stylistId'] as String?) ?? (row['cashier_id'] as String?) ?? 'unknown';
+          if ((line['is_product'] ?? line['isProduct'] as bool?) ?? false) {
+            continue;
+          }
+
+          final stylistId = (line['stylist_id'] as String?) ??
+              (line['stylistId'] as String?) ??
+              (row['cashier_id'] as String?) ??
+              'unknown';
+          final fallbackName = (line['stylist_name'] as String?) ??
+              (line['stylistName'] as String?) ??
+              'Coiffeur';
+
+          final profile = profilesMap[stylistId];
+          final name = (profile?['full_name'] as String?) ?? fallbackName;
+          final rate = (profile?['commission_rate'] as num?)?.toDouble() ?? 0.0;
+          final spec = (profile?['speciality'] as String?) ?? 'Coiffure';
+
           final qty = (line['quantity'] as num?)?.toInt() ?? 1;
-          final price = (line['unitPriceFcfa'] as num?)?.toInt() ?? 0;
+          final price = ((line['unit_price_fcfa'] ?? line['unitPriceFcfa'])
+                  as num?)
+              ?.toInt() ??
+              0;
           final amount = price * qty;
 
           final entry = map.putIfAbsent(stylistId, () => {
             'stylist_id': stylistId,
-            'stylist_name': 'Coiffeur',
+            'stylist_name': name,
             'revenue_fcfa': 0,
             'commission_fcfa': 0,
             'service_count': 0,
-            'commission_rate': 0,
-            'speciality': 'Coiffure',
+            'commission_rate': rate,
+            'speciality': spec,
             'client_count': 0,
+            'clients': <String>{},
           });
 
           entry['revenue_fcfa'] = (entry['revenue_fcfa'] as int) + amount;
           entry['service_count'] = (entry['service_count'] as int) + qty;
+          if (clientId != null && clientId.isNotEmpty) {
+            (entry['clients'] as Set<String>).add(clientId);
+          }
         }
+      }
+
+      for (final entry in map.values) {
+        final rev = entry['revenue_fcfa'] as int;
+        final rate = (entry['commission_rate'] as num).toDouble();
+        entry['commission_fcfa'] = (rev * (rate / 100)).round();
+        entry['client_count'] = (entry['clients'] as Set<String>).length;
       }
 
       return map.values.map(StylistCommission.fromMap).toList();
@@ -163,16 +252,33 @@ class FinanceRepository {
 
       for (final row in rows) {
         if (row['status'] != 'paid') continue;
-        final lines = (row['lines'] as List?) ?? const [];
+
+        final rawLines = row['lines'];
+        List lines = [];
+        if (rawLines is String) {
+          try {
+            lines = (jsonDecode(rawLines) as List?) ?? const [];
+          } catch (_) {}
+        } else if (rawLines is List) {
+          lines = rawLines;
+        }
+
         for (final line in lines) {
           if (line is! Map<String, dynamic>) continue;
-          if ((line['isProduct'] as bool?) ?? false) continue; // Exclure produits
+          if ((line['is_product'] ?? line['isProduct'] as bool?) ?? false) {
+            continue; // Exclure produits
+          }
 
-          final serviceId = (line['refId'] as String?) ?? (line['label'] as String?) ?? 'service';
+          final serviceId = (line['ref_id'] ?? line['refId'] as String?) ??
+              (line['label'] as String?) ??
+              'service';
           final name = (line['label'] as String?) ?? 'Prestation';
           final category = (line['category'] as String?) ?? 'Autre';
           final qty = (line['quantity'] as num?)?.toInt() ?? 1;
-          final price = (line['unitPriceFcfa'] as num?)?.toInt() ?? 0;
+          final price = ((line['unit_price_fcfa'] ?? line['unitPriceFcfa'])
+                  as num?)
+              ?.toInt() ??
+              0;
           final amount = price * qty;
 
           final entry = map.putIfAbsent(serviceId, () => {

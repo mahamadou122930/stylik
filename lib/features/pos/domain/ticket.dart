@@ -40,6 +40,7 @@ class TicketLine {
     this.quantity = 1,
     this.isProduct = false,
     this.stylistId,
+    this.stylistName,
     this.category,
   });
 
@@ -52,39 +53,54 @@ class TicketLine {
 
   /// Coiffeur crédité de la commission sur cette ligne.
   final String? stylistId;
+  final String? stylistName;
 
   /// Catégorie de la prestation ou marque du produit, affichée en sous-titre.
   final String? category;
 
   int get totalFcfa => unitPriceFcfa * quantity;
 
-  TicketLine copyWith({int? quantity, String? stylistId}) => TicketLine(
+  TicketLine copyWith({
+    int? quantity,
+    String? stylistId,
+    String? stylistName,
+  }) =>
+      TicketLine(
         refId: refId,
         label: label,
         unitPriceFcfa: unitPriceFcfa,
         quantity: quantity ?? this.quantity,
         isProduct: isProduct,
         stylistId: stylistId ?? this.stylistId,
+        stylistName: stylistName ?? this.stylistName,
         category: category,
       );
 
   Map<String, dynamic> toMap() => {
         'ref_id': refId,
+        'refId': refId,
         'label': label,
         'unit_price_fcfa': unitPriceFcfa,
+        'unitPriceFcfa': unitPriceFcfa,
         'quantity': quantity,
         'is_product': isProduct,
+        'isProduct': isProduct,
         'stylist_id': stylistId,
+        'stylistId': stylistId,
+        'stylist_name': stylistName,
+        'stylistName': stylistName,
         'category': category,
       };
 
   factory TicketLine.fromMap(Map<String, dynamic> map) => TicketLine(
-        refId: map['ref_id'] as String,
+        refId: (map['ref_id'] ?? map['refId'] ?? '') as String,
         label: (map['label'] as String?) ?? '',
-        unitPriceFcfa: (map['unit_price_fcfa'] as num?)?.toInt() ?? 0,
+        unitPriceFcfa:
+            (map['unit_price_fcfa'] ?? map['unitPriceFcfa'] as num?)?.toInt() ?? 0,
         quantity: (map['quantity'] as num?)?.toInt() ?? 1,
-        isProduct: (map['is_product'] as bool?) ?? false,
-        stylistId: map['stylist_id'] as String?,
+        isProduct: (map['is_product'] ?? map['isProduct'] as bool?) ?? false,
+        stylistId: (map['stylist_id'] ?? map['stylistId']) as String?,
+        stylistName: (map['stylist_name'] ?? map['stylistName']) as String?,
         category: map['category'] as String?,
       );
 }
@@ -220,10 +236,12 @@ class SalonTransaction {
       );
 
   Map<String, dynamic> toMap() => {
+        if (id.isNotEmpty && !id.startsWith('tx_')) 'id': id,
         'salon_id': salonId,
-        'appointment_id': appointmentId,
-        'client_id': clientId,
-        'cashier_id': cashierId,
+        'appointment_id':
+            (appointmentId != null && appointmentId!.isNotEmpty) ? appointmentId : null,
+        'client_id': (clientId != null && clientId!.isNotEmpty) ? clientId : null,
+        'cashier_id': (cashierId != null && cashierId!.isNotEmpty) ? cashierId : null,
         'subtotal_fcfa': subtotalFcfa,
         'discount_fcfa': discountFcfa,
         'total_amount_fcfa': totalAmountFcfa,

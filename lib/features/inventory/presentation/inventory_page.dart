@@ -9,6 +9,7 @@ import '../domain/product.dart';
 import 'consumption_page.dart';
 import 'inventory_providers.dart';
 import 'product_detail_page.dart';
+import 'product_form_page.dart';
 import 'stock_reception_page.dart';
 
 /// 7.1 — Inventaire : niveaux, alertes et valeur du stock.
@@ -30,8 +31,12 @@ class InventoryPage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.add_rounded,
         filled: true,
-        onTap: () {
-          // TODO(inventory): formulaire de création d'un produit.
+        onTap: () async {
+          final res = await Navigator.of(context)
+              .pushNamed(ProductFormPage.routeName);
+          if (res == true) {
+            ref.invalidate(productsProvider);
+          }
         },
       ),
       header: Padding(

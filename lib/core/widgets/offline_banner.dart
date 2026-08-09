@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../constants/app_colors.dart';
 import '../services/connectivity_service.dart';
 import '../services/sync_engine.dart';
 
-/// Bannière affichée en haut de l'application indiquant l'état de la connexion
-/// et les opérations en attente de synchronisation.
+/// Indicateur discret flottant en haut de l'écran affichant l'état de la synchronisation
+/// et le mode hors-ligne sans masquer l'interface ni décaler les éléments.
 class OfflineBanner extends ConsumerWidget {
   const OfflineBanner({super.key, required this.child});
 
@@ -22,63 +23,101 @@ class OfflineBanner extends ConsumerWidget {
 
     final showBanner = !isOnline || isSyncing || pendingCount > 0;
 
-    return Column(
+    final Color bgColor;
+    final Color borderColor;
+    final Color textColor;
+    final IconData iconData;
+    final String label;
+
+    if (!isOnline) {
+      bgColor = const Color(0xFA2C2416);
+      borderColor = const Color(0xFFB97706);
+      textColor = const Color(0xFFFBBF24);
+      iconData = Icons.wifi_off_rounded;
+      label = pendingCount > 0
+          ? 'Hors-ligne • $pendingCount en attente'
+          : 'Mode hors-ligne';
+    } else if (isSyncing) {
+      bgColor = const Color(0xFA1E2838);
+      borderColor = const Color(0xFF2A5FC0);
+      textColor = const Color(0xFF93C5FD);
+      iconData = Icons.sync_rounded;
+      label = 'Synchronisation…';
+    } else {
+      bgColor = const Color(0xFA162B22);
+      borderColor = AppColors.accent;
+      textColor = const Color(0xFF6EE7B7);
+      iconData = Icons.cloud_done_rounded;
+      label = '$pendingCount modification(s) en attente';
+    }
+
+    final topPadding = MediaQuery.of(context).padding.top + 6;
+
+    return Stack(
       children: [
-        if (showBanner)
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            color: !isOnline
-                ? const Color(0xFFD97706) // Ambre / Orange chaud
-                : isSyncing
-                    ? const Color(0xFF2563EB) // Bleu synchro
-                    : const Color(0xFF059669), // Vert succès
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-            child: SafeArea(
-              bottom: false,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    !isOnline
-                        ? Icons.wifi_off_rounded
-                        : isSyncing
-                            ? Icons.sync_rounded
-                            : Icons.cloud_done_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    !isOnline
-                        ? pendingCount > 0
-                            ? 'Mode hors-ligne • $pendingCount modification(s) en attente de synchro'
-                            : 'Mode hors-ligne • Consultation du cache local'
-                        : isSyncing
-                            ? 'Synchronisation des données avec le serveur...'
-                            : 'Données synchronisées',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+        Positioned.fill(child: child),
+        Positioned(
+          top: topPadding,
+          left: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: Center(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: showBanner ? 1.0 : 0.0,
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 300),
+                  offset: showBanner ? Offset.zero : const Offset(0, -0.6),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: bgColor,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: borderColor.withValues(alpha: 0.6), width: 1),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x33000000),
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(iconData, size: 13, color: textColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                        if (isSyncing) ...[
+                          const SizedBox(width: 7),
+                          SizedBox(
+                            width: 10,
+                            height: 10,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.8,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(textColor),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  if (isSyncing) ...[
-                    const SizedBox(width: 8),
-                    const SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
-        Expanded(child: child),
+        ),
       ],
     );
   }

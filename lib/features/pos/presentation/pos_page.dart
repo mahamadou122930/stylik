@@ -5,10 +5,14 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../auth/domain/profile.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../catalog/domain/salon_service.dart';
 import '../../catalog/presentation/catalog_providers.dart';
 import '../../inventory/domain/product.dart';
 import '../../inventory/presentation/inventory_providers.dart';
+import '../../inventory/presentation/product_form_page.dart';
+import '../../staff/presentation/staff_providers.dart';
 import '../domain/ticket.dart';
 import 'payment_page.dart';
 import 'pos_providers.dart';
@@ -33,7 +37,18 @@ class PosPage extends ConsumerWidget {
         priceBuilder: (service) => service.priceFcfa,
       ),
     );
-    if (selected != null) ref.read(ticketProvider.notifier).addService(selected);
+    if (selected != null) {
+      final currentProfile = ref.read(currentProfileProvider).valueOrNull;
+      final stylists = ref.read(stylistsProvider).valueOrNull ?? const [];
+      final defaultStylist =
+          currentProfile ?? (stylists.isNotEmpty ? stylists.first : null);
+
+      ref.read(ticketProvider.notifier).addService(
+            selected,
+            stylistId: defaultStylist?.id,
+            stylistName: defaultStylist?.fullName,
+          );
+    }
   }
 
   Future<void> _pickProduct(BuildContext context, WidgetRef ref) async {
@@ -47,6 +62,14 @@ class PosPage extends ConsumerWidget {
         labelBuilder: (product) => product.name,
         subtitleBuilder: (product) => product.brand,
         priceBuilder: (product) => product.unitSalePriceFcfa,
+        addNewLabel: '+ Nouveau produit',
+        onAddNew: () async {
+          final res = await Navigator.of(context)
+              .pushNamed(ProductFormPage.routeName);
+          if (res == true) {
+            ref.invalidate(productsProvider);
+          }
+        },
       ),
     );
     if (selected != null) ref.read(ticketProvider.notifier).addProduct(selected);
@@ -190,8 +213,44 @@ class _TicketLineRow extends ConsumerWidget {
   final TicketLine line;
   final bool isProduct;
 
+  Future<void> _changeStylist(BuildContext context, WidgetRef ref) async {
+    final stylists = ref.read(stylistsProvider).valueOrNull ?? const [];
+    if (stylists.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun coiffeur trouvé dans l\'équipe.')),
+      );
+      return;
+    }
+
+    final selected = await showModalBottomSheet<Profile>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => _PickerSheet<Profile>(
+        title: 'Attribuer au coiffeur',
+        items: stylists,
+        labelBuilder: (stylist) => stylist.fullName,
+        subtitleBuilder: (stylist) => stylist.role.label,
+        priceBuilder: (_) => 0,
+        showPrice: false,
+      ),
+    );
+
+    if (selected != null) {
+      ref.read(ticketProvider.notifier).updateLineStylist(
+            line.refId,
+            stylistId: selected.id,
+            stylistName: selected.fullName,
+          );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentProfile = ref.watch(currentProfileProvider).valueOrNull;
+    final displayName = line.stylistName ??
+        currentProfile?.fullName ??
+        'Choisir coiffeur';
+
     return Dismissible(
       key: ValueKey(line.refId),
       direction: DismissDirection.endToStart,
@@ -203,32 +262,106 @@ class _TicketLineRow extends ConsumerWidget {
       ),
       onDismissed: (_) =>
           ref.read(ticketProvider.notifier).removeLine(line.refId),
-      child: AppListRow(
-        label: line.quantity > 1
-            ? '${line.label} × ${line.quantity}'
-            : line.label,
-        subtitle: line.category,
-        strong: true,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        leading: isProduct
-            ? Container(
-                width: 34,
-                height: 34,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        child: Row(
+          children: [
+            if (isProduct)
+              Container(
+                width: 38,
+                height: 38,
+                margin: const EdgeInsets.only(right: 12),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceSubtle,
                   border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: const Icon(
                   Icons.local_drink_outlined,
-                  size: 17,
+                  size: 18,
                   color: AppColors.primary,
                 ),
-              )
-            : null,
-        trailing: Text(
-          Formatters.fcfa(line.totalFcfa),
-          style: AppTypography.sora(14, FontWeight.w700),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    line.quantity > 1
+                        ? '${line.label} × ${line.quantity}'
+                        : line.label,
+                    style: AppTypography.manrope(14.5, FontWeight.w700),
+                  ),
+                  if (!isProduct) ...[
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: () => _changeStylist(context, ref),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(4, 2.5, 8, 2.5),
+                        decoration: BoxDecoration(
+                          color: AppColors.tintGreenSoft,
+                          border: Border.all(color: AppColors.tintGreenBorder),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 18,
+                              height: 18,
+                              decoration: const BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                Formatters.initials(displayName),
+                                style: AppTypography.sora(
+                                  9,
+                                  FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              displayName,
+                              style: AppTypography.manrope(
+                                11.5,
+                                FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 14,
+                              color: AppColors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else if (line.category != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      line.category!,
+                      style: AppTypography.manrope(
+                        12,
+                        FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              Formatters.fcfa(line.totalFcfa),
+              style: AppTypography.sora(14, FontWeight.w700),
+            ),
+          ],
         ),
       ),
     );
@@ -318,7 +451,7 @@ class _DashedAction extends StatelessWidget {
   }
 }
 
-/// Feuille de sélection d'une prestation ou d'un produit.
+/// Feuille de sélection d'une prestation, d'un produit ou d'un coiffeur.
 class _PickerSheet<T> extends StatelessWidget {
   const _PickerSheet({
     required this.title,
@@ -326,6 +459,9 @@ class _PickerSheet<T> extends StatelessWidget {
     required this.labelBuilder,
     required this.subtitleBuilder,
     required this.priceBuilder,
+    this.showPrice = true,
+    this.onAddNew,
+    this.addNewLabel,
   });
 
   final String title;
@@ -333,6 +469,9 @@ class _PickerSheet<T> extends StatelessWidget {
   final String Function(T) labelBuilder;
   final String Function(T) subtitleBuilder;
   final int Function(T) priceBuilder;
+  final bool showPrice;
+  final VoidCallback? onAddNew;
+  final String? addNewLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -346,17 +485,47 @@ class _PickerSheet<T> extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
-              child: Text(
-                title,
-                style: AppTypography.sora(17, FontWeight.w700),
+              padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    title,
+                    style: AppTypography.sora(17, FontWeight.w700),
+                  ),
+                  if (onAddNew != null)
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        onAddNew!();
+                      },
+                      child: Text(
+                        addNewLabel ?? '+ Créer',
+                        style: AppTypography.manrope(
+                          13,
+                          FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             if (items.isEmpty)
-              const AppEmptyState(
-                compact: true,
-                title: 'Rien à ajouter',
-                message: 'Le catalogue est vide pour le moment.',
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: AppEmptyState(
+                  compact: true,
+                  title: 'Rien à afficher',
+                  message: 'Aucun élément disponible.',
+                  actionLabel: onAddNew != null ? addNewLabel : null,
+                  onAction: onAddNew != null
+                      ? () {
+                          Navigator.pop(context);
+                          onAddNew!();
+                        }
+                      : null,
+                ),
               )
             else
               Flexible(
@@ -371,10 +540,12 @@ class _PickerSheet<T> extends StatelessWidget {
                     strong: true,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     onTap: () => Navigator.pop(context, items[index]),
-                    trailing: Text(
-                      Formatters.fcfa(priceBuilder(items[index])),
-                      style: AppTypography.sora(14, FontWeight.w700),
-                    ),
+                    trailing: showPrice
+                        ? Text(
+                            Formatters.fcfa(priceBuilder(items[index])),
+                            style: AppTypography.sora(14, FontWeight.w700),
+                          )
+                        : null,
                   ),
                 ),
               ),

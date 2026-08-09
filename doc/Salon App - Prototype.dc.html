@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#DCE3D6; font-family:'Manrope',system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  a { color:#0C7A50; } a:hover { color:#13A06B; }
+  *::-webkit-scrollbar { width:0; height:0; }
+  .scr { position:absolute; inset:0; display:flex; flex-direction:column; }
+  .body { flex:1; overflow-y:auto; }
+  .tapc { cursor:pointer; transition:transform .08s, background .12s; }
+  .tapc:active { transform:scale(.985); }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:22px">
+  <div style="text-align:center">
+    <div style="font-family:'Sora';font-weight:700;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#0C7A50;margin-bottom:6px">Prototype cliquable · FCFA</div>
+    <div style="font-family:'Sora';font-weight:800;font-size:26px;letter-spacing:-.6px;color:#17231C">L'Atelier — app coiffeur</div>
+    <div style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#3C473F;margin-top:4px">Touchez les éléments : navigation, onglets, drill-downs et retours fonctionnent.</div>
+  </div>
+
+  <div style="position:relative;width:390px;height:844px;background:#F2F5EF;border-radius:44px;border:10px solid #1c1e1b;overflow:hidden;box-shadow:0 34px 80px rgba(0,0,0,.24)">
+
+    <!-- ============ LOGIN ============ -->
+    <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ true }}">
+      <div class="scr" style="background:#17231C">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#fff">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#fff" stroke-opacity=".5"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#fff"/></svg></div></div>
+        <div class="body" style="padding:0 26px;display:flex;flex-direction:column">
+          <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
+            <div style="width:72px;height:72px;border-radius:22px;background:#13A06B;display:flex;align-items:center;justify-content:center;margin-bottom:20px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M6 4c0 4 2 6 6 6s6-2 6-6M6 20c0-4 2-6 6-6s6 2 6 6M12 10v4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+            <h1 style="font-family:'Sora';font-weight:800;font-size:28px;letter-spacing:-.7px;color:#fff;margin:0 0 6px">L'Atelier</h1>
+            <p style="font-family:'Manrope';font-weight:500;font-size:14px;color:rgba(255,255,255,.6);margin:0 0 28px">La gestion de votre salon, simplifiée</p>
+            <div style="width:100%;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:15px 16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="rgba(255,255,255,.55)" stroke-width="1.7"/><path d="M4 7l8 6 8-6" stroke="rgba(255,255,255,.55)" stroke-width="1.7" stroke-linecap="round"/></svg><span style="font-family:'Manrope';font-weight:600;font-size:14px;color:rgba(255,255,255,.85)">lea@latelier.sn</span></div>
+              <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:15px 16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="4" y="10" width="16" height="10" rx="2" stroke="rgba(255,255,255,.55)" stroke-width="1.7"/><path d="M8 10V7a4 4 0 018 0v3" stroke="rgba(255,255,255,.55)" stroke-width="1.7"/></svg><span style="font-family:'Manrope';font-weight:600;font-size:14px;color:rgba(255,255,255,.85);letter-spacing:3px">••••••••</span></div>
+            </div>
+          </div>
+          <div style="padding-bottom:calc(env(safe-area-inset-bottom) + 26px);display:flex;flex-direction:column;gap:14px">
+            <div class="tapc" onClick="{{ goRole }}" style="height:56px;border-radius:16px;background:#13A06B;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:16px;color:#fff">Se connecter</div>
+            <div style="text-align:center;font-family:'Manrope';font-weight:600;font-size:13px;color:rgba(255,255,255,.55)">Pas de compte ? <span style="color:#7EE0B4">Inscrire mon salon</span></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ SÉLECTION DU RÔLE ============ -->
+    <sc-if value="{{ isRole }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div class="body" style="padding:12px 22px 20px">
+          <h1 style="font-family:'Sora';font-weight:800;font-size:26px;letter-spacing:-.6px;color:#17231C;margin:8px 0 6px">Qui êtes-vous ?</h1>
+          <p style="font-family:'Manrope';font-weight:500;font-size:14px;color:#6C7870;margin:0 0 22px">Votre rôle détermine ce que vous voyez dans l'app.</p>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div class="tapc" onClick="{{ goHome }}" style="display:flex;align-items:center;gap:14px;background:#fff;border:1.5px solid #13A06B;border-radius:18px;padding:17px 16px;box-shadow:0 6px 18px rgba(19,160,107,.12)"><div style="width:48px;height:48px;border-radius:14px;background:#E2F3EA;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.5 5 5.5.8-4 3.9 1 5.5-5-2.7-5 2.7 1-5.5-4-3.9 5.5-.8L12 3z" stroke="#0C7A50" stroke-width="1.5" stroke-linejoin="round"/></svg></div><div style="flex:1"><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#17231C">Gérant</div><div style="font-family:'Manrope';font-weight:500;font-size:12.5px;color:#6C7870">Accès complet, finance et équipe</div></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#0C7A50" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+            <div class="tapc" onClick="{{ goHome }}" style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #E6EBE1;border-radius:18px;padding:17px 16px"><div style="width:48px;height:48px;border-radius:14px;background:#EAF1FD;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="#2A5FC0" stroke-width="1.7"/><path d="M5 20c0-4 3-6 7-6s7 2 7 6" stroke="#2A5FC0" stroke-width="1.7" stroke-linecap="round"/></svg></div><div style="flex:1"><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#17231C">Coiffeur</div><div style="font-family:'Manrope';font-weight:500;font-size:12.5px;color:#6C7870">Planning, encaissement, clients</div></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+            <div class="tapc" onClick="{{ goHome }}" style="display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #E6EBE1;border-radius:18px;padding:17px 16px"><div style="width:48px;height:48px;border-radius:14px;background:#FEF2DF;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="5" width="17" height="15" rx="2.5" stroke="#B97706" stroke-width="1.7"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="#B97706" stroke-width="1.7" stroke-linecap="round"/></svg></div><div style="flex:1"><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#17231C">Réceptionniste</div><div style="font-family:'Manrope';font-weight:500;font-size:12.5px;color:#6C7870">Agenda et prise de RDV</div></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ ACCUEIL ============ -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 18px 14px"><div style="flex:1"><div style="font-family:'Manrope';font-weight:600;font-size:13px;color:#6C7870">Lundi 4 août</div><h1 style="font-family:'Sora';font-weight:800;font-size:24px;letter-spacing:-.6px;color:#17231C;margin:1px 0 0">Bonjour, Léa</h1></div><div class="tapc" onClick="{{ goNotifications }}" style="position:relative;width:46px;height:46px;border-radius:14px;background:#fff;border:1px solid #E6EBE1;display:flex;align-items:center;justify-content:center"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="#3C473F" stroke-width="1.8"/><path d="M10 20a2 2 0 004 0" stroke="#3C473F" stroke-width="1.8" stroke-linecap="round"/></svg><div style="position:absolute;top:9px;right:11px;width:8px;height:8px;border-radius:50%;background:#E4583E;border:1.5px solid #fff"></div></div></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:14px"><div style="font-family:'Manrope';font-weight:600;font-size:11.5px;color:#6C7870">CA du jour</div><div style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;margin-top:5px;white-space:nowrap">248 000 F</div><div style="font-family:'Manrope';font-weight:700;font-size:11.5px;color:#0C7A50;margin-top:3px">▲ 12 %</div></div>
+            <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:14px"><div style="font-family:'Manrope';font-weight:600;font-size:11.5px;color:#6C7870">Rendez-vous</div><div style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;margin-top:5px">14</div><div style="font-family:'Manrope';font-weight:700;font-size:11.5px;color:#6C7870;margin-top:3px">5 à venir</div></div>
+            <div class="tapc" onClick="{{ goStock }}" style="background:#FCEBE7;border:1px solid #F6D5CD;border-radius:16px;padding:14px"><div style="font-family:'Manrope';font-weight:600;font-size:11.5px;color:#C0432C">Alerte stock</div><div style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#E4583E;margin-top:5px">3</div><div style="font-family:'Manrope';font-weight:700;font-size:11.5px;color:#C0432C;margin-top:3px">à réappro.</div></div>
+            <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:14px"><div style="font-family:'Manrope';font-weight:600;font-size:11.5px;color:#6C7870">Remplissage</div><div style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;margin-top:5px">82 %</div><div style="font-family:'Manrope';font-weight:700;font-size:11.5px;color:#B97706;margin-top:3px">3 libres</div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:18px 2px 10px"><div style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">Prochains rendez-vous</div><span class="tapc" onClick="{{ goAgenda }}" style="font-family:'Manrope';font-weight:700;font-size:12.5px;color:#0C7A50">Tout voir</span></div>
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px">
+            <div class="tapc" onClick="{{ goRdvDetail }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #E6EBE1"><div style="font-family:'Sora';font-weight:700;font-size:13px;color:#0C7A50;width:42px">11:15</div><div style="flex:1;min-width:0"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Amine Roux</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Couleur · 34 000 F</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="tapc" onClick="{{ goRdvDetail }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px"><div style="font-family:'Sora';font-weight:700;font-size:13px;color:#0C7A50;width:42px">12:00</div><div style="flex:1;min-width:0"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Claire Moreau</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Brushing · 17 000 F</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+        {{ tabBar }}
+      </div>
+    </sc-if>
+
+    <!-- ============ AGENDA ============ -->
+    <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 18px 12px"><h1 style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;flex:1;margin:0">Agenda</h1></div>
+        <div style="display:flex;gap:6px;padding:0 14px 12px">
+          <div style="flex:1;text-align:center;padding:8px 0;border-radius:13px;color:#9AA69C"><div style="font-family:'Manrope';font-weight:600;font-size:11px">DIM</div><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#3C473F;margin-top:2px">3</div></div>
+          <div style="flex:1;text-align:center;padding:8px 0;border-radius:13px;background:#0C7A50;color:#fff"><div style="font-family:'Manrope';font-weight:600;font-size:11px;opacity:.8">LUN</div><div style="font-family:'Sora';font-weight:700;font-size:16px;margin-top:2px">4</div></div>
+          <div style="flex:1;text-align:center;padding:8px 0;border-radius:13px;color:#9AA69C"><div style="font-family:'Manrope';font-weight:600;font-size:11px">MAR</div><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#3C473F;margin-top:2px">5</div></div>
+          <div style="flex:1;text-align:center;padding:8px 0;border-radius:13px;color:#9AA69C"><div style="font-family:'Manrope';font-weight:600;font-size:11px">MER</div><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#3C473F;margin-top:2px">6</div></div>
+          <div style="flex:1;text-align:center;padding:8px 0;border-radius:13px;color:#9AA69C"><div style="font-family:'Manrope';font-weight:600;font-size:11px">JEU</div><div style="font-family:'Sora';font-weight:700;font-size:16px;color:#3C473F;margin-top:2px">7</div></div>
+        </div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;overflow:hidden">
+            <div class="tapc" onClick="{{ goRdvDetail }}" style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #E6EBE1"><div style="width:44px"><div style="font-family:'Sora';font-weight:700;font-size:14px;color:#17231C">9:00</div><div style="font-family:'Manrope';font-weight:500;font-size:10px;color:#9AA69C">45 min</div></div><div style="width:3px;height:34px;border-radius:3px;background:#13A06B"></div><div style="flex:1;min-width:0"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Marie Dupont</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Coupe + brushing</div></div><span style="font-family:'Manrope';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:#E2F3EA;color:#0C7A50">Léa</span></div>
+            <div class="tapc" onClick="{{ goRdvDetail }}" style="display:flex;align-items:center;gap:12px;padding:14px;background:#F0FAF4;border-bottom:1px solid #E6EBE1"><div style="width:44px"><div style="font-family:'Sora';font-weight:700;font-size:14px;color:#0C7A50">10:00</div><div style="font-family:'Manrope';font-weight:700;font-size:10px;color:#13A06B">en cours</div></div><div style="width:3px;height:34px;border-radius:3px;background:#13A06B"></div><div style="flex:1;min-width:0"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Sophie Bernard</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Balayage + coupe</div></div><span style="font-family:'Manrope';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:#E2F3EA;color:#0C7A50">Léa</span></div>
+            <div class="tapc" onClick="{{ goRdvDetail }}" style="display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #E6EBE1"><div style="width:44px"><div style="font-family:'Sora';font-weight:700;font-size:14px;color:#17231C">11:15</div><div style="font-family:'Manrope';font-weight:500;font-size:10px;color:#9AA69C">50 min</div></div><div style="width:3px;height:34px;border-radius:3px;background:#F4A526"></div><div style="flex:1;min-width:0"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Amine Roux</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Couleur</div></div><span style="font-family:'Manrope';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:#FEF2DF;color:#B97706">Sofia</span></div>
+            <div class="tapc" onClick="{{ goRdvDetail }}" style="display:flex;align-items:center;gap:12px;padding:14px"><div style="width:44px"><div style="font-family:'Sora';font-weight:700;font-size:14px;color:#17231C">12:00</div><div style="font-family:'Manrope';font-weight:500;font-size:10px;color:#9AA69C">30 min</div></div><div style="width:3px;height:34px;border-radius:3px;background:#13A06B"></div><div style="flex:1;min-width:0"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Claire Moreau</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Brushing</div></div><span style="font-family:'Manrope';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:#E2F3EA;color:#0C7A50">Léa</span></div>
+          </div>
+        </div>
+        <div class="tapc" onClick="{{ goRdvNew }}" style="position:absolute;right:22px;bottom:96px;width:58px;height:58px;border-radius:20px;background:#13A06B;box-shadow:0 10px 24px rgba(19,160,107,.42);display:flex;align-items:center;justify-content:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></div>
+        {{ tabBar }}
+      </div>
+    </sc-if>
+
+    <!-- ============ DÉTAIL RDV ============ -->
+    <sc-if value="{{ isRdvDetail }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 12px"><div class="tapc" onClick="{{ goBack }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#17231C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="font-family:'Sora';font-weight:700;font-size:18px;letter-spacing:-.4px;color:#17231C;flex:1;margin:0">Rendez-vous</h1></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:18px;padding:18px;text-align:center">
+            <div style="width:64px;height:64px;border-radius:20px;background:#FEF2DF;color:#B97706;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:22px;margin:0 auto 12px">AR</div>
+            <h2 style="font-family:'Sora';font-weight:800;font-size:20px;color:#17231C;margin:0 0 4px">Amine Roux</h2>
+            <span style="font-family:'Manrope';font-weight:600;font-size:11.5px;padding:4px 11px;border-radius:20px;background:#FEF2DF;color:#B97706">Confirmé</span>
+          </div>
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:6px 14px;margin-top:12px">
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E6EBE1"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Horaire</span><b style="font-family:'Sora';font-weight:650;font-size:13.5px;color:#17231C">Aujourd'hui · 11:15</b></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E6EBE1"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Prestation</span><b style="font-family:'Sora';font-weight:650;font-size:13.5px;color:#17231C">Couleur racines</b></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E6EBE1"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Durée</span><b style="font-family:'Sora';font-weight:650;font-size:13.5px;color:#17231C">50 min</b></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E6EBE1"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Coiffeuse</span><b style="font-family:'Sora';font-weight:650;font-size:13.5px;color:#17231C">Sofia</b></div>
+            <div style="display:flex;justify-content:space-between;padding:12px 0"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Montant</span><b style="font-family:'Sora';font-weight:800;font-size:15px;color:#0C7A50">34 000 F</b></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;padding:12px 18px calc(env(safe-area-inset-bottom) + 22px)"><div class="tapc" onClick="{{ goClientDetail }}" style="flex:1;height:54px;border-radius:16px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:14.5px;color:#3C473F">Voir le client</div><div class="tapc" onClick="{{ goCaisse }}" style="flex:1;height:54px;border-radius:16px;background:#13A06B;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:14.5px;color:#fff">Encaisser</div></div>
+      </div>
+    </sc-if>
+
+    <!-- ============ NOUVEAU RDV ============ -->
+    <sc-if value="{{ isRdvNew }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 12px"><div class="tapc" onClick="{{ goBack }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#17231C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="font-family:'Sora';font-weight:700;font-size:18px;letter-spacing:-.4px;color:#17231C;flex:1;margin:0">Nouveau RDV</h1></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:2px 2px 8px">Client</div>
+          <div class="tapc" onClick="{{ goClientNew }}" style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:14px;margin-bottom:16px"><div style="width:38px;height:38px;border-radius:11px;background:#0C7A50;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:13px">MD</div><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14px;color:#17231C">Marie Dupont</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">+221 77 123 45 67</div></div><span style="font-family:'Manrope';font-weight:700;font-size:12px;color:#0C7A50">Changer</span></div>
+          <div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:0 2px 8px">Prestation</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;gap:12px;background:#F0FAF4;border:1.5px solid #13A06B;border-radius:14px;padding:13px 14px"><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14px;color:#17231C">Coupe femme</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">45 min</div></div><b style="font-family:'Sora';font-weight:700;font-size:14px;color:#0C7A50">25 000 F</b></div>
+            <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:13px 14px"><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14px;color:#17231C">Brushing</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">30 min</div></div><b style="font-family:'Sora';font-weight:700;font-size:14px;color:#3C473F">17 000 F</b></div>
+          </div>
+          <div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:0 2px 8px">Créneau</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="font-family:'Sora';font-weight:650;font-size:13px;padding:9px 14px;border-radius:12px;background:#fff;border:1px solid #E6EBE1;color:#3C473F">14:00</span>
+            <span style="font-family:'Sora';font-weight:650;font-size:13px;padding:9px 14px;border-radius:12px;background:#0C7A50;color:#fff">14:30</span>
+            <span style="font-family:'Sora';font-weight:650;font-size:13px;padding:9px 14px;border-radius:12px;background:#fff;border:1px solid #E6EBE1;color:#3C473F">15:15</span>
+            <span style="font-family:'Sora';font-weight:650;font-size:13px;padding:9px 14px;border-radius:12px;background:#fff;border:1px solid #E6EBE1;color:#3C473F">16:00</span>
+          </div>
+        </div>
+        <div style="padding:12px 18px calc(env(safe-area-inset-bottom) + 22px)"><div class="tapc" onClick="{{ goAgenda }}" style="height:56px;border-radius:16px;background:#13A06B;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:16px;color:#fff">Confirmer le rendez-vous</div></div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CAISSE ============ -->
+    <sc-if value="{{ isCaisse }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 18px 12px"><h1 style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;flex:1;margin:0">Encaissement</h1></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid #E6EBE1;border-radius:16px"><div style="width:40px;height:40px;border-radius:12px;background:#0C7A50;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:14px">SB</div><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Sophie Bernard</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">Coiffeuse · Léa</div></div><span style="font-family:'Manrope';font-weight:600;font-size:11px;padding:3px 9px;border-radius:20px;background:#E2F3EA;color:#0C7A50">10:00</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 2px 10px"><div style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">Ticket</div><span style="font-family:'Manrope';font-weight:600;font-size:12px;color:#6C7870;background:#fff;border:1px solid #E6EBE1;padding:2px 9px;border-radius:20px">{{ cartCount }}</span></div>
+          <sc-if value="{{ cartEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff;border:1px dashed #D5DCCD;border-radius:16px;padding:26px 14px;text-align:center"><div style="font-family:'Manrope';font-weight:600;font-size:13.5px;color:#9AA69C">Aucune prestation. Ajoutez ce que vous facturez.</div></div>
+          </sc-if>
+          <sc-if value="{{ cartHasItems }}" hint-placeholder-val="{{ true }}">
+            <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px">
+              <sc-for list="{{ cart }}" as="item" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #E6EBE1"><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">{{ item.name }}</div><div class="tapc" onClick="{{ item.cycle }}" style="display:inline-flex;align-items:center;gap:5px;margin-top:5px;padding:3px 9px 3px 4px;border-radius:20px;background:#F0FAF4;border:1px solid #CDE4D8"><span style="width:18px;height:18px;border-radius:50%;background:#0C7A50;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:9px">{{ item.stylistInitial }}</span><span style="font-family:'Manrope';font-weight:650;font-size:11.5px;color:#0C7A50">{{ item.stylist }}</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="#0C7A50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div style="font-family:'Sora';font-weight:700;font-size:14px;color:#17231C;white-space:nowrap">{{ item.priceLabel }}</div><div class="tapc" onClick="{{ item.remove }}" style="width:26px;height:26px;border-radius:8px;background:#FCEBE7;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E4583E" stroke-width="2.2" stroke-linecap="round"/></svg></div></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div class="tapc" onClick="{{ goCaissePick }}" style="margin-top:10px;height:48px;border:1.5px dashed #13A06B;background:#F0FAF4;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Sora';font-weight:650;font-size:14px;color:#0C7A50"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#0C7A50" stroke-width="2.4" stroke-linecap="round"/></svg>Ajouter une prestation ou un produit</div>
+          <div style="margin-top:16px;background:#fff;border:1px solid #E6EBE1;border-radius:18px;padding:6px 16px 4px">
+            <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #E6EBE1"><span style="font-family:'Manrope';font-weight:550;font-size:14px;color:#6C7870">Sous-total</span><b style="font-family:'Sora';font-weight:650;font-size:14px;color:#3C473F">{{ subTotalLabel }}</b></div>
+            <div style="display:flex;justify-content:space-between;padding:11px 0"><span style="font-family:'Manrope';font-weight:550;font-size:14px;color:#0C7A50">Remise fidélité (5 %)</span><b style="font-family:'Sora';font-weight:650;font-size:14px;color:#0C7A50">{{ discountLabel }}</b></div>
+          </div>
+          <div style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C;margin:18px 2px 10px">Moyen de paiement</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;height:66px;border-radius:14px;border:1.5px solid #E6EBE1;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="6" width="19" height="12" rx="2.5" stroke="#6C7870" stroke-width="1.8"/><circle cx="12" cy="12" r="2.4" stroke="#6C7870" stroke-width="1.8"/></svg><span style="font-family:'Sora';font-weight:650;font-size:12px;color:#6C7870">Espèces</span></div>
+            <div style="flex:1;height:66px;border-radius:14px;border:1.5px solid #13A06B;background:#E2F3EA;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="6" y="2.5" width="12" height="19" rx="2.5" stroke="#0C7A50" stroke-width="1.8"/><path d="M10.5 18.5h3" stroke="#0C7A50" stroke-width="1.8" stroke-linecap="round"/></svg><span style="font-family:'Sora';font-weight:650;font-size:12px;color:#0C7A50">Wave</span></div>
+            <div style="flex:1;height:66px;border-radius:14px;border:1.5px solid #E6EBE1;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="5" width="19" height="14" rx="2.5" stroke="#6C7870" stroke-width="1.8"/><path d="M2.5 10h19" stroke="#6C7870" stroke-width="1.8"/></svg><span style="font-family:'Sora';font-weight:650;font-size:12px;color:#6C7870">Carte</span></div>
+          </div>
+        </div>
+        <div style="padding:12px 18px 8px"><div class="tapc" onClick="{{ goPaid }}" style="height:56px;border-radius:16px;background:#13A06B;display:flex;align-items:center;justify-content:space-between;padding:0 22px"><span style="font-family:'Sora';font-weight:700;font-size:16px;color:#fff">Valider le paiement</span><span style="font-family:'Sora';font-weight:800;font-size:18px;color:#fff;white-space:nowrap">{{ totalLabel }}</span></div></div>
+        {{ tabBar }}
+      </div>
+    </sc-if>
+
+    <!-- ============ AJOUTER AU TICKET (PICKER) ============ -->
+    <sc-if value="{{ isCaissePick }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 12px"><div class="tapc" onClick="{{ goBack }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#17231C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="font-family:'Sora';font-weight:700;font-size:18px;letter-spacing:-.4px;color:#17231C;flex:1;margin:0">Ajouter au ticket</h1></div>
+        <div style="padding:0 18px 12px"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:12px 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9AA69C" stroke-width="1.8"/><path d="M20 20l-4-4" stroke="#9AA69C" stroke-width="1.8" stroke-linecap="round"/></svg><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#9AA69C">Rechercher une prestation…</span></div></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="font-family:'Sora';font-weight:700;font-size:13px;letter-spacing:.3px;text-transform:uppercase;color:#9AA69C;margin:2px 2px 10px">Prestations</div>
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px">
+            <sc-for list="{{ catalog }}" as="svc" hint-placeholder-count="6">
+              <div class="tapc" onClick="{{ svc.add }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #E6EBE1"><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14px;color:#17231C">{{ svc.name }}</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">{{ svc.meta }}</div></div><b style="font-family:'Sora';font-weight:700;font-size:14px;color:#3C473F;white-space:nowrap">{{ svc.priceLabel }}</b><div style="width:28px;height:28px;border-radius:9px;background:#13A06B;display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></div></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:12px 18px calc(env(safe-area-inset-bottom) + 22px)"><div class="tapc" onClick="{{ goBack }}" style="height:56px;border-radius:16px;background:#17231C;display:flex;align-items:center;justify-content:space-between;padding:0 22px"><span style="font-family:'Sora';font-weight:700;font-size:16px;color:#fff">Retour au ticket</span><span style="font-family:'Sora';font-weight:800;font-size:16px;color:#fff;white-space:nowrap">{{ cartCount }} · {{ totalLabel }}</span></div></div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CLIENTS ============ -->
+    <sc-if value="{{ isClients }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 18px 12px"><h1 style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;flex:1;margin:0">Clients</h1><div class="tapc" onClick="{{ goClientNew }}" style="width:40px;height:40px;border-radius:12px;background:#13A06B;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></div></div>
+        <div style="padding:0 18px 12px"><div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:12px 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#9AA69C" stroke-width="1.8"/><path d="M20 20l-4-4" stroke="#9AA69C" stroke-width="1.8" stroke-linecap="round"/></svg><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#9AA69C">Rechercher un client</span></div></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px">
+            <div class="tapc" onClick="{{ goClientDetail }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #E6EBE1"><div style="width:42px;height:42px;border-radius:13px;background:#0C7A50;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:14px">MD</div><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Marie Dupont</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">24 visites · Coloration</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="tapc" onClick="{{ goClientDetail }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #E6EBE1"><div style="width:42px;height:42px;border-radius:13px;background:#EAF1FD;color:#2A5FC0;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:14px">AS</div><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Awa Sow</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">18 visites · Fidèle</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="tapc" onClick="{{ goClientDetail }}" style="display:flex;align-items:center;gap:12px;padding:13px 14px"><div style="width:42px;height:42px;border-radius:13px;background:#FEF2DF;color:#B97706;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:14px">CM</div><div style="flex:1"><div style="font-family:'Manrope';font-weight:700;font-size:14.5px;color:#17231C">Claire Moreau</div><div style="font-family:'Manrope';font-weight:500;font-size:12px;color:#6C7870">6 visites</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8 5l7 7-7 7" stroke="#9AA69C" stroke-width="2" stroke-linecap="round"/></svg></div>
+          </div>
+        </div>
+        {{ tabBar }}
+      </div>
+    </sc-if>
+
+    <!-- ============ FICHE CLIENT ============ -->
+    <sc-if value="{{ isClientDetail }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 10px"><div class="tapc" onClick="{{ goBack }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#17231C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="font-family:'Sora';font-weight:700;font-size:18px;letter-spacing:-.4px;color:#17231C;flex:1;margin:0">Fiche client</h1></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 16px">
+            <div style="width:72px;height:72px;border-radius:22px;background:#0C7A50;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:26px">MD</div>
+            <h2 style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;margin:12px 0 5px">Marie Dupont</h2>
+            <div style="display:flex;gap:7px"><span style="font-family:'Manrope';font-weight:600;font-size:11.5px;padding:4px 11px;border-radius:20px;background:#E2F3EA;color:#0C7A50">Cliente fidèle</span><span style="font-family:'Manrope';font-weight:600;font-size:11.5px;padding:4px 11px;border-radius:20px;background:#F1EBFD;color:#7C3AED">Coloration</span></div>
+          </div>
+          <div style="display:flex;gap:2px;background:#fff;border:1px solid #E6EBE1;border-radius:16px;overflow:hidden">
+            <div style="flex:1;padding:13px 8px;text-align:center;border-right:1px solid #E6EBE1"><div style="font-family:'Sora';font-weight:800;font-size:18px;color:#17231C">24</div><div style="font-family:'Manrope';font-weight:600;font-size:10.5px;color:#6C7870;margin-top:2px">Visites</div></div>
+            <div style="flex:1;padding:13px 8px;text-align:center;border-right:1px solid #E6EBE1"><div style="font-family:'Sora';font-weight:800;font-size:16px;color:#17231C;white-space:nowrap">742 000 F</div><div style="font-family:'Manrope';font-weight:600;font-size:10.5px;color:#6C7870;margin-top:2px">Total</div></div>
+            <div style="flex:1;padding:13px 8px;text-align:center"><div style="font-family:'Sora';font-weight:800;font-size:18px;color:#17231C">12 j</div><div style="font-family:'Manrope';font-weight:600;font-size:10.5px;color:#6C7870;margin-top:2px">Dernière</div></div>
+          </div>
+          <div style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C;margin:18px 2px 10px">Préférences</div>
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:6px 14px">
+            <div style="display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #E6EBE1"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Couleur</span><b style="font-family:'Sora';font-weight:650;font-size:13.5px;color:#17231C">6.3 — Blond foncé</b></div>
+            <div style="display:flex;justify-content:space-between;padding:11px 0"><span style="font-family:'Manrope';font-weight:500;font-size:13.5px;color:#6C7870">Note</span><b style="font-family:'Sora';font-weight:650;font-size:13.5px;color:#17231C">Allergie ammoniaque</b></div>
+          </div>
+          <div style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C;margin:18px 2px 10px">Historique</div>
+          <div style="background:#fff;border:1px solid #E6EBE1;border-radius:16px">
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #E6EBE1"><div style="width:52px;font-family:'Sora';font-weight:700;font-size:13px;color:#17231C">23 juil</div><div style="flex:1;font-family:'Manrope';font-weight:700;font-size:14px;color:#17231C">Couleur + coupe</div><b style="font-family:'Sora';font-weight:700;font-size:13.5px;color:#3C473F">42 000 F</b></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 14px"><div style="width:52px;font-family:'Sora';font-weight:700;font-size:13px;color:#17231C">2 juil</div><div style="flex:1;font-family:'Manrope';font-weight:700;font-size:14px;color:#17231C">Brushing</div><b style="font-family:'Sora';font-weight:700;font-size:13.5px;color:#3C473F">17 000 F</b></div>
+          </div>
+        </div>
+        <div style="padding:12px 18px calc(env(safe-area-inset-bottom) + 22px)"><div class="tapc" onClick="{{ goRdvNew }}" style="height:54px;border-radius:16px;background:#13A06B;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Sora';font-weight:700;font-size:16px;color:#fff"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>Prendre un rendez-vous</div></div>
+      </div>
+    </sc-if>
+
+    <!-- ============ NOUVEAU CLIENT ============ -->
+    <sc-if value="{{ isClientNew }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 12px"><div class="tapc" onClick="{{ goBack }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#17231C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="font-family:'Sora';font-weight:700;font-size:18px;letter-spacing:-.4px;color:#17231C;flex:1;margin:0">Nouveau client</h1></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div><div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:0 2px 7px">Nom complet</div><div style="background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:15px 14px;font-family:'Manrope';font-weight:600;font-size:14px;color:#17231C">Fatou Ndiaye</div></div>
+            <div><div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:0 2px 7px">Téléphone</div><div style="background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:15px 14px;font-family:'Manrope';font-weight:600;font-size:14px;color:#17231C">+221 77 __ __ __</div></div>
+            <div><div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:0 2px 7px">Préférence couleur</div><div style="background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:15px 14px;font-family:'Manrope';font-weight:500;font-size:14px;color:#9AA69C">Optionnel</div></div>
+            <div><div style="font-family:'Sora';font-weight:650;font-size:12.5px;color:#3C473F;margin:0 2px 7px">Note / allergie</div><div style="background:#fff;border:1px solid #E6EBE1;border-radius:14px;padding:15px 14px;height:60px;font-family:'Manrope';font-weight:500;font-size:14px;color:#9AA69C">Optionnel</div></div>
+          </div>
+        </div>
+        <div style="padding:12px 18px calc(env(safe-area-inset-bottom) + 22px)"><div class="tapc" onClick="{{ goClients }}" style="height:56px;border-radius:16px;background:#13A06B;display:flex;align-items:center;justify-content:center;font-family:'Sora';font-weight:700;font-size:16px;color:#fff">Créer la fiche client</div></div>
+      </div>
+    </sc-if>
+
+    <!-- ============ PLUS (HUB) ============ -->
+    <sc-if value="{{ isPlus }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 18px 14px"><h1 style="font-family:'Sora';font-weight:800;font-size:22px;letter-spacing:-.5px;color:#17231C;flex:1;margin:0">Plus</h1></div>
+        <div class="body" style="padding:0 18px 20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="tapc" onClick="{{ goStaff }}" style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:16px"><div style="width:40px;height:40px;border-radius:12px;background:#E2F3EA;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3" stroke="#0C7A50" stroke-width="1.8"/><path d="M3.5 20c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke="#0C7A50" stroke-width="1.8" stroke-linecap="round"/><path d="M16 6a3 3 0 010 5.4" stroke="#0C7A50" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="font-family:'Sora';font-weight:700;font-size:14.5px;color:#17231C">Personnel</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">Équipe, congés</div></div>
+            <div class="tapc" onClick="{{ goServices }}" style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:16px"><div style="width:40px;height:40px;border-radius:12px;background:#EAF1FD;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="#2A5FC0" stroke-width="1.9" stroke-linecap="round"/></svg></div><div style="font-family:'Sora';font-weight:700;font-size:14.5px;color:#17231C">Prestations</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">Tarifs, forfaits</div></div>
+            <div class="tapc" onClick="{{ goStock }}" style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:16px"><div style="width:40px;height:40px;border-radius:12px;background:#FEF2DF;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 7l9-4 9 4v10l-9 4-9-4V7z" stroke="#B97706" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 7l9 4 9-4M12 11v10" stroke="#B97706" stroke-width="1.7"/></svg></div><div style="font-family:'Sora';font-weight:700;font-size:14.5px;color:#17231C">Stock</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">Produits, alertes</div></div>
+            <div class="tapc" onClick="{{ goFinance }}" style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:16px"><div style="width:40px;height:40px;border-radius:12px;background:#E2F3EA;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 16l5-5 4 4 7-8" stroke="#0C7A50" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-family:'Sora';font-weight:700;font-size:14.5px;color:#17231C">Finance</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">CA, rapports</div></div>
+            <div class="tapc" onClick="{{ goMarketing }}" style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:16px"><div style="width:40px;height:40px;border-radius:12px;background:#F1EBFD;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 11l16-6-3 15-4-4-3 4-1-6-5-3z" stroke="#7C3AED" stroke-width="1.7" stroke-linejoin="round"/></svg></div><div style="font-family:'Sora';font-weight:700;font-size:14.5px;color:#17231C">Marketing</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">Fidélité, promos</div></div>
+            <div class="tapc" onClick="{{ goSettings }}" style="background:#fff;border:1px solid #E6EBE1;border-radius:16px;padding:16px"><div style="width:40px;height:40px;border-radius:12px;background:#F1F4EE;display:flex;align-items:center;justify-content:center;margin-bottom:10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#3C473F" stroke-width="1.8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" stroke="#3C473F" stroke-width="1.8" stroke-linecap="round"/></svg></div><div style="font-family:'Sora';font-weight:700;font-size:14.5px;color:#17231C">Paramètres</div><div style="font-family:'Manrope';font-weight:500;font-size:11.5px;color:#6C7870">Salon, rôles</div></div>
+          </div>
+        </div>
+        {{ tabBar }}
+      </div>
+    </sc-if>
+
+    <!-- ============ SECTIONS SECONDAIRES (via renderVals) ============ -->
+    <sc-if value="{{ isSection }}" hint-placeholder-val="{{ true }}">
+      <div class="scr">
+        <div style="height:52px;flex:0 0 52px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 9px"><span style="font-family:'Sora';font-weight:700;font-size:15px;color:#17231C">9:41</span><div style="display:flex;gap:6px;align-items:center"><svg width="18" height="12" viewBox="0 0 18 12" fill="#17231C"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="21" height="10" rx="2.5" stroke="#17231C" stroke-opacity=".4"/><rect x="3" y="3" width="15" height="6" rx="1" fill="#17231C"/></svg></div></div>
+        <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 12px"><div class="tapc" onClick="{{ goPlus }}" style="width:40px;height:40px;border-radius:12px;border:1px solid #E6EBE1;background:#fff;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="#17231C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><h1 style="font-family:'Sora';font-weight:700;font-size:18px;letter-spacing:-.4px;color:#17231C;flex:1;margin:0">{{ sectionTitle }}</h1></div>
+        <div class="body" style="padding:0 18px 20px">{{ sectionBody }}</div>
+        {{ tabBar }}
+      </div>
+    </sc-if>
+
+  </div>
+
+  <div style="font-family:'Manrope';font-weight:600;font-size:12px;color:#6C7870">Écran : <b style="font-family:'Sora';color:#0C7A50">{{ screenLabel }}</b> · touchez pour naviguer</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  STYLISTS = ['Léa', 'Karim', 'Sofia'];
+  state = { screen: 'login', stack: [], cart: [{ name:'Balayage', price:37000, stylist:'Léa' }, { name:'Coupe femme', price:25000, stylist:'Léa' }, { name:'Soin kératine', price:11000, stylist:'Sofia' }] };
+  cycleStylist(i) { this.setState(s => ({ cart: s.cart.map((it, idx) => idx !== i ? it : { ...it, stylist: this.STYLISTS[(this.STYLISTS.indexOf(it.stylist) + 1) % this.STYLISTS.length] }) })); }
+
+  CATALOG = [
+    { name:'Coupe femme', meta:'Coupe · 45 min', price:25000 },
+    { name:'Coupe homme', meta:'Coupe · 30 min', price:15000 },
+    { name:'Couleur racines', meta:'Couleur · 1 h', price:34000 },
+    { name:'Balayage', meta:'Couleur · 2 h', price:37000 },
+    { name:'Brushing', meta:'Coiffage · 30 min', price:17000 },
+    { name:'Soin kératine', meta:'Soins · 25 min', price:11000 },
+    { name:'Shampooing (produit)', meta:'Vente · Kérastase', price:9000 },
+  ];
+  fmt(n) { return n.toLocaleString('fr-FR').replace(/\u202f|,/g, ' ') + ' F'; }
+  addItem(svc) { this.setState(s => ({ cart: [...s.cart, { name:svc.name, price:svc.price, stylist:'Léa' }] })); }
+  removeItem(i) { this.setState(s => ({ cart: s.cart.filter((_, idx) => idx !== i) })); }
+
+  go(screen) {
+    this.setState(s => ({ screen, stack: [...s.stack, s.screen] }));
+  }
+  back() {
+    this.setState(s => {
+      const stack = s.stack.slice();
+      const prev = stack.pop() || 'home';
+      return { screen: prev, stack };
+    });
+  }
+
+  tabbar() {
+    const active = this.state.screen;
+    const tab = ['home','agenda','caisse','clients','plus'].includes(active) ? active : 'plus';
+    const item = (key, label, dpath, onClick) => {
+      const on = tab === key;
+      const col = on ? '#0C7A50' : '#9AA69C';
+      return React.createElement('div', {
+        className: 'tapc', onClick,
+        style: { flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:'4px', padding:'6px 0', color: col }
+      },
+        React.createElement('svg', { width:23, height:23, viewBox:'0 0 24 24', fill:'none', dangerouslySetInnerHTML:{ __html: dpath.replace(/CUR/g, col) } }),
+        React.createElement('span', { style:{ fontFamily:'Manrope', fontWeight: on?700:600, fontSize:'10px' } }, label)
+      );
+    };
+    return React.createElement('div', {
+      style:{ flex:'0 0 auto', display:'flex', background:'#fff', borderTop:'1px solid #E6EBE1', padding:'8px 6px 26px' }
+    },
+      item('home','Accueil','<path d="M4 11l8-7 8 7v8a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-8z" stroke="CUR" stroke-width="1.9" stroke-linejoin="round"/>', () => this.go('home')),
+      item('agenda','Agenda','<rect x="3.5" y="5" width="17" height="15" rx="2.5" stroke="CUR" stroke-width="1.9"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke="CUR" stroke-width="1.9" stroke-linecap="round"/>', () => this.go('agenda')),
+      item('caisse','Caisse','<path d="M6 3h12v18l-2.5-1.7L13 21l-2.5-1.7L8 21l-2-1.7V3z" stroke="CUR" stroke-width="1.9" stroke-linejoin="round"/><path d="M9 8h6M9 12h6" stroke="CUR" stroke-width="1.7" stroke-linecap="round"/>', () => this.go('caisse')),
+      item('clients','Clients','<circle cx="9" cy="8" r="3.2" stroke="CUR" stroke-width="1.9"/><path d="M3.5 20c0-3.3 2.8-5.5 5.5-5.5s5.5 2.2 5.5 5.5" stroke="CUR" stroke-width="1.9" stroke-linecap="round"/><path d="M16 6a3 3 0 010 5.4M21 20c0-2.2-1.2-4-3-4.6" stroke="CUR" stroke-width="1.9" stroke-linecap="round"/>', () => this.go('clients')),
+      item('plus','Plus','<rect x="4" y="4" width="7" height="7" rx="1.6" stroke="CUR" stroke-width="1.9"/><rect x="13" y="4" width="7" height="7" rx="1.6" stroke="CUR" stroke-width="1.9"/><rect x="4" y="13" width="7" height="7" rx="1.6" stroke="CUR" stroke-width="1.9"/><rect x="13" y="13" width="7" height="7" rx="1.6" stroke="CUR" stroke-width="1.9"/>', () => this.go('plus'))
+    );
+  }
+
+  sectionData() {
+    const S = this.state.screen;
+    const card = (rows) => React.createElement('div', { style:{ background:'#fff', border:'1px solid #E6EBE1', borderRadius:'16px' } }, rows);
+    const row = (a, b, sub, last) => React.createElement('div', {
+      key:a, style:{ display:'flex', alignItems:'center', gap:'12px', padding:'13px 14px', borderBottom: last?'none':'1px solid #E6EBE1' }
+    },
+      React.createElement('div', { style:{ flex:1 } },
+        React.createElement('div', { style:{ fontFamily:'Manrope', fontWeight:700, fontSize:'14px', color:'#17231C' } }, a),
+        sub && React.createElement('div', { style:{ fontFamily:'Manrope', fontWeight:500, fontSize:'11.5px', color:'#6C7870', marginTop:'2px' } }, sub)
+      ),
+      b && React.createElement('b', { style:{ fontFamily:'Sora', fontWeight:700, fontSize:'13.5px', color:'#3C473F', whiteSpace:'nowrap' } }, b)
+    );
+    const hdr = (t) => React.createElement('div', { style:{ fontFamily:'Sora', fontWeight:700, fontSize:'15px', color:'#17231C', margin:'4px 2px 10px' } }, t);
+    const hero = (label, val) => React.createElement('div', {
+      style:{ background:'linear-gradient(135deg,#13A06B,#0C7A50)', borderRadius:'18px', padding:'18px', color:'#fff', marginBottom:'14px' }
+    },
+      React.createElement('div', { style:{ fontFamily:'Manrope', fontWeight:600, fontSize:'12.5px', color:'rgba(255,255,255,.82)' } }, label),
+      React.createElement('div', { style:{ fontFamily:'Sora', fontWeight:800, fontSize:'28px', letterSpacing:'-.6px', marginTop:'3px', whiteSpace:'nowrap' } }, val)
+    );
+
+    switch (S) {
+      case 'staff': return { title:'Personnel', body: React.createElement(React.Fragment, null,
+        hdr('Équipe · 4 présents'),
+        card([ row('Léa Fall','Présente','Coloriste · Gérante'), row('Karim Sy','Présent','Barbier'), row('Sofia Mbaye','Présente','Coiffeuse'), row('Rama Diallo','Congé','Réceptionniste', true) ]) ) };
+      case 'services': return { title:'Prestations', body: React.createElement(React.Fragment, null,
+        hero('Prestation la plus rentable · Balayage','90 000 F'),
+        hdr('Catalogue'),
+        card([ row('Coupe femme','25 000 F','45 min'), row('Coupe homme','15 000 F','30 min'), row('Couleur racines','34 000 F','1 h'), row('Balayage','90 000 F','2 h'), row('Brushing','17 000 F','30 min', true) ]) ) };
+      case 'stock': return { title:'Stock', body: React.createElement(React.Fragment, null,
+        hdr('3 produits en alerte'),
+        card([ row('Oxydant 20 vol','2 restants','L\u2019Oréal'), row('Coloration 6.3','Rupture','Wella'), row('Masque réparateur','3 restants','Kérastase'), row('Shampooing pro','12 en stock','Kérastase', true) ]) ) };
+      case 'finance': return { title:'Finance', body: React.createElement(React.Fragment, null,
+        hero('CA du mois · août','6 820 000 F'),
+        hdr('Par coiffeur'),
+        card([ row('Léa Fall','1 022 000 F','Commission 35 %'), row('Karim Sy','631 000 F','Commission 30 %'), row('Sofia Mbaye','503 000 F','Commission 28 %', true) ]) ) };
+      case 'marketing': return { title:'Marketing', body: React.createElement(React.Fragment, null,
+        hero('Promo active · Rentrée −20 %','238 000 F'),
+        hdr('Automatisations'),
+        card([ row('Rappel RDV 24 h','Actif','SMS + WhatsApp'), row('Relance client inactif','Actif','8 semaines'), row('Vœux anniversaire','Inactif','Code −15 %', true) ]) ) };
+      case 'settings': return { title:'Paramètres', body: React.createElement(React.Fragment, null,
+        hdr('L\u2019Atelier Coiffure'),
+        card([ row('Infos salon','', 'Horaires, contact'), row('Rôles & permissions','','3 rôles'), row('Notifications','','Push activé'), row('Abonnement','Pro Salon','18 000 F / mois', true) ]) ) };
+      default: return { title:'', body:null };
+    }
+  }
+
+  renderVals() {
+    const S = this.state.screen;
+    const sd = this.sectionData();
+    const cart = this.state.cart;
+    const subTotal = cart.reduce((a, it) => a + it.price, 0);
+    const discount = Math.round(subTotal * 0.05);
+    const total = subTotal - discount;
+    const cartRows = cart.map((it, i) => ({
+      name: it.name, priceLabel: this.fmt(it.price), remove: () => this.removeItem(i),
+      stylist: it.stylist, stylistInitial: (it.stylist || 'L')[0], cycle: () => this.cycleStylist(i),
+    }));
+    const catalogRows = this.CATALOG.map(svc => ({
+      name: svc.name, meta: svc.meta, priceLabel: this.fmt(svc.price), add: () => this.addItem(svc),
+    }));
+    const labels = { login:'Connexion', role:'Rôle', home:'Accueil', agenda:'Agenda', rdvDetail:'Détail RDV', rdvNew:'Nouveau RDV', caisse:'Caisse', clients:'Clients', clientDetail:'Fiche client', clientNew:'Nouveau client', plus:'Plus', staff:'Personnel', services:'Prestations', stock:'Stock', finance:'Finance', marketing:'Marketing', settings:'Paramètres', notifications:'Notifications' };
+    return {
+      isLogin: S==='login', isRole: S==='role', isHome: S==='home', isAgenda: S==='agenda',
+      isRdvDetail: S==='rdvDetail', isRdvNew: S==='rdvNew', isCaisse: S==='caisse',
+      isClients: S==='clients', isClientDetail: S==='clientDetail', isClientNew: S==='clientNew',
+      isPlus: S==='plus', isNotifications: S==='notifications', isCaissePick: S==='caissePick',
+      cart: cartRows, cartCount: cart.length + (cart.length > 1 ? ' articles' : ' article'),
+      cartEmpty: cart.length === 0, cartHasItems: cart.length > 0,
+      catalog: catalogRows,
+      subTotalLabel: this.fmt(subTotal), discountLabel: '− ' + this.fmt(discount), totalLabel: this.fmt(total),
+      goCaissePick: () => this.go('caissePick'),
+      goPaid: () => { this.setState({ cart: [] }); this.go('home'); },
+      isSection: ['staff','services','stock','finance','marketing','settings'].includes(S),
+      sectionTitle: sd.title, sectionBody: sd.body,
+      screenLabel: labels[S] || S,
+      tabBar: this.tabbar(),
+      goLogin: () => this.go('login'), goRole: () => this.go('role'), goHome: () => this.go('home'),
+      goAgenda: () => this.go('agenda'), goRdvDetail: () => this.go('rdvDetail'), goRdvNew: () => this.go('rdvNew'),
+      goCaisse: () => this.go('caisse'), goClients: () => this.go('clients'), goClientDetail: () => this.go('clientDetail'),
+      goClientNew: () => this.go('clientNew'), goPlus: () => this.go('plus'), goNotifications: () => this.go('notifications'),
+      goStaff: () => this.go('staff'), goServices: () => this.go('services'), goStock: () => this.go('stock'),
+      goFinance: () => this.go('finance'), goMarketing: () => this.go('marketing'), goSettings: () => this.go('settings'),
+      goBack: () => this.back(),
+    };
+  }
+}
+</script>
+</body>
+</html>

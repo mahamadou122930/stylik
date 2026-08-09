@@ -21,7 +21,7 @@ final posRepositoryProvider = Provider<PosRepository>(
 class TicketNotifier extends StateNotifier<Ticket> {
   TicketNotifier() : super(const Ticket());
 
-  void addService(SalonService service, {String? stylistId}) {
+  void addService(SalonService service, {String? stylistId, String? stylistName}) {
     final existing = state.lines.indexWhere((line) => line.refId == service.id);
 
     if (existing >= 0) {
@@ -41,7 +41,19 @@ class TicketNotifier extends StateNotifier<Ticket> {
           unitPriceFcfa: service.priceFcfa,
           category: service.category,
           stylistId: stylistId,
+          stylistName: stylistName,
         ),
+      ],
+    );
+  }
+
+  void updateLineStylist(String refId, {String? stylistId, String? stylistName}) {
+    state = state.copyWith(
+      lines: [
+        for (final line in state.lines)
+          line.refId == refId
+              ? line.copyWith(stylistId: stylistId, stylistName: stylistName)
+              : line,
       ],
     );
   }

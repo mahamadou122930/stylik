@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/supabase_tables.dart';
@@ -24,9 +25,10 @@ class PosRepository {
     final transaction = SalonTransaction(
       id: localId,
       salonId: salonId,
-      appointmentId: ticket.appointmentId,
-      clientId: ticket.clientId,
-      cashierId: cashierId,
+      appointmentId:
+          (ticket.appointmentId?.isNotEmpty ?? false) ? ticket.appointmentId : null,
+      clientId: (ticket.clientId?.isNotEmpty ?? false) ? ticket.clientId : null,
+      cashierId: (cashierId?.isNotEmpty ?? false) ? cashierId : null,
       subtotalFcfa: ticket.subtotalFcfa,
       discountFcfa: ticket.discountFcfa,
       totalAmountFcfa: ticket.totalFcfa,
@@ -36,22 +38,29 @@ class PosRepository {
     );
 
     final map = transaction.toMap();
-    if (map['id'] == null || map['id'] == '') {
-      map['id'] = localId;
-    }
+    final localMap = Map<String, dynamic>.from(map);
+    localMap['id'] = localId;
 
     // 1. Sauvegarder dans le cache local SQLite
     await _localDb.cacheRecord(
       tableName: SupabaseTables.transactions,
       salonId: salonId,
-      record: map,
+      record: localMap,
     );
+
+    // Payload pour Supabase : sans l'id temporaire 'tx_...' (Postgres générera le UUID)
+    final insertPayload = Map<String, dynamic>.from(map);
+    if (insertPayload['id']?.toString().startsWith('tx_') ?? false) {
+      insertPayload.remove('id');
+    } else if (insertPayload['id'] == null || insertPayload['id'] == '') {
+      insertPayload.remove('id');
+    }
 
     try {
       // 2. Tenter l'envoi vers Supabase
       final data = await _client
           .from(SupabaseTables.transactions)
-          .insert(map)
+          .insert(insertPayload)
           .select()
           .single();
 
@@ -63,13 +72,14 @@ class PosRepository {
       );
 
       return created;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Erreur lors de l\'encaissement Supabase: $e');
       // 3. En cas d'échec réseau, mettre en file d'attente
       await _localDb.enqueueMutation(
         action: 'INSERT',
         tableName: SupabaseTables.transactions,
         recordId: localId,
-        payload: map,
+        payload: insertPayload,
       );
       return transaction;
     }
