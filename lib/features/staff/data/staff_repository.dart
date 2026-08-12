@@ -12,8 +12,10 @@ class StaffRepository {
   final SupabaseClient _client;
 
   Future<List<Profile>> fetchTeam(String salonId, {UserRole? role}) async {
-    var query =
-        _client.from(SupabaseTables.profiles).select().eq('salon_id', salonId);
+    var query = _client
+        .from(SupabaseTables.profiles)
+        .select(Profile.columns)
+        .eq('salon_id', salonId);
 
     if (role != null) query = query.eq('role', role.value);
 
@@ -28,7 +30,7 @@ class StaffRepository {
   Future<Profile?> fetchById(String profileId) async {
     final data = await _client
         .from(SupabaseTables.profiles)
-        .select()
+        .select(Profile.columns)
         .eq('id', profileId)
         .maybeSingle();
     return data == null ? null : Profile.fromMap(data);
@@ -61,7 +63,7 @@ class StaffRepository {
           'email': email,
           'is_active': true,
         })
-        .select()
+        .select(Profile.columns)
         .single();
 
     return Profile.fromMap(data);
@@ -72,7 +74,7 @@ class StaffRepository {
         .from(SupabaseTables.profiles)
         .update(profile.toMap()..remove('id'))
         .eq('id', profile.id)
-        .select()
+        .select(Profile.columns)
         .single();
     return Profile.fromMap(data);
   }

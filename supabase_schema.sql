@@ -303,14 +303,13 @@ ALTER TABLE public.campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
 
--- Le salon est créé avant le compte du gérant (inscription 1.3 → 1.4) : l'INSERT
--- doit donc être ouvert aux anonymes, le reste reste réservé aux authentifiés.
-CREATE POLICY "Anyone can create a salon during signup" ON public.salons FOR INSERT TO anon, authenticated WITH CHECK (true);
-CREATE POLICY "Authenticated users can read salons" ON public.salons FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Authenticated users can update salons" ON public.salons FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Authenticated users can delete salons" ON public.salons FOR DELETE TO authenticated USING (true);
-
--- Création du salon par un utilisateur encore anonyme, sans ouvrir la lecture.
+-- Aucune policy permissive sur `salons` : l'accès passe par « Tenant isolation
+-- for salons » plus bas. Une policy `USING (true)` ici s'ajouterait à celle-ci
+-- par OU et annulerait l'isolation multi-tenant.
+--
+-- Le salon est créé avant le compte du gérant (inscription 1.3 → 1.4), donc par
+-- un appelant encore anonyme : cette création passe exclusivement par la RPC
+-- SECURITY DEFINER ci-dessous, jamais par un INSERT direct.
 CREATE OR REPLACE FUNCTION public.create_salon_for_signup(
   p_name TEXT,
   p_phone TEXT,
@@ -324,14 +323,45 @@ AS $$
 DECLARE
   v_salon public.salons;
 BEGIN
+  -- Exécutable par `anon`, et la clé anonyme est lisible dans l'APK : on refuse
+  -- au moins les lignes vides ou aberrantes.
+  IF p_name IS NULL OR btrim(p_name) = '' THEN
+    RAISE EXCEPTION 'Le nom du salon est obligatoire'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  IF length(btrim(p_name)) > 120 THEN
+    RAISE EXCEPTION 'Nom de salon trop long'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
   INSERT INTO public.salons (name, phone, address)
-  VALUES (p_name, p_phone, p_address)
+  VALUES (btrim(p_name), nullif(btrim(coalesce(p_phone, '')), ''),
+          nullif(btrim(coalesce(p_address, '')), ''))
   RETURNING * INTO v_salon;
   RETURN v_salon;
 END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.create_salon_for_signup(TEXT, TEXT, TEXT) TO anon, authenticated;
+
+-- Nettoyage d'un salon dont l'inscription du gérant a échoué juste après.
+CREATE OR REPLACE FUNCTION public.delete_orphan_salon(p_salon_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  DELETE FROM public.salons s
+   WHERE s.id = p_salon_id
+     AND NOT EXISTS (
+       SELECT 1 FROM public.profiles p WHERE p.salon_id = s.id
+     );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.delete_orphan_salon(UUID) TO anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.get_auth_salon_id()
 RETURNS UUID
@@ -403,14 +433,26 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_salon_id UUID := (NEW.raw_user_meta_data->>'salon_id')::uuid;
   v_claimed  UUID;
+  v_matches  INTEGER;
 BEGIN
-  SELECT id INTO v_claimed
+  -- Sans `salon_id` transmis, plusieurs salons peuvent avoir pré-créé une fiche
+  -- avec le même email. On ne réclame que s'il n'y a aucune ambiguïté : un
+  -- `LIMIT 1` arbitraire rattacherait la personne au mauvais salon.
+  SELECT count(*) INTO v_matches
     FROM public.profiles
    WHERE user_id IS NULL
      AND email IS NOT NULL
      AND lower(email) = lower(NEW.email)
-     AND (v_salon_id IS NULL OR salon_id = v_salon_id)
-   LIMIT 1;
+     AND (v_salon_id IS NULL OR salon_id = v_salon_id);
+
+  IF v_matches = 1 THEN
+    SELECT id INTO v_claimed
+      FROM public.profiles
+     WHERE user_id IS NULL
+       AND email IS NOT NULL
+       AND lower(email) = lower(NEW.email)
+       AND (v_salon_id IS NULL OR salon_id = v_salon_id);
+  END IF;
 
   IF v_claimed IS NOT NULL THEN
     UPDATE public.profiles
@@ -585,11 +627,13 @@ BEGIN
     RETURN FALSE;
   END IF;
 
-  IF v_stored_pin = p_pin OR v_stored_pin = crypt(p_pin, v_stored_pin) THEN
-    RETURN TRUE;
+  -- Un hash pgcrypto commence toujours par '$' ($2a$, $2b$, $6$…). Appeler
+  -- crypt() sur un PIN en clair lèverait « invalid salt » au lieu de refuser.
+  IF v_stored_pin LIKE '$%' THEN
+    RETURN v_stored_pin = crypt(p_pin, v_stored_pin);
   END IF;
 
-  RETURN FALSE;
+  RETURN v_stored_pin = p_pin;
 END;
 $$;
 

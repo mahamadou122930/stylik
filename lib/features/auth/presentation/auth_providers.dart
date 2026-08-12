@@ -88,13 +88,25 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
         address: draft.salonAddress,
       );
 
-      await _repository.signUp(
-        email: draft.email,
-        password: draft.password,
-        fullName: draft.fullName,
-        role: draft.role,
-        salonId: salon.id,
-      );
+      try {
+        await _repository.signUp(
+          email: draft.email,
+          password: draft.password,
+          fullName: draft.fullName,
+          role: draft.role,
+          salonId: salon.id,
+        );
+      } catch (_) {
+        // Le salon est déjà committé : sans ce nettoyage, chaque inscription
+        // ratée (email refusé, quota d'envoi atteint…) laisse une ligne
+        // orpheline que l'isolation tenant rend ensuite inaccessible.
+        try {
+          await settings.deleteOrphan(salon.id);
+        } catch (_) {
+          // Nettoyage best-effort : l'erreur d'inscription prime.
+        }
+        rethrow;
+      }
 
       if (draft.logo != null) {
         try {

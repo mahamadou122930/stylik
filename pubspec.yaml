@@ -44,15 +44,18 @@ dev_dependencies:
 
 # Icônes générées depuis assets/icons/icon-square.svg (cf. doc/App gestion
 # coiffeur/export-icones/). Regénérer avec : dart run flutter_launcher_icons
+#
+# Les masters vivent dans `tool/icons/` et non dans `assets/` : ils ne servent
+# qu'au build, les embarquer alourdirait l'APK de ~106 Ko jamais chargés.
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/images/logo.png"
+  image_path: "tool/icons/logo.png"
   min_sdk_android: 21
   # Android 8+ : le lanceur applique son propre masque (rond, écureuil, goutte)
   # et recadre jusqu'à 33 %. Fond et glyphe sont donc fournis séparément.
-  adaptive_icon_background: "assets/images/icon_background.png"
-  adaptive_icon_foreground: "assets/images/icon_foreground.png"
+  adaptive_icon_background: "tool/icons/icon_background.png"
+  adaptive_icon_foreground: "tool/icons/icon_foreground.png"
   # L'App Store refuse toute transparence dans l'icône.
   remove_alpha_ios: true
 
@@ -61,7 +64,6 @@ flutter:
 
   assets:
     - .env
-    - assets/images/
     - assets/icons/
 
   # Polices de la maquette, embarquées pour rester fidèles hors connexion.

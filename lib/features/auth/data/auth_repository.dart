@@ -57,7 +57,7 @@ class AuthRepository {
     // propre identifiant et n'est rattaché à un compte qu'à l'inscription.
     final data = await _client
         .from(SupabaseTables.profiles)
-        .select()
+        .select(Profile.columns)
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -69,32 +69,25 @@ class AuthRepository {
         .from(SupabaseTables.profiles)
         .update(profile.toMap()..remove('id'))
         .eq('id', profile.id)
-        .select()
+        .select(Profile.columns)
         .single();
 
     return Profile.fromMap(data);
   }
 
   /// Vérifie le code PIN d'un membre (déverrouillage rapide en caisse).
-  Future<bool> verifyPin({required String profileId, required String pin}) async {
-    try {
-      final res = await _client.rpc<bool>(
-        'verify_pin',
-        params: {
-          'p_profile_id': profileId,
-          'p_pin': pin,
-        },
-      );
-      return res;
-    } catch (_) {
-      final data = await _client
-          .from(SupabaseTables.profiles)
-          .select('id')
-          .eq('id', profileId)
-          .eq('pin_code', pin)
-          .maybeSingle();
-
-      return data != null;
-    }
+  ///
+  /// Passe uniquement par la RPC `verify_pin` : `pin_code` n'est jamais lu
+  /// côté client. Une panne de la RPC doit remonter à l'appelant — se rabattre
+  /// sur une comparaison en clair rendrait le durcissement contournable et
+  /// masquerait une RPC absente en production.
+  Future<bool> verifyPin({required String profileId, required String pin}) {
+    return _client.rpc<bool>(
+      'verify_pin',
+      params: {
+        'p_profile_id': profileId,
+        'p_pin': pin,
+      },
+    );
   }
 }

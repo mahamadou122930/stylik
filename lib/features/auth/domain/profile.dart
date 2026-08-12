@@ -9,7 +9,6 @@ class Profile {
     required this.role,
     this.specialties = const [],
     this.commissionRate = 0,
-    this.pinCode,
     this.avatarUrl,
     this.phone,
     this.email,
@@ -40,15 +39,20 @@ class Profile {
   /// Taux de commission en pourcentage (ex. 30 pour 30 %).
   final double commissionRate;
 
-  /// Code PIN de déverrouillage rapide en caisse.
-  final String? pinCode;
-
   final String? avatarUrl;
   final String? phone;
   final bool isActive;
 
   /// Jours de congés restants, affichés sur la fiche employé (4.2).
   final int leaveBalanceDays;
+
+  /// Colonnes à demander à PostgREST. Liste explicite plutôt que `select()` :
+  /// `pin_code` ne doit jamais quitter la base — n'importe quel membre du salon
+  /// pourrait sinon lire le code caisse de ses collègues. Sa vérification passe
+  /// exclusivement par la RPC `verify_pin`.
+  static const String columns =
+      'id, user_id, salon_id, full_name, role, specialties, commission_rate, '
+      'avatar_url, phone, email, is_active, leave_balance_days';
 
   factory Profile.fromMap(Map<String, dynamic> map) => Profile(
         id: map['id'] as String,
@@ -59,7 +63,6 @@ class Profile {
             (map['specialties'] as List?)?.map((e) => e.toString()).toList() ??
                 const [],
         commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0,
-        pinCode: map['pin_code'] as String?,
         avatarUrl: map['avatar_url'] as String?,
         phone: map['phone'] as String?,
         email: map['email'] as String?,
@@ -75,7 +78,6 @@ class Profile {
         'role': role.value,
         'specialties': specialties,
         'commission_rate': commissionRate,
-        'pin_code': pinCode,
         'avatar_url': avatarUrl,
         'phone': phone,
         'email': email,
@@ -90,7 +92,6 @@ class Profile {
     UserRole? role,
     List<String>? specialties,
     double? commissionRate,
-    String? pinCode,
     String? avatarUrl,
     String? phone,
     String? email,
@@ -104,7 +105,6 @@ class Profile {
         role: role ?? this.role,
         specialties: specialties ?? this.specialties,
         commissionRate: commissionRate ?? this.commissionRate,
-        pinCode: pinCode ?? this.pinCode,
         avatarUrl: avatarUrl ?? this.avatarUrl,
         phone: phone ?? this.phone,
         email: email ?? this.email,

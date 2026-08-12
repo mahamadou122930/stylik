@@ -42,6 +42,18 @@ class SettingsRepository {
     return Salon.fromMap(data);
   }
 
+  /// Supprime un salon créé à l'inscription quand la suite a échoué.
+  ///
+  /// Sans ça la ligne reste en base à jamais : l'isolation multi-tenant la rend
+  /// invisible dès qu'elle n'a pas de gérant. La RPC ne supprime que les salons
+  /// sans aucun profil rattaché.
+  Future<void> deleteOrphan(String salonId) {
+    return _client.rpc<void>(
+      'delete_orphan_salon',
+      params: {'p_salon_id': salonId},
+    );
+  }
+
   Future<Salon> update(Salon salon) async {
     final data = await _client
         .from(SupabaseTables.salons)
