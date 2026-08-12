@@ -21,11 +21,13 @@ import 'features/auth/presentation/role_selection_page.dart';
 import 'features/auth/presentation/welcome_page.dart';
 import 'features/catalog/domain/salon_service.dart';
 import 'features/catalog/presentation/catalog_page.dart';
+import 'features/catalog/presentation/package_form_page.dart';
 import 'features/catalog/presentation/packages_page.dart';
 import 'features/catalog/presentation/service_edit_page.dart';
 import 'features/clients/presentation/client_detail_page.dart';
 import 'features/clients/presentation/client_form_page.dart';
 import 'features/clients/presentation/clients_page.dart';
+import 'features/finance/presentation/expense_form_page.dart';
 import 'features/finance/presentation/expenses_page.dart';
 import 'features/finance/presentation/export_page.dart';
 import 'features/finance/presentation/finance_page.dart';
@@ -39,10 +41,12 @@ import 'features/inventory/presentation/product_detail_page.dart';
 import 'features/inventory/presentation/product_form_page.dart';
 import 'features/inventory/presentation/stock_reception_page.dart';
 import 'features/loyalty/presentation/loyalty_page.dart';
+import 'features/loyalty/presentation/promotion_form_page.dart';
 import 'features/loyalty/presentation/promotions_page.dart';
 import 'features/loyalty/presentation/reminders_page.dart';
 import 'features/pos/domain/ticket.dart';
 import 'features/pos/presentation/payment_page.dart';
+import 'features/pos/presentation/pos_add_to_ticket_page.dart';
 import 'features/pos/presentation/pos_page.dart';
 import 'features/pos/presentation/receipt_page.dart';
 import 'features/pos/presentation/refund_page.dart';
@@ -81,55 +85,19 @@ class AtelierApp extends ConsumerWidget {
         return OfflineBanner(child: child ?? const SizedBox.shrink());
       },
       home: const _AuthGate(),
-      routes: {
-        WelcomePage.routeName: (_) => const WelcomePage(),
-        LoginPage.routeName: (_) => const LoginPage(),
-        RegisterPage.routeName: (_) => const RegisterPage(),
-        HomePage.routeName: (_) => const HomePage(),
-        MorePage.routeName: (_) => const MorePage(),
-        AgendaPage.routeName: (_) => const AgendaPage(),
-        AppointmentFormPage.routeName: (_) => const AppointmentFormPage(),
-        WalkInQueuePage.routeName: (_) => const WalkInQueuePage(),
-        ClientsPage.routeName: (_) => const ClientsPage(),
-        ClientFormPage.routeName: (_) => const ClientFormPage(),
-        CatalogPage.routeName: (_) => const CatalogPage(),
-        PackagesPage.routeName: (_) => const PackagesPage(),
-        PosPage.routeName: (_) => const PosPage(),
-        PaymentPage.routeName: (_) => const PaymentPage(),
-        ReceiptPage.routeName: (_) => const ReceiptPage(),
-        TransactionsPage.routeName: (_) => const TransactionsPage(),
-        InventoryPage.routeName: (_) => const InventoryPage(),
-        ProductFormPage.routeName: (_) => const ProductFormPage(),
-        StockReceptionPage.routeName: (_) => const StockReceptionPage(),
-        ConsumptionPage.routeName: (_) => const ConsumptionPage(),
-        FinancePage.routeName: (_) => const FinancePage(),
-        StylistReportPage.routeName: (_) => const StylistReportPage(),
-        ServiceReportPage.routeName: (_) => const ServiceReportPage(),
-        ExpensesPage.routeName: (_) => const ExpensesPage(),
-        ExportPage.routeName: (_) => const ExportPage(),
-        LoyaltyPage.routeName: (_) => const LoyaltyPage(),
-        PromotionsPage.routeName: (_) => const PromotionsPage(),
-        RemindersPage.routeName: (_) => const RemindersPage(),
-        StaffPage.routeName: (_) => const StaffPage(),
-        TimeOffPage.routeName: (_) => const TimeOffPage(),
-        SettingsPage.routeName: (_) => const SettingsPage(),
-        SalonInfoPage.routeName: (_) => const SalonInfoPage(),
-        RolesPage.routeName: (_) => const RolesPage(),
-        NotificationsPage.routeName: (_) => const NotificationsPage(),
-        SubscriptionPage.routeName: (_) => const SubscriptionPage(),
-        PlanSelectionPage.routeName: (_) => const PlanSelectionPage(),
-        ProfilePage.routeName: (_) => const ProfilePage(),
-      },
-      onGenerateRoute: _onGenerateRoute,
+      onGenerateRoute: buildRoute,
     );
   }
 
-  /// Routes qui reçoivent un argument (identifiant ou objet du domaine).
-  Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
+  /// Générateur de route global et imbriqué.
+  static Route<dynamic>? buildRoute(RouteSettings settings) {
     Route<dynamic> page(Widget child) => MaterialPageRoute(
           builder: (_) => child,
           settings: settings,
         );
+
+    final simpleWidget = _routesMap[settings.name];
+    if (simpleWidget != null) return page(simpleWidget);
 
     return switch (settings.name) {
       RoleSelectionPage.routeName => page(
@@ -161,6 +129,50 @@ class AtelierApp extends ConsumerWidget {
       _ => null,
     };
   }
+
+  static final Map<String, Widget> _routesMap = {
+    WelcomePage.routeName: const WelcomePage(),
+    LoginPage.routeName: const LoginPage(),
+    RegisterPage.routeName: const RegisterPage(),
+    HomePage.routeName: const HomePage(),
+    MorePage.routeName: const MorePage(),
+    AgendaPage.routeName: const AgendaPage(),
+    AppointmentFormPage.routeName: const AppointmentFormPage(),
+    WalkInQueuePage.routeName: const WalkInQueuePage(),
+    ClientsPage.routeName: const ClientsPage(),
+    ClientFormPage.routeName: const ClientFormPage(),
+    CatalogPage.routeName: const CatalogPage(),
+    PackagesPage.routeName: const PackagesPage(),
+    PackageFormPage.routeName: const PackageFormPage(),
+    PosPage.routeName: const PosPage(),
+    PosAddToTicketPage.routeName: const PosAddToTicketPage(),
+    PaymentPage.routeName: const PaymentPage(),
+    ReceiptPage.routeName: const ReceiptPage(),
+    TransactionsPage.routeName: const TransactionsPage(),
+    InventoryPage.routeName: const InventoryPage(),
+    ProductFormPage.routeName: const ProductFormPage(),
+    StockReceptionPage.routeName: const StockReceptionPage(),
+    ConsumptionPage.routeName: const ConsumptionPage(),
+    FinancePage.routeName: const FinancePage(),
+    StylistReportPage.routeName: const StylistReportPage(),
+    ServiceReportPage.routeName: const ServiceReportPage(),
+    ExpensesPage.routeName: const ExpensesPage(),
+    ExpenseFormPage.routeName: const ExpenseFormPage(),
+    ExportPage.routeName: const ExportPage(),
+    LoyaltyPage.routeName: const LoyaltyPage(),
+    PromotionsPage.routeName: const PromotionsPage(),
+    PromotionFormPage.routeName: const PromotionFormPage(),
+    RemindersPage.routeName: const RemindersPage(),
+    StaffPage.routeName: const StaffPage(),
+    TimeOffPage.routeName: const TimeOffPage(),
+    SettingsPage.routeName: const SettingsPage(),
+    SalonInfoPage.routeName: const SalonInfoPage(),
+    RolesPage.routeName: const RolesPage(),
+    NotificationsPage.routeName: const NotificationsPage(),
+    SubscriptionPage.routeName: const SubscriptionPage(),
+    PlanSelectionPage.routeName: const PlanSelectionPage(),
+    ProfilePage.routeName: const ProfilePage(),
+  };
 }
 
 /// Aiguille vers la connexion ou l'espace de travail selon la session.
@@ -185,8 +197,6 @@ class _AuthGate extends ConsumerWidget {
           onRetry: () => ref.invalidate(currentProfileProvider),
         ),
       ),
-      // Session ouverte sans profil : le déclencheur Supabase n'a pas encore
-      // (ou pas) créé la fiche. Rien d'utile à afficher — on laisse réessayer.
       data: (data) => data == null
           ? Scaffold(
               backgroundColor: AppColors.background,
@@ -212,6 +222,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
   final Set<int> _visitedIndices = {0};
 
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+  ];
+
   static const List<_Tab> _tabs = [
     _Tab('Accueil', Icons.home_outlined, Icons.home_rounded, HomePage()),
     _Tab(
@@ -236,24 +254,54 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   ];
 
   void _onTabSelected(int index) {
-    if (!_visitedIndices.contains(index)) {
-      setState(() {
-        _visitedIndices.add(index);
-        _index = index;
-      });
+    if (_index == index) {
+      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
     } else {
-      setState(() => _index = index);
+      if (!_visitedIndices.contains(index)) {
+        setState(() {
+          _visitedIndices.add(index);
+          _index = index;
+        });
+      } else {
+        setState(() => _index = index);
+      }
     }
+  }
+
+  Widget _buildTabNavigator(int index) {
+    return Navigator(
+      key: _navigatorKeys[index],
+      onGenerateRoute: (settings) {
+        if (settings.name == '/' || settings.name == null) {
+          return MaterialPageRoute(builder: (_) => _tabs[index].page);
+        }
+        return AtelierApp.buildRoute(settings);
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = IndexedStack(
-      index: _index,
-      children: [
-        for (var i = 0; i < _tabs.length; i++)
-          _visitedIndices.contains(i) ? _tabs[i].page : const SizedBox.shrink(),
-      ],
+    final body = PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final currentNav = _navigatorKeys[_index].currentState;
+        if (currentNav != null && currentNav.canPop()) {
+          currentNav.pop();
+        } else if (_index != 0) {
+          setState(() => _index = 0);
+        }
+      },
+      child: IndexedStack(
+        index: _index,
+        children: [
+          for (var i = 0; i < _tabs.length; i++)
+            _visitedIndices.contains(i)
+                ? _buildTabNavigator(i)
+                : const SizedBox.shrink(),
+        ],
+      ),
     );
 
     if (MediaQuery.sizeOf(context).width >= 720) {
@@ -284,27 +332,113 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: body,
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(6, 8, 6, 8),
-            child: Row(
-              children: [
-                for (var i = 0; i < _tabs.length; i++)
-                  Expanded(
-                    child: _TabButton(
-                      tab: _tabs[i],
-                      selected: i == _index,
-                      onTap: () => _onTabSelected(i),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          height: 80,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 1. Pilule flottante sombre (Prototype Lot 2/6/8)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1C1E1B),
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x4714190F),
+                        blurRadius: 30,
+                        offset: Offset(0, 12),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Onglets Gauche
+                      Expanded(
+                        child: _TabButton(
+                          tab: _tabs[0],
+                          selected: _index == 0,
+                          onTap: () => _onTabSelected(0),
+                        ),
+                      ),
+                      Expanded(
+                        child: _TabButton(
+                          tab: _tabs[1],
+                          selected: _index == 1,
+                          onTap: () => _onTabSelected(1),
+                        ),
+                      ),
+                      // Espace réservé pour le bouton central surélevé
+                      const SizedBox(width: 58),
+                      // Onglets Droite
+                      Expanded(
+                        child: _TabButton(
+                          tab: _tabs[3],
+                          selected: _index == 3,
+                          onTap: () => _onTabSelected(3),
+                        ),
+                      ),
+                      Expanded(
+                        child: _TabButton(
+                          tab: _tabs[4],
+                          selected: _index == 4,
+                          onTap: () => _onTabSelected(4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 2. Bouton d'action central vert surélevé (Caisse / POS)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: GestureDetector(
+                    onTap: () => _onTabSelected(2),
+                    child: Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1C1E1B),
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(
+                            color: Color(0x4D20251F),
+                            blurRadius: 18,
+                            offset: Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: _index == 2
+                              ? const Color(0xFF22D65C)
+                              : AppColors.primary,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _index == 2
+                              ? Icons.receipt_long_rounded
+                              : Icons.add_rounded,
+                          size: 28,
+                          color: _index == 2 ? const Color(0xFF0A2A16) : Colors.white,
+                        ),
+                      ),
                     ),
                   ),
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -325,22 +459,22 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textFaint;
+    final color = selected ? const Color(0xFF22D65C) : const Color(0xFFEDEFEC);
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(selected ? tab.activeIcon : tab.icon, size: 23, color: color),
-            const SizedBox(height: 4),
+            Icon(selected ? tab.activeIcon : tab.icon, size: 21, color: color),
+            const SizedBox(height: 3),
             Text(
               tab.label,
               style: AppTypography.manrope(
-                10.5,
+                10,
                 selected ? FontWeight.w700 : FontWeight.w600,
                 color: color,
               ),

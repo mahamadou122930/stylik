@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../loyalty/domain/loyalty_campaign.dart';
 import '../domain/client.dart';
 import 'client_detail_page.dart';
 import 'client_form_page.dart';
@@ -107,9 +108,23 @@ class ClientRow extends StatelessWidget {
             ? AppColors.primary
             : AppColors.blue;
 
+    final tier = LoyaltyTier.forPoints(client.loyaltyPoints);
+    final tierColor = switch (tier) {
+      LoyaltyTier.bronze => const Color(0xFF64748B),
+      LoyaltyTier.silver => const Color(0xFF0284C7),
+      LoyaltyTier.gold => const Color(0xFFD97706),
+      LoyaltyTier.platinum => const Color(0xFF7C3AED),
+    };
+    final tierBg = switch (tier) {
+      LoyaltyTier.bronze => const Color(0xFFF1F5F9),
+      LoyaltyTier.silver => const Color(0xFFE0F2FE),
+      LoyaltyTier.gold => const Color(0xFFFEF3C7),
+      LoyaltyTier.platinum => const Color(0xFFF3E8FF),
+    };
+
     return AppListRow(
       label: client.fullName,
-      subtitle: client.activityLabel,
+      subtitle: '${client.activityLabel} · ${client.loyaltyPoints} pts',
       strong: true,
       onTap: onTap,
       padding: const EdgeInsets.symmetric(vertical: 11),
@@ -126,14 +141,19 @@ class ClientRow extends StatelessWidget {
           style: AppTypography.sora(14, FontWeight.w700, color: accent),
         ),
       ),
-      trailing: client.isLoyal
-          ? const AppBadge(
-              label: 'Fidèle',
-              color: AppColors.primary,
-              background: AppColors.tintGreen,
-              dense: true,
-            )
-          : const AppChevron(),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppBadge(
+            label: tier.label,
+            color: tierColor,
+            background: tierBg,
+            dense: true,
+          ),
+          const SizedBox(width: 6),
+          const AppChevron(),
+        ],
+      ),
     );
   }
 }

@@ -12,35 +12,35 @@ dependencies:
     sdk: flutter
 
   # Backend
-  supabase_flutter: ^2.8.0
-  flutter_dotenv: ^5.1.0
+  supabase_flutter: ^2.16.0
+  flutter_dotenv: ^6.0.1
 
   # State management / injection de dépendances
-  flutter_riverpod: ^2.5.1
+  flutter_riverpod: ^2.6.1
 
   # UI
-  flutter_svg: ^2.0.10+1
-  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.3.0
+  cupertino_icons: ^1.0.9
 
   # Formatage (dates, montants FCFA)
-  intl: ^0.19.0
-
-  # Photos avant / après
+  intl: ^0.20.3
+  
+  # Photos avant / après  
   image_picker: ^1.1.2
-
+  
   # Cache local et mode hors-ligne
   sqflite: ^2.3.3+1
   path: ^1.9.0
-  connectivity_plus: ^6.0.3
-  uuid: ^4.5.1
-  share_plus: ^10.1.4
-  path_provider: ^2.1.5
+  connectivity_plus: ^6.1.5
+  uuid: ^4.6.0
+  share_plus: ^11.1.0
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
 
 # Icônes générées depuis assets/icons/icon-square.svg (cf. doc/App gestion
 # coiffeur/export-icones/). Regénérer avec : dart run flutter_launcher_icons

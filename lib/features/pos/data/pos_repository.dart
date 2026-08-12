@@ -63,6 +63,14 @@ class PosRepository {
         record: created.toMap(),
       );
 
+      if (created.clientId != null && created.clientId!.isNotEmpty) {
+        await _updateClientStatsOnCheckout(
+          salonId,
+          created.clientId!,
+          created.totalAmountFcfa,
+        );
+      }
+
       return created;
     } catch (e) {
       debugPrint('Erreur lors de l\'encaissement Supabase: $e');
@@ -73,7 +81,62 @@ class PosRepository {
         recordId: transactionId,
         payload: payload,
       );
+
+      if (transaction.clientId != null && transaction.clientId!.isNotEmpty) {
+        await _updateClientStatsOnCheckout(
+          salonId,
+          transaction.clientId!,
+          transaction.totalAmountFcfa,
+        );
+      }
+
       return transaction;
+    }
+  }
+
+  Future<void> _updateClientStatsOnCheckout(
+    String salonId,
+    String clientId,
+    int amountFcfa,
+  ) async {
+    try {
+      final cached = await _localDb.getCachedRecordById(
+        tableName: SupabaseTables.clients,
+        recordId: clientId,
+      );
+
+      final currentVisits = (cached?['visit_count'] as num?)?.toInt() ?? 0;
+      final currentSpent = (cached?['total_spent_fcfa'] as num?)?.toInt() ?? 0;
+      final currentPoints = (cached?['loyalty_points'] as num?)?.toInt() ?? 0;
+      final pointsEarned = (amountFcfa / 1000).floor();
+      final nowStr = DateTime.now().toIso8601String();
+
+      final updatedVisits = currentVisits + 1;
+      final updatedSpent = currentSpent + amountFcfa;
+      final updatedPoints = currentPoints + pointsEarned;
+
+      if (cached != null) {
+        final updatedMap = Map<String, dynamic>.from(cached);
+        updatedMap['visit_count'] = updatedVisits;
+        updatedMap['total_spent_fcfa'] = updatedSpent;
+        updatedMap['loyalty_points'] = updatedPoints;
+        updatedMap['last_visit_at'] = nowStr;
+
+        await _localDb.cacheRecord(
+          tableName: SupabaseTables.clients,
+          salonId: salonId,
+          record: updatedMap,
+        );
+      }
+
+      await _client.from(SupabaseTables.clients).update({
+        'visit_count': updatedVisits,
+        'total_spent_fcfa': updatedSpent,
+        'loyalty_points': updatedPoints,
+        'last_visit_at': nowStr,
+      }).eq('id', clientId);
+    } catch (e) {
+      debugPrint('Erreur lors de la mise à jour des stats client: $e');
     }
   }
 

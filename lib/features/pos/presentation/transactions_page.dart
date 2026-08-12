@@ -11,93 +11,159 @@ import 'pos_providers.dart';
 import 'refund_page.dart';
 
 /// 6.4 — Historique des transactions : journal de caisse du jour.
-class TransactionsPage extends ConsumerWidget {
+class TransactionsPage extends ConsumerStatefulWidget {
   const TransactionsPage({super.key});
 
   static const routeName = '/pos/transactions';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final transactions = ref.watch(todayTransactionsProvider);
+  ConsumerState<TransactionsPage> createState() => _TransactionsPageState();
+}
+
+class _TransactionsPageState extends ConsumerState<TransactionsPage> {
+  TransactionStatus? _statusFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final transactionsState = ref.watch(todayTransactionsProvider);
     final total = ref.watch(todayCashTotalProvider);
-    final count = transactions.valueOrNull?.length ?? 0;
+
+    final allItems = transactionsState.valueOrNull ?? <SalonTransaction>[];
+    final items = _statusFilter == null
+        ? allItems
+        : allItems.where((t) => t.status == _statusFilter).toList();
+    final count = items.length;
 
     return AppScreen(
       title: 'Transactions',
       largeTitle: true,
-      action: AppIconButton(
-        icon: Icons.filter_list_rounded,
-        onTap: () {
-          // TODO(pos): filtres (moyen de paiement, caissier, statut).
-        },
-      ),
-      header: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-        child: AppGradientCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          bubbleColor: Colors.transparent,
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total caisse · aujourd\'hui',
-                      style: AppTypography.manrope(
-                        12,
-                        FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.82),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      Formatters.fcfa(total),
-                      style: AppTypography.sora(
-                        24,
-                        FontWeight.w800,
-                        color: Colors.white,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+      header: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+            child: AppGradientCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              bubbleColor: Colors.transparent,
+              child: Row(
                 children: [
-                  Text(
-                    '$count',
-                    style: AppTypography.sora(
-                      15,
-                      FontWeight.w700,
-                      color: Colors.white,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total caisse · aujourd\'hui',
+                          style: AppTypography.manrope(
+                            12,
+                            FontWeight.w600,
+                            color: Colors.white.withValues(alpha: 0.82),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          Formatters.fcfa(total),
+                          style: AppTypography.sora(
+                            24,
+                            FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Text(
-                    'ventes',
-                    style: AppTypography.manrope(
-                      11,
-                      FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.82),
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '$count',
+                        style: AppTypography.sora(
+                          15,
+                          FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Text(
+                        'ventes',
+                        style: AppTypography.manrope(
+                          11,
+                          FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.82),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('Tous'),
+                  selected: _statusFilter == null,
+                  onSelected: (sel) {
+                    if (sel) setState(() => _statusFilter = null);
+                  },
+                  selectedColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: _statusFilter == null ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Payé'),
+                  selected: _statusFilter == TransactionStatus.paid,
+                  onSelected: (sel) {
+                    setState(() => _statusFilter = sel ? TransactionStatus.paid : null);
+                  },
+                  selectedColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: _statusFilter == TransactionStatus.paid ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Remboursé'),
+                  selected: _statusFilter == TransactionStatus.refunded,
+                  onSelected: (sel) {
+                    setState(() => _statusFilter = sel ? TransactionStatus.refunded : null);
+                  },
+                  selectedColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: _statusFilter == TransactionStatus.refunded ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Annulé'),
+                  selected: _statusFilter == TransactionStatus.cancelled,
+                  onSelected: (sel) {
+                    setState(() => _statusFilter = sel ? TransactionStatus.cancelled : null);
+                  },
+                  selectedColor: AppColors.primary,
+                  labelStyle: TextStyle(
+                    color: _statusFilter == TransactionStatus.cancelled ? Colors.white : AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
-      child: transactions.when(
+      child: transactionsState.when(
         loading: () => const AppLoader(),
         error: (error, _) => AppErrorState(
           message: '$error',
           onRetry: () => ref.invalidate(todayTransactionsProvider),
         ),
-        data: (items) => items.isEmpty
+        data: (_) => items.isEmpty
             ? const AppEmptyState(
                 title: 'Aucune transaction',
-                message: 'Le journal de caisse du jour est vide.',
+                message: 'Aucune transaction ne correspond à ce filtre.',
                 icon: Icons.receipt_long_outlined,
               )
             : AppListCard(

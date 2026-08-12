@@ -67,6 +67,12 @@ class LoyaltyRepository {
     return data.map((row) => Promotion.fromMap(row)).toList();
   }
 
+  Future<void> createPromotion(Promotion promo) async {
+    final payload = promo.toMap();
+    if (payload['id'] == null || payload['id'] == '') payload.remove('id');
+    await _client.from(SupabaseTables.promotions).insert(payload);
+  }
+
   Future<void> setPromotionActive({
     required String promotionId,
     required bool isActive,

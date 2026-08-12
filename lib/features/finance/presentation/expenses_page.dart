@@ -6,6 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
+import 'expense_form_page.dart';
 import 'finance_providers.dart';
 
 /// 8.4 — Dépenses / charges : sorties du salon et résultat net.
@@ -25,9 +26,8 @@ class ExpensesPage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.add_rounded,
         filled: true,
-        onTap: () {
-          // TODO(finance): formulaire de saisie d'une charge.
-        },
+        onTap: () =>
+            Navigator.of(context).pushNamed(ExpenseFormPage.routeName),
       ),
       header: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),

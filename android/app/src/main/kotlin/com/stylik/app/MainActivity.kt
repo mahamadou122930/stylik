@@ -1,4 +1,4 @@
-package com.example.stylik
+package com.stylik.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/salon_service.dart';
 import 'catalog_providers.dart';
+import 'package_form_page.dart';
 
 /// 5.3 — Packages / forfaits : services combinés à prix réduit.
 class PackagesPage extends ConsumerWidget {
@@ -25,9 +26,8 @@ class PackagesPage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.add_rounded,
         filled: true,
-        onTap: () {
-          // TODO(catalog): assistant de création d'un forfait.
-        },
+        onTap: () =>
+            Navigator.of(context).pushNamed(PackageFormPage.routeName),
       ),
       child: services.isLoading
           ? const AppLoader()

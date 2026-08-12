@@ -9,6 +9,7 @@ import '../../auth/domain/profile.dart';
 import '../../staff/presentation/staff_providers.dart';
 import '../domain/walk_in_entry.dart';
 import 'agenda_providers.dart';
+import 'walk_in_form_dialog.dart';
 
 /// 2.5 — Liste d'attente / walk-in : clients sans RDV, attribution rapide.
 class WalkInQueuePage extends ConsumerWidget {
@@ -70,9 +71,7 @@ class WalkInQueuePage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.person_add_alt_rounded,
         filled: true,
-        onTap: () {
-          // TODO(agenda): formulaire d'ajout d'un client de passage.
-        },
+        onTap: () => WalkInFormDialog.show(context),
       ),
       header: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),

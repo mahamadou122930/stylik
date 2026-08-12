@@ -197,20 +197,50 @@ class ClientsRepository {
     return update(updated);
   }
 
-  /// Historique des passages du client (rendez-vous les plus récents).
-  Future<List<ClientVisit>> fetchHistory(String clientId) async {
+  /// Historique des passages et ventes du client (rendez-vous et transactions caisse).
+  Future<List<ClientVisit>> fetchHistory(String clientId, {String? salonId}) async {
+    final visits = <ClientVisit>[];
+
     try {
-      final data = await _client
+      final transactionsData = await _client
+          .from(SupabaseTables.transactions)
+          .select('*, profiles!transactions_cashier_id_fkey(full_name)')
+          .eq('client_id', clientId)
+          .order('created_at', ascending: false)
+          .limit(20);
+
+      for (final row in transactionsData) {
+        visits.add(ClientVisit.fromTransaction(row));
+      }
+    } catch (_) {}
+
+    try {
+      final appointmentsData = await _client
           .from(SupabaseTables.appointments)
           .select('*, profiles!appointments_stylist_id_fkey(full_name)')
           .eq('client_id', clientId)
           .order('start_time', ascending: false)
           .limit(20);
 
-      return data.map((row) => ClientVisit.fromMap(row)).toList();
-    } catch (_) {
-      return const [];
+      for (final row in appointmentsData) {
+        visits.add(ClientVisit.fromMap(row));
+      }
+    } catch (_) {}
+
+    if (visits.isEmpty && salonId != null && salonId.isNotEmpty) {
+      final cachedTransactions = await _localDb.getCachedRecords(
+        tableName: SupabaseTables.transactions,
+        salonId: salonId,
+      );
+      for (final row in cachedTransactions) {
+        if (row['client_id'] == clientId) {
+          visits.add(ClientVisit.fromTransaction(row));
+        }
+      }
     }
+
+    visits.sort((a, b) => b.date.compareTo(a.date));
+    return visits;
   }
 }
 
@@ -222,6 +252,7 @@ class ClientVisit {
     required this.label,
     required this.amountFcfa,
     this.stylistName,
+    this.isTransaction = false,
   });
 
   final String id;
@@ -229,16 +260,46 @@ class ClientVisit {
   final String label;
   final int amountFcfa;
   final String? stylistName;
+  final bool isTransaction;
 
   factory ClientVisit.fromMap(Map<String, dynamic> map) => ClientVisit(
-        id: map['id'] as String,
-        date: DateTime.parse(map['start_time'] as String).toLocal(),
+        id: (map['id'] as String?) ?? '',
+        date: map['start_time'] != null
+            ? DateTime.parse(map['start_time'] as String).toLocal()
+            : DateTime.now(),
         label: (map['summary'] as String?) ??
             (map['notes'] as String?) ??
-            'Prestation',
+            'Prestation RDV',
         amountFcfa: (map['total_price_fcfa'] as num?)?.toInt() ?? 0,
         stylistName: map['profiles'] is Map<String, dynamic>
             ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
             : null,
       );
+
+  factory ClientVisit.fromTransaction(Map<String, dynamic> map) {
+    final linesRaw = map['lines'];
+    String summary = 'Achat / Ticket caisse';
+    if (linesRaw is List && linesRaw.isNotEmpty) {
+      final labels = linesRaw
+          .map((l) => l['label'] ?? l['name'] ?? l['service_name'] ?? '')
+          .where((l) => l.toString().isNotEmpty)
+          .join(', ');
+      if (labels.isNotEmpty) summary = labels;
+    }
+
+    return ClientVisit(
+      id: (map['id'] as String?) ?? '',
+      date: map['created_at'] != null
+          ? DateTime.parse(map['created_at'] as String).toLocal()
+          : DateTime.now(),
+      label: summary,
+      amountFcfa: (map['total_amount_fcfa'] as num?)?.toInt() ??
+          (map['total_amount'] as num?)?.toInt() ??
+          0,
+      stylistName: map['profiles'] is Map<String, dynamic>
+          ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
+          : null,
+      isTransaction: true,
+    );
+  }
 }

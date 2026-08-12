@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/loyalty_campaign.dart';
 import 'loyalty_providers.dart';
+import 'promotion_form_page.dart';
 
 /// 9.2 — Promotions / offres : campagnes en cours et planifiées.
 class PromotionsPage extends ConsumerWidget {
@@ -25,9 +26,8 @@ class PromotionsPage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.add_rounded,
         filled: true,
-        onTap: () {
-          // TODO(loyalty): formulaire de création d'une promotion.
-        },
+        onTap: () =>
+            Navigator.of(context).pushNamed(PromotionFormPage.routeName),
       ),
       child: promotions.when(
         loading: () => const AppLoader(),
