@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylik/core/theme/app_theme.dart';
+import 'package:stylik/core/widgets/widgets.dart';
 import 'package:stylik/features/auth/domain/registration_draft.dart';
+import 'package:stylik/features/auth/domain/salon_invite.dart';
+import 'package:stylik/features/auth/presentation/join_salon_page.dart';
 import 'package:stylik/features/auth/presentation/login_page.dart';
 import 'package:stylik/features/auth/presentation/register_page.dart';
 import 'package:stylik/features/auth/presentation/role_selection_page.dart';
+import 'package:stylik/features/auth/presentation/signup_choice_page.dart';
 import 'package:stylik/features/auth/presentation/welcome_page.dart';
 
 /// Les écrans du tunnel d'entrée sont rendus au format exact de la maquette
@@ -43,18 +47,57 @@ void main() {
       find.text('La gestion complète de votre salon, dans une seule app.'),
       findsOneWidget,
     );
-    expect(find.text('Créer mon salon'), findsOneWidget);
+    expect(find.text('Créer un compte'), findsOneWidget);
     expect(find.text('J\'ai déjà un compte'), findsOneWidget);
   });
 
   testWidgets('1.2 Connexion suit les libellés de la maquette', (tester) async {
     await pumpScreen(tester, const LoginPage());
 
-    expect(find.text('Bon retour'), findsOneWidget);
-    expect(find.text('Connectez-vous pour gérer votre salon.'), findsOneWidget);
-    expect(find.text('Email ou téléphone'), findsOneWidget);
+    expect(find.text('L\'Atelier'), findsOneWidget);
+    expect(
+      find.text('La gestion de votre salon, simplifiée'),
+      findsOneWidget,
+    );
     expect(find.text('Mot de passe oublié ?'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
+    // Le lien d'inscription est un fragment de `Text.rich`, pas un `Text`.
+    expect(
+      find.textContaining('Créer un compte', findRichText: true),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('1.2b Créer un compte aiguille vers les deux parcours',
+      (tester) async {
+    await pumpScreen(tester, const SignupChoicePage());
+
+    expect(find.text('Je crée mon salon'), findsOneWidget);
+    expect(find.text('Vous êtes le gérant'), findsOneWidget);
+    expect(find.text('Je rejoins un salon'), findsOneWidget);
+    expect(
+      find.text('Coiffeur ou réceptionniste · avec code'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('1.2c Rejoindre un salon attend un code avant de s\'ouvrir',
+      (tester) async {
+    await pumpScreen(tester, const JoinSalonPage());
+
+    expect(find.text('Code d\'invitation'), findsOneWidget);
+    expect(
+      find.text('$inviteCodeLength caractères, communiqués par votre gérant.'),
+      findsOneWidget,
+    );
+    // Une case par caractère, toutes vides au départ.
+    expect(find.text('•'), findsNWidgets(inviteCodeLength));
+
+    // Tant qu'aucun salon n'est reconnu, l'inscription reste fermée.
+    final cta = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Rejoindre le salon'),
+    );
+    expect(cta.onPressed, isNull);
   });
 
   testWidgets('1.3 Inscription est l\'étape 1/2 et collecte le salon',

@@ -9,6 +9,7 @@ class Salon {
     this.logoUrl,
     this.openingHours = const {},
     this.currency = 'FCFA',
+    this.inviteCode,
   });
 
   final String id;
@@ -25,6 +26,10 @@ class Salon {
 
   final String currency;
 
+  /// Code à six caractères que le gérant dicte à un employé pour qu'il
+  /// rejoigne le salon. Généré côté base, jamais réécrit depuis l'app.
+  final String? inviteCode;
+
   factory Salon.fromMap(Map<String, dynamic> map) => Salon(
         id: map['id'] as String,
         name: (map['name'] as String?) ?? '',
@@ -35,6 +40,7 @@ class Salon {
         openingHours:
             (map['opening_hours'] as Map<String, dynamic>?) ?? const {},
         currency: (map['currency'] as String?) ?? 'FCFA',
+        inviteCode: map['invite_code'] as String?,
       );
 
   Map<String, dynamic> toMap() => {
@@ -64,6 +70,7 @@ class Salon {
         logoUrl: logoUrl ?? this.logoUrl,
         openingHours: openingHours ?? this.openingHours,
         currency: currency,
+        inviteCode: inviteCode,
       );
 }
 

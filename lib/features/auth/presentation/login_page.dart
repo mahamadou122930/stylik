@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -6,9 +7,9 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/auth_error_message.dart';
 import 'auth_providers.dart';
-import 'register_page.dart';
+import 'signup_choice_page.dart';
 
-/// Connexion du personnel du salon.
+/// Connexion du personnel du salon — écran sombre pleine page de la maquette.
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -85,122 +86,70 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authControllerProvider).isLoading;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(26, 20, 26, 24),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.textPrimary,
+        body: SafeArea(
+          bottom: false,
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
                 key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 16),
-                    Center(
-                      child: const AppLogo(size: 84, radius: 22),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Bon retour',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.sora(
-                        28,
-                        FontWeight.w800,
-                        letterSpacing: -0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Connectez-vous pour gérer votre salon.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.manrope(
-                        14.5,
-                        FontWeight.w500,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    AppInput(
-                      label: 'Email ou téléphone',
-                      hint: 'lea@latelier.sn',
-                      controller: _email,
-                      keyboardType: TextInputType.emailAddress,
-                      textInputAction: TextInputAction.next,
-                      prefixIcon: Icons.email_outlined,
-                      validator: (value) =>
-                          (value == null || !value.contains('@'))
-                              ? 'Email invalide'
-                              : null,
-                    ),
-                    const SizedBox(height: 16),
-                    AppInput(
-                      label: 'Mot de passe',
-                      controller: _password,
-                      obscureText: _obscure,
-                      textInputAction: TextInputAction.done,
-                      prefixIcon: Icons.lock_outline_rounded,
-                      suffix: GestureDetector(
-                        onTap: () => setState(() => _obscure = !_obscure),
-                        child: Icon(
-                          _obscure
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          size: 19,
-                          color: AppColors.textFaint,
+                // Le bloc d'identification est centré et le pied reste collé en
+                // bas : c'est la mise en page de la maquette, et elle tient
+                // aussi quand le clavier réduit la hauteur disponible.
+                child: CustomScrollView(
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          26,
+                          20,
+                          26,
+                          MediaQuery.paddingOf(context).bottom + 26,
                         ),
-                      ),
-                      validator: (value) => (value == null || value.length < 6)
-                          ? '6 caractères minimum'
-                          : null,
-                    ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: _resetPassword,
-                        child: Text(
-                          'Mot de passe oublié ?',
-                          style: AppTypography.manrope(
-                            12.5,
-                            FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    AppButton(
-                      label: 'Se connecter',
-                      isLoading: isLoading,
-                      onPressed: _submit,
-                    ),
-                    const SizedBox(height: 24),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context)
-                          .pushNamed(RegisterPage.routeName),
-                      child: Text.rich(
-                        TextSpan(
-                          text: 'Pas encore de salon ? ',
-                          style: AppTypography.manrope(
-                            13.5,
-                            FontWeight.w500,
-                            color: AppColors.textSecondary,
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            TextSpan(
-                              text: 'Créer un compte',
-                              style: AppTypography.manrope(
-                                13.5,
-                                FontWeight.w700,
-                                color: AppColors.primary,
+                            Expanded(child: _identity()),
+                            const SizedBox(height: 28),
+                            AppButton(
+                              label: 'Se connecter',
+                              isLoading: isLoading,
+                              height: 56,
+                              onPressed: _submit,
+                            ),
+                            const SizedBox(height: 14),
+                            GestureDetector(
+                              onTap: () => Navigator.of(context)
+                                  .pushNamed(SignupChoicePage.routeName),
+                              child: Text.rich(
+                                TextSpan(
+                                  text: 'Pas de compte ? ',
+                                  style: AppTypography.manrope(
+                                    13,
+                                    FontWeight.w600,
+                                    color: Colors.white54,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Créer un compte',
+                                      style: AppTypography.manrope(
+                                        13,
+                                        FontWeight.w600,
+                                        color: AppColors.mint,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           ],
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
                   ],
@@ -210,6 +159,98 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Marque, champs et lien d'oubli — le bloc centré de l'écran.
+  Widget _identity() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.accent,
+              borderRadius: BorderRadius.circular(22),
+            ),
+            child: const Center(
+              child: AppGlyph(size: 36, color: Colors.white),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'L\'Atelier',
+          textAlign: TextAlign.center,
+          style: AppTypography.sora(
+            28,
+            FontWeight.w800,
+            color: Colors.white,
+            letterSpacing: -0.7,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'La gestion de votre salon, simplifiée',
+          textAlign: TextAlign.center,
+          style: AppTypography.manrope(
+            14,
+            FontWeight.w500,
+            color: Colors.white60,
+          ),
+        ),
+        const SizedBox(height: 28),
+        AppInput(
+          dark: true,
+          hint: 'lea@latelier.sn',
+          controller: _email,
+          keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          prefixIcon: Icons.email_outlined,
+          validator: (value) => (value == null || !value.contains('@'))
+              ? 'Email invalide'
+              : null,
+        ),
+        const SizedBox(height: 12),
+        AppInput(
+          dark: true,
+          hint: '••••••••',
+          controller: _password,
+          obscureText: _obscure,
+          textInputAction: TextInputAction.done,
+          prefixIcon: Icons.lock_outline_rounded,
+          suffix: GestureDetector(
+            onTap: () => setState(() => _obscure = !_obscure),
+            child: Icon(
+              _obscure
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              size: 19,
+              color: Colors.white60,
+            ),
+          ),
+          validator: (value) =>
+              (value == null || value.length < 6) ? '6 caractères minimum' : null,
+        ),
+        const SizedBox(height: 14),
+        Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onTap: _resetPassword,
+            child: Text(
+              'Mot de passe oublié ?',
+              style: AppTypography.manrope(
+                12.5,
+                FontWeight.w700,
+                color: AppColors.mint,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
 import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/auth_providers.dart';
+import 'invite_code_card.dart';
 import 'staff_providers.dart';
 
 /// Nouvel employé ou édition d'un membre de l'équipe.
@@ -242,13 +243,18 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
               ),
             ],
             const SizedBox(height: 18),
-            if (!isEditing)
+            if (!isEditing) ...[
               const AppCallout(
                 message: 'Aucun compte n\'est créé : le membre apparaît au '
-                    'planning et touche ses commissions sans se connecter. '
-                    'S\'il s\'inscrit un jour avec l\'email renseigné, son '
-                    'compte rejoindra automatiquement cette fiche.',
+                    'planning et touche ses commissions sans se connecter.',
               ),
+              const AppSectionTitle('Code d\'invitation'),
+              const InviteCodeCard(
+                message: 'L\'employé l\'entre pour rejoindre le salon, avec '
+                    'l\'email renseigné ci-dessus : son compte se rattachera '
+                    'alors à cette fiche.',
+              ),
+            ],
           ],
         ),
       ),

@@ -6,20 +6,21 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../agenda/domain/appointment.dart';
+import '../../agenda/presentation/agenda_page.dart';
 import '../../agenda/presentation/agenda_providers.dart';
 import '../../agenda/presentation/appointment_detail_page.dart';
-import '../../agenda/presentation/walk_in_queue_page.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../auth/presentation/profile_page.dart';
 import '../../inventory/presentation/inventory_page.dart';
 import '../../inventory/presentation/inventory_providers.dart';
 import '../../pos/presentation/pos_providers.dart';
-import '../../settings/presentation/settings_providers.dart';
+import 'home_providers.dart';
 
-/// Accueil : la journée du salon en un coup d'œil.
+/// 1 · Accueil — la journée du salon en un coup d'œil.
 ///
-/// Reprend les blocs de la maquette (carte verte de CA, tuiles, listes) pour
-/// rassembler ce que le personnel consulte en arrivant.
+/// Quatre tuiles (CA, rendez-vous, panier moyen, remplissage), la semaine en
+/// cours en barres, puis les prochains rendez-vous : la mise en page de la
+/// maquette, chaque chiffre branché sur les données réelles du salon.
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -28,31 +29,29 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(currentProfileProvider).valueOrNull;
-    final salon = ref.watch(currentSalonProvider).valueOrNull;
     final appointments = ref.watch(dayAppointmentsProvider);
-    final queue = ref.watch(walkInQueueProvider).valueOrNull ?? const [];
-    final cashTotal = ref.watch(todayCashTotalProvider);
-    final ticketCount =
-        ref.watch(todayTransactionsProvider).valueOrNull?.length ?? 0;
     final lowStock = ref.watch(lowStockProductsProvider);
 
-    final upcoming = (appointments.valueOrNull ?? const <Appointment>[])
+    final today = (appointments.valueOrNull ?? const <Appointment>[]);
+    final upcoming = today
         .where((appointment) =>
             appointment.status.isActive &&
             appointment.endTime.isAfter(DateTime.now()))
-        .take(4)
         .toList();
 
+    final firstName = (profile?.fullName ?? '').split(' ').first;
+
     return AppScreen(
-      title: salon?.name ?? 'Mon salon',
+      title: firstName.isEmpty ? 'Bonjour' : 'Bonjour, $firstName',
       subtitle: Formatters.day(DateTime.now()),
       showBack: false,
       largeTitle: true,
+      subtitleFirst: true,
       action: GestureDetector(
         onTap: () => Navigator.of(context).pushNamed(ProfilePage.routeName),
         child: AppAvatar(
           initials: Formatters.initials(profile?.fullName ?? '?'),
-          size: 40,
+          size: 46,
           background: AppColors.primary,
           color: Colors.white,
         ),
@@ -60,83 +59,11 @@ class HomePage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppGradientCard(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
-            bubbleColor: Colors.transparent,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Caisse du jour',
-                        style: AppTypography.manrope(
-                          12.5,
-                          FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.82),
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        Formatters.fcfa(cashTotal),
-                        style: AppTypography.sora(
-                          28,
-                          FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '$ticketCount',
-                      style: AppTypography.sora(
-                        15,
-                        FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'ventes',
-                      style: AppTypography.manrope(
-                        11,
-                        FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.82),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: AppStatTile(
-                  label: 'RDV aujourd\'hui',
-                  value: '${appointments.valueOrNull?.length ?? 0}',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: AppStatTile(
-                  label: 'File d\'attente',
-                  value: '${queue.length}',
-                  tinted: queue.isNotEmpty,
-                  onTap: () => Navigator.of(context)
-                      .pushNamed(WalkInQueuePage.routeName),
-                ),
-              ),
-            ],
-          ),
+          _statGrid(context, ref, todayCount: today.length, upcoming: upcoming.length),
+          const SizedBox(height: 14),
+          const _WeekCard(),
           if (lowStock.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             AppCard(
               onTap: () =>
                   Navigator.of(context).pushNamed(InventoryPage.routeName),
@@ -168,7 +95,21 @@ class HomePage extends ConsumerWidget {
               ),
             ),
           ],
-          const AppSectionTitle('Prochains rendez-vous'),
+          AppSectionTitle(
+            'Prochains rendez-vous',
+            trailing: GestureDetector(
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AgendaPage.routeName),
+              child: Text(
+                'Tout voir',
+                style: AppTypography.manrope(
+                  12.5,
+                  FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
           appointments.when(
             loading: () => const AppLoader(compact: true),
             error: (error, _) => AppErrorState(
@@ -185,21 +126,31 @@ class HomePage extends ConsumerWidget {
                   )
                 : AppListCard(
                     children: [
-                      for (final appointment in upcoming)
+                      for (final appointment in upcoming.take(4))
                         AppListRow(
                           label: appointment.clientName ?? 'Client de passage',
-                          subtitle:
-                              '${appointment.summary} · ${appointment.stylistName ?? ''}',
+                          subtitle: appointment.summary,
                           strong: true,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          leading: AppBadge(
-                            label: Formatters.time(appointment.startTime),
-                            color: appointment.status.color,
-                            background:
-                                appointment.status.color.withValues(alpha: 0.12),
-                            dense: true,
+                          leading: SizedBox(
+                            width: 42,
+                            child: Text(
+                              Formatters.time(appointment.startTime),
+                              style: AppTypography.sora(
+                                13,
+                                FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
                           ),
-                          trailing: const AppChevron(),
+                          trailing: appointment.stylistName == null
+                              ? const AppChevron()
+                              : AppBadge(
+                                  label: appointment.stylistName!,
+                                  color: AppColors.primary,
+                                  background: AppColors.tintGreen,
+                                  dense: true,
+                                ),
                           onTap: () => Navigator.of(context).pushNamed(
                             AppointmentDetailPage.routeName,
                             arguments: appointment.id,
@@ -207,6 +158,199 @@ class HomePage extends ConsumerWidget {
                         ),
                     ],
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Les quatre tuiles du haut, en grille 2 × 2.
+  Widget _statGrid(
+    BuildContext context,
+    WidgetRef ref, {
+    required int todayCount,
+    required int upcoming,
+  }) {
+    final trend = ref.watch(revenueTrendProvider);
+    final basket = ref.watch(averageTicketProvider);
+    final occupancy = ref.watch(occupancyProvider);
+
+    final rate = occupancy.rate;
+
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _StatTile(
+                label: 'CA du jour',
+                value: Formatters.fcfa(ref.watch(todayCashTotalProvider)),
+                caption: trend == null
+                    ? 'aujourd\'hui'
+                    : '${trend < 0 ? '▼' : '▲'} '
+                        '${(trend.abs() * 100).round()} % vs sem. dern.',
+                captionColor:
+                    trend == null || trend >= 0 ? AppColors.primary : AppColors.expense,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                label: 'Rendez-vous',
+                value: '$todayCount',
+                caption: '$upcoming à venir',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: _StatTile(
+                label: 'Panier moyen',
+                value: basket.saleCount == 0
+                    ? '—'
+                    : Formatters.fcfa(basket.valueFcfa),
+                caption: basket.saleCount == 0
+                    ? 'aucune vente'
+                    : 'sur ${basket.saleCount} vente'
+                        '${basket.saleCount > 1 ? 's' : ''}',
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _StatTile(
+                label: 'Remplissage',
+                value: rate == null ? '—' : '${(rate * 100).round()} %',
+                caption: rate == null
+                    ? 'horaires à renseigner'
+                    : '${occupancy.freeSlots} créneaux libres',
+                captionColor: AppColors.amber,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Tuile de chiffre du jour : libellé, valeur, légende colorée.
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.caption,
+    this.captionColor = AppColors.textSecondary,
+  });
+
+  final String label;
+  final String value;
+  final String caption;
+  final Color captionColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: AppTypography.statLabel),
+          const SizedBox(height: 5),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: AppTypography.sora(
+                24,
+                FontWeight.w800,
+                letterSpacing: -0.6,
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.manrope(
+              11.5,
+              FontWeight.w700,
+              color: captionColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// « Semaine en cours » : total encaissé et barres du lundi au dimanche.
+class _WeekCard extends ConsumerWidget {
+  const _WeekCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final week = ref.watch(weekRevenueProvider);
+    final total = week.fold<int>(0, (sum, day) => sum + day.totalFcfa);
+    final today = DateTime.now();
+    final todayIndex = week.indexWhere(
+      (entry) =>
+          entry.day.year == today.year &&
+          entry.day.month == today.month &&
+          entry.day.day == today.day,
+    );
+
+    return AppCard(
+      radius: 18,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  'Semaine en cours',
+                  style: AppTypography.sora(14.5, FontWeight.w700),
+                ),
+              ),
+              Text(
+                Formatters.fcfa(total),
+                style: AppTypography.sora(
+                  13,
+                  FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          AppBarChart(
+            height: 88,
+            highlightMax: false,
+            highlightIndex: todayIndex,
+            slices: [
+              for (final entry in week)
+                ChartSlice(
+                  label: Formatters.weekdayShort(entry.day)
+                      .substring(0, 1)
+                      .toUpperCase(),
+                  value: entry.totalFcfa,
+                  // Un jour sans encaissement reste visible en piste neutre :
+                  // une barre verte au ras du sol se lirait comme un montant.
+                  color: entry.totalFcfa == 0 ? AppColors.toggleOff : null,
+                ),
+            ],
           ),
         ],
       ),

@@ -22,11 +22,16 @@ class AppBarChart extends StatelessWidget {
     required this.slices,
     this.height = 96,
     this.highlightMax = true,
+    this.highlightIndex,
   });
 
   final List<ChartSlice> slices;
   final double height;
   final bool highlightMax;
+
+  /// Barre mise en avant par sa position plutôt que par sa valeur — le jour
+  /// courant de la semaine, qui n'est pas forcément le plus haut.
+  final int? highlightIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +53,8 @@ class AppBarChart extends StatelessWidget {
               child: _Bar(
                 slice: slices[i],
                 ratio: maxValue == 0 ? 0 : slices[i].value / maxValue,
-                highlighted: highlightMax && slices[i].value == maxValue,
+                highlighted: i == highlightIndex ||
+                    (highlightMax && slices[i].value == maxValue),
                 maxBarHeight: height - 22,
               ),
             ),
@@ -80,7 +86,8 @@ class _Bar extends StatelessWidget {
         Container(
           height: math.max(6, maxBarHeight * ratio),
           decoration: BoxDecoration(
-            color: highlighted ? AppColors.accent : AppColors.tintGreenBorder,
+            color: slice.color ??
+                (highlighted ? AppColors.accent : AppColors.tintGreenBorder),
             borderRadius: BorderRadius.circular(7),
           ),
         ),

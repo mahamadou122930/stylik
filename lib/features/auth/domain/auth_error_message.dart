@@ -4,8 +4,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 ///
 /// Les exceptions brutes (`AuthApiException(message: ..., statusCode: ...)`)
 /// n'ont aucun sens pour un gérant de salon.
-String authErrorMessage(Object? error) {
+/// [fallback] remplace le message brut quand le refus vient d'un trigger de la
+/// base : Supabase le remonte en `unexpected_failure` (« Database error saving
+/// new user »), sans jamais faire remonter le texte de l'exception SQL.
+String authErrorMessage(Object? error, {String? fallback}) {
   if (error is AuthApiException) {
+    if (error.code == 'unexpected_failure' && fallback != null) {
+      return fallback;
+    }
     switch (error.code) {
       case 'email_address_invalid':
         return "Cette adresse email est refusée. Utilisez une adresse "

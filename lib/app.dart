@@ -14,10 +14,12 @@ import 'features/agenda/presentation/walk_in_queue_page.dart';
 import 'features/auth/domain/profile.dart';
 import 'features/auth/domain/registration_draft.dart';
 import 'features/auth/presentation/auth_providers.dart';
+import 'features/auth/presentation/join_salon_page.dart';
 import 'features/auth/presentation/login_page.dart';
 import 'features/auth/presentation/profile_page.dart';
 import 'features/auth/presentation/register_page.dart';
 import 'features/auth/presentation/role_selection_page.dart';
+import 'features/auth/presentation/signup_choice_page.dart';
 import 'features/auth/presentation/welcome_page.dart';
 import 'features/catalog/domain/salon_service.dart';
 import 'features/catalog/presentation/catalog_page.dart';
@@ -133,7 +135,9 @@ class AtelierApp extends ConsumerWidget {
   static final Map<String, Widget> _routesMap = {
     WelcomePage.routeName: const WelcomePage(),
     LoginPage.routeName: const LoginPage(),
+    SignupChoicePage.routeName: const SignupChoicePage(),
     RegisterPage.routeName: const RegisterPage(),
+    JoinSalonPage.routeName: const JoinSalonPage(),
     HomePage.routeName: const HomePage(),
     MorePage.routeName: const MorePage(),
     AgendaPage.routeName: const AgendaPage(),

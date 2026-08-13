@@ -34,6 +34,10 @@ migrate_working_dir/
 /coverage/
 .env
 
+# Supabase CLI installée dans le projet (binaires, ~167 Mo) — voir README
+/tool/bin/
+/supabase/.temp/
+
 # Symbolication related
 app.*.symbols
 

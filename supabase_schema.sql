@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS public.salons (
     logo_url TEXT,
     opening_hours JSONB DEFAULT '{}'::jsonb,
     currency TEXT DEFAULT 'FCFA',
+    invite_code TEXT,             -- code à 6 caractères dicté aux employés
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
@@ -425,16 +426,99 @@ CREATE POLICY "Tenant isolation for subscriptions" ON public.subscriptions
 -- Le catalogue des formules est public en lecture, modifiable seulement côté admin.
 CREATE POLICY "Anyone can read subscription plans" ON public.subscription_plans FOR SELECT TO anon, authenticated USING (true);
 
+-- Code d'invitation du salon (parcours « Rejoindre un salon »).
+-- Alphabet sans caractères ambigus (ni 0/O, ni 1/I/L) : le code est dicté à
+-- l'oral ou recopié depuis un SMS.
+CREATE OR REPLACE FUNCTION public.generate_invite_code()
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_alphabet CONSTANT TEXT := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  v_code TEXT;
+  v_try INTEGER := 0;
+BEGIN
+  LOOP
+    v_code := '';
+    FOR i IN 1..6 LOOP
+      v_code := v_code || substr(
+        v_alphabet,
+        1 + floor(random() * length(v_alphabet))::int,
+        1
+      );
+    END LOOP;
+
+    EXIT WHEN NOT EXISTS (
+      SELECT 1 FROM public.salons WHERE upper(invite_code) = v_code
+    );
+
+    v_try := v_try + 1;
+    IF v_try > 50 THEN
+      RAISE EXCEPTION 'Impossible de générer un code d''invitation unique';
+    END IF;
+  END LOOP;
+
+  RETURN v_code;
+END;
+$$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS salons_invite_code_key
+  ON public.salons (upper(invite_code));
+
+ALTER TABLE public.salons
+  ALTER COLUMN invite_code SET DEFAULT public.generate_invite_code();
+
+-- Appelée par un visiteur encore anonyme, sur l'écran « Rejoindre un salon » :
+-- elle ne renvoie que le nom, de quoi confirmer « Salon reconnu ». Le code seul
+-- ne donne aucun accès — l'inscription exige en plus une fiche employé.
+CREATE OR REPLACE FUNCTION public.salon_by_invite_code(p_code TEXT)
+RETURNS TABLE (id UUID, name TEXT)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT s.id, s.name
+    FROM public.salons s
+   WHERE upper(s.invite_code) = upper(btrim(coalesce(p_code, '')))
+     AND btrim(coalesce(p_code, '')) <> '';
+$$;
+
+GRANT EXECUTE ON FUNCTION public.salon_by_invite_code(TEXT) TO anon, authenticated;
+
 -- Trigger pour la création automatique du profil après inscription Supabase Auth
 -- À l'inscription : réclamer la fiche pré-créée par le gérant (même email et
 -- même salon) plutôt que d'en créer une seconde en doublon.
+--
+-- Sur le parcours « Rejoindre un salon », le salon vient du code résolu ici :
+-- un `salon_id` posé par le client ne peut donc pas servir à s'inviter dans un
+-- salon tiers. Et sans fiche employé correspondant à l'email, l'inscription est
+-- refusée — sinon deviner un code à six caractères suffirait à entrer.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
-  v_salon_id UUID := (NEW.raw_user_meta_data->>'salon_id')::uuid;
-  v_claimed  UUID;
-  v_matches  INTEGER;
+  v_join_code TEXT := upper(btrim(coalesce(NEW.raw_user_meta_data->>'join_code', '')));
+  v_salon_id  UUID := (NEW.raw_user_meta_data->>'salon_id')::uuid;
+  v_claimed   UUID;
+  v_matches   INTEGER;
 BEGIN
+  IF v_join_code <> '' THEN
+    SELECT s.id INTO v_salon_id
+      FROM public.salons s
+     WHERE upper(s.invite_code) = v_join_code;
+
+    IF v_salon_id IS NULL THEN
+      RAISE EXCEPTION 'Code d''invitation inconnu'
+        USING ERRCODE = 'check_violation';
+    END IF;
+  END IF;
+
   -- Sans `salon_id` transmis, plusieurs salons peuvent avoir pré-créé une fiche
   -- avec le même email. On ne réclame que s'il n'y a aucune ambiguïté : un
   -- `LIMIT 1` arbitraire rattacherait la personne au mauvais salon.
@@ -452,6 +536,11 @@ BEGIN
        AND email IS NOT NULL
        AND lower(email) = lower(NEW.email)
        AND (v_salon_id IS NULL OR salon_id = v_salon_id);
+  END IF;
+
+  IF v_join_code <> '' AND v_claimed IS NULL THEN
+    RAISE EXCEPTION 'Aucune fiche employé n''attend cet email dans ce salon'
+      USING ERRCODE = 'check_violation';
   END IF;
 
   IF v_claimed IS NOT NULL THEN
@@ -475,7 +564,7 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users

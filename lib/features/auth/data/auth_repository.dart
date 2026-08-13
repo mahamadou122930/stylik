@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/supabase_tables.dart';
 import '../domain/profile.dart';
+import '../domain/salon_invite.dart';
 import '../domain/user_role.dart';
 
 /// Accès aux opérations d'authentification et au profil du personnel.
@@ -38,6 +39,50 @@ class AuthRepository {
         'full_name': fullName,
         'role': role.value,
         'salon_id': ?salonId,
+      },
+    );
+  }
+
+  /// Salon désigné par un code d'invitation, ou `null` si le code n'existe pas.
+  ///
+  /// Passe par la RPC `salon_by_invite_code`, ouverte à `anon` : la personne
+  /// n'a pas encore de session quand elle saisit son code.
+  Future<SalonInvite?> findSalonByInviteCode(String code) async {
+    final normalized = code.trim().toUpperCase();
+    if (normalized.length != inviteCodeLength) return null;
+
+    final rows = await _client.rpc<List<dynamic>>(
+      'salon_by_invite_code',
+      params: {'p_code': normalized},
+    );
+
+    if (rows.isEmpty) return null;
+    final row = rows.first as Map<String, dynamic>;
+
+    return SalonInvite(
+      code: normalized,
+      salonId: row['id'] as String,
+      salonName: (row['name'] as String?) ?? '',
+    );
+  }
+
+  /// Inscription d'un employé sur un salon existant.
+  ///
+  /// Seul le code part vers le serveur : c'est lui qui désigne le salon, et le
+  /// rôle vient de la fiche pré-créée par le gérant — rien de tout cela n'est
+  /// décidé côté client.
+  Future<AuthResponse> joinSalon({
+    required String code,
+    required String email,
+    required String password,
+    required String fullName,
+  }) {
+    return _client.auth.signUp(
+      email: email,
+      password: password,
+      data: {
+        'full_name': fullName,
+        'join_code': code.trim().toUpperCase(),
       },
     );
   }

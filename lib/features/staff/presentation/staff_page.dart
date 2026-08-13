@@ -6,6 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
+import 'invite_code_card.dart';
 import 'staff_detail_page.dart';
 import 'staff_form_page.dart';
 import 'staff_providers.dart';
@@ -55,55 +56,65 @@ class StaffPage extends ConsumerWidget {
           ],
         ),
       ),
-      child: team.when(
-        loading: () => const AppLoader(),
-        error: (error, _) => AppErrorState(
-          message: '$error',
-          onRetry: () => ref.invalidate(teamProvider),
-        ),
-        data: (members) => members.isEmpty
-            ? const AppEmptyState(
-                title: 'Aucun membre',
-                message: 'Invitez vos coiffeurs et réceptionnistes.',
-                icon: Icons.badge_outlined,
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < members.length; i++) ...[
-                    _StaffCard(
-                      member: members[i],
-                      isAbsent: absent.contains(members[i].id),
-                      accent: AppColors
-                          .chartSeries[i % AppColors.chartSeries.length],
-                      onTap: () => Navigator.of(context).pushNamed(
-                        StaffDetailPage.routeName,
-                        arguments: members[i].id,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                  const AppSectionTitle('Absences'),
-                  AppListCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          team.when(
+            loading: () => const AppLoader(),
+            error: (error, _) => AppErrorState(
+              message: '$error',
+              onRetry: () => ref.invalidate(teamProvider),
+            ),
+            data: (members) => members.isEmpty
+                ? const AppEmptyState(
+                    title: 'Aucun membre',
+                    message: 'Invitez vos coiffeurs et réceptionnistes.',
+                    icon: Icons.badge_outlined,
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      AppListRow(
-                        label: 'Congés & absences',
-                        subtitle: 'Demandes à valider, calendrier',
-                        strong: true,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        leading: const AppIconTile(
-                          icon: Icons.beach_access_rounded,
-                          color: AppColors.amber,
-                          background: AppColors.tintAmber,
+                      for (var i = 0; i < members.length; i++) ...[
+                        _StaffCard(
+                          member: members[i],
+                          isAbsent: absent.contains(members[i].id),
+                          accent: AppColors
+                              .chartSeries[i % AppColors.chartSeries.length],
+                          onTap: () => Navigator.of(context).pushNamed(
+                            StaffDetailPage.routeName,
+                            arguments: members[i].id,
+                          ),
                         ),
-                        trailing: const AppChevron(),
-                        onTap: () => Navigator.of(context)
-                            .pushNamed(TimeOffPage.routeName),
-                      ),
+                        const SizedBox(height: 10),
+                      ],
                     ],
                   ),
-                ],
+          ),
+          const AppSectionTitle('Rejoindre le salon'),
+          const InviteCodeCard(
+            message: 'Créez d\'abord la fiche de la personne avec son email, '
+                'puis donnez-lui ce code : il lui servira à créer son compte.',
+          ),
+          const AppSectionTitle('Absences'),
+          AppListCard(
+            children: [
+              AppListRow(
+                label: 'Congés & absences',
+                subtitle: 'Demandes à valider, calendrier',
+                strong: true,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                leading: const AppIconTile(
+                  icon: Icons.beach_access_rounded,
+                  color: AppColors.amber,
+                  background: AppColors.tintAmber,
+                ),
+                trailing: const AppChevron(),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(TimeOffPage.routeName),
               ),
+            ],
+          ),
+        ],
       ),
     );
   }

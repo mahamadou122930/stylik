@@ -585,12 +585,15 @@ class _StepButton extends StatelessWidget {
 
 /// Chevron de navigation des lignes de liste.
 class AppChevron extends StatelessWidget {
-  const AppChevron({super.key});
+  const AppChevron({super.key, this.color});
+
+  /// Teinte le chevron d'une ligne mise en avant (choix suggéré).
+  final Color? color;
 
   @override
-  Widget build(BuildContext context) => const Icon(
+  Widget build(BuildContext context) => Icon(
         Icons.chevron_right_rounded,
         size: 20,
-        color: AppColors.textFaint,
+        color: color ?? AppColors.textFaint,
       );
 }

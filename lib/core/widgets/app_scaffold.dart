@@ -22,6 +22,7 @@ class AppScreen extends StatelessWidget {
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.scrollable = true,
+    this.subtitleFirst = false,
     this.bodyPadding = const EdgeInsets.fromLTRB(
       AppSizes.screenPadding,
       0,
@@ -55,6 +56,10 @@ class AppScreen extends StatelessWidget {
   final Widget? bottomNavigationBar;
   final Widget? floatingActionButton;
   final bool scrollable;
+
+  /// Voir [AppTopBar.subtitleFirst].
+  final bool subtitleFirst;
+
   final EdgeInsets bodyPadding;
 
   @override
@@ -77,6 +82,7 @@ class AppScreen extends StatelessWidget {
                   showBack: showBack,
                   large: largeTitle,
                   action: action,
+                  subtitleFirst: subtitleFirst,
                 ),
             ?header,
             Expanded(
@@ -113,6 +119,7 @@ class AppTopBar extends StatelessWidget {
     this.showBack = true,
     this.large = false,
     this.action,
+    this.subtitleFirst = false,
   });
 
   final String title;
@@ -120,6 +127,10 @@ class AppTopBar extends StatelessWidget {
   final bool showBack;
   final bool large;
   final Widget? action;
+
+  /// Sous-titre posé au-dessus du titre — la date qui coiffe « Bonjour, Léa »
+  /// sur l'accueil.
+  final bool subtitleFirst;
 
   @override
   Widget build(BuildContext context) {
@@ -141,6 +152,15 @@ class AppTopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (subtitle != null && subtitleFirst)
+                  Text(
+                    subtitle!,
+                    style: AppTypography.manrope(
+                      13,
+                      FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 Text(
                   title,
                   style: large
@@ -148,7 +168,7 @@ class AppTopBar extends StatelessWidget {
                       : AppTypography.screenTitle,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (subtitle != null)
+                if (subtitle != null && !subtitleFirst)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(subtitle!, style: AppTypography.rowSubtitle),

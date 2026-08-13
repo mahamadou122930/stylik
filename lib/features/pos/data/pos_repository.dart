@@ -144,9 +144,26 @@ class PosRepository {
   Future<List<SalonTransaction>> fetchDay({
     required String salonId,
     required DateTime day,
-  }) async {
+  }) {
     final start = DateTime(day.year, day.month, day.day);
-    final end = start.add(const Duration(days: 1));
+    return fetchRange(
+      salonId: salonId,
+      from: start,
+      to: start.add(const Duration(days: 1)),
+    );
+  }
+
+  /// Tickets encaissés entre [from] inclus et [to] exclu, dates locales.
+  ///
+  /// Alimente les séries de l'accueil (la semaine en cours, la comparaison au
+  /// même jour la semaine passée) : une seule requête plutôt qu'une par jour.
+  Future<List<SalonTransaction>> fetchRange({
+    required String salonId,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final start = DateTime(from.year, from.month, from.day);
+    final end = DateTime(to.year, to.month, to.day);
 
     try {
       final data = await _client
@@ -173,7 +190,7 @@ class PosRepository {
 
       final list = cached.map((row) => SalonTransaction.fromMap(row)).where((tx) {
         final ct = tx.createdAt?.toLocal() ?? DateTime.now();
-        return ct.year == day.year && ct.month == day.month && ct.day == day.day;
+        return !ct.isBefore(start) && ct.isBefore(end);
       }).toList();
 
       list.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));

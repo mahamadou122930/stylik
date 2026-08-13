@@ -125,6 +125,31 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Inscription d'un employé sur un salon existant, via le code que son gérant
+  /// lui a communiqué. Échoue si aucune fiche employé n'attend cet email.
+  Future<bool> joinSalon({
+    required String code,
+    required String email,
+    required String password,
+    required String fullName,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      await _repository.joinSalon(
+        code: code,
+        email: email,
+        password: password,
+        fullName: fullName,
+      );
+      _ref.invalidate(currentProfileProvider);
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stack) {
+      state = AsyncError(error, stack);
+      return false;
+    }
+  }
+
   Future<void> signOut() async {
     await _repository.signOut();
     _ref.invalidate(currentProfileProvider);
