@@ -8,6 +8,7 @@ import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../catalog/presentation/catalog_page.dart';
 import '../../finance/presentation/finance_page.dart';
+import '../../finance/presentation/my_commission_page.dart';
 import '../../inventory/presentation/inventory_page.dart';
 import '../../loyalty/presentation/loyalty_page.dart';
 import '../../settings/presentation/settings_page.dart';
@@ -54,6 +55,15 @@ class MorePage extends ConsumerWidget {
           description: 'CA, rapports, export',
           icon: Icons.bar_chart_rounded,
           route: FinancePage.routeName,
+        )
+      // La finance du salon lui étant fermée, le coiffeur accède quand même à
+      // sa propre rémunération — c'est la sienne.
+      else if (role.canViewOwnCommission)
+        const _MoreEntry(
+          label: 'Mes commissions',
+          description: 'Ce que je gagne',
+          icon: Icons.savings_rounded,
+          route: MyCommissionPage.routeName,
         ),
       const _MoreEntry(
         label: 'Fidélité',

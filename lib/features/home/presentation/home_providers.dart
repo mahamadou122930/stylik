@@ -121,6 +121,45 @@ final occupancyProvider =
   );
 });
 
+/// Prestations terminées aujourd'hui dont le paiement n'a pas été encaissé.
+///
+/// C'est l'angle mort du comptoir : le client est parti, la prestation est
+/// marquée « Terminé », mais aucun ticket n'a été clôturé. Le rapprochement se
+/// fait sur `appointment_id`, seul lien entre le rendez-vous et sa recette.
+final unpaidCompletedProvider = Provider<List<Appointment>>((ref) {
+  final appointments =
+      ref.watch(dayAppointmentsProvider).valueOrNull ?? const <Appointment>[];
+  final transactions =
+      ref.watch(todayTransactionsProvider).valueOrNull ?? const [];
+
+  final settled = <String>{
+    for (final transaction in transactions)
+      if (!transaction.isRefund && transaction.appointmentId != null)
+        transaction.appointmentId!,
+  };
+
+  return appointments
+      .where((appointment) =>
+          appointment.status == AppointmentStatus.completed &&
+          !settled.contains(appointment.id))
+      .toList();
+});
+
+/// Rendez-vous du jour encore à venir, dans l'ordre chronologique.
+final upcomingTodayProvider = Provider<List<Appointment>>((ref) {
+  final now = DateTime.now();
+  final appointments =
+      ref.watch(dayAppointmentsProvider).valueOrNull ?? const <Appointment>[];
+
+  final upcoming = appointments
+      .where((appointment) =>
+          appointment.status.isActive && appointment.endTime.isAfter(now))
+      .toList()
+    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+
+  return upcoming;
+});
+
 /// Amplitude d'ouverture du jour, en minutes. 0 si le salon est fermé ou si
 /// ses horaires ne sont pas renseignés.
 int _openMinutesToday(Salon? salon) {

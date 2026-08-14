@@ -71,6 +71,30 @@ final commissionsProvider =
       );
 });
 
+/// Commission du membre connecté sur le mois calendaire en cours.
+///
+/// Volontairement indépendante de `financePeriodProvider` : l'accueil du
+/// coiffeur annonce « ma commission du mois », un repère de paie qui ne doit
+/// pas changer parce qu'il a consulté ses commissions à la semaine ailleurs.
+final myMonthCommissionProvider =
+    FutureProvider<StylistCommission?>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  final profile = ref.watch(currentProfileProvider).valueOrNull;
+  if (salonId == null || profile == null) return null;
+
+  final now = DateTime.now();
+  final rows = await ref.watch(financeRepositoryProvider).fetchCommissions(
+        salonId: salonId,
+        from: DateTime(now.year, now.month),
+        to: DateTime(now.year, now.month + 1),
+      );
+
+  for (final row in rows) {
+    if (row.stylistId == profile.id) return row;
+  }
+  return null;
+});
+
 /// Rapport par service sur la période sélectionnée.
 final servicePerformanceProvider =
     FutureProvider<List<ServicePerformance>>((ref) async {

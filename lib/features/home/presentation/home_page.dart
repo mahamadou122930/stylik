@@ -9,12 +9,15 @@ import '../../agenda/domain/appointment.dart';
 import '../../agenda/presentation/agenda_page.dart';
 import '../../agenda/presentation/agenda_providers.dart';
 import '../../agenda/presentation/appointment_detail_page.dart';
+import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../auth/presentation/profile_page.dart';
 import '../../inventory/presentation/inventory_page.dart';
 import '../../inventory/presentation/inventory_providers.dart';
 import '../../pos/presentation/pos_providers.dart';
 import 'home_providers.dart';
+import 'reception_home_page.dart';
+import 'stylist_home_page.dart';
 
 /// 1 · Accueil — la journée du salon en un coup d'œil.
 ///
@@ -29,15 +32,11 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(currentProfileProvider).valueOrNull;
+    final role = profile?.role ?? UserRole.coiffeur;
     final appointments = ref.watch(dayAppointmentsProvider);
-    final lowStock = ref.watch(lowStockProductsProvider);
 
     final today = (appointments.valueOrNull ?? const <Appointment>[]);
-    final upcoming = today
-        .where((appointment) =>
-            appointment.status.isActive &&
-            appointment.endTime.isAfter(DateTime.now()))
-        .toList();
+    final upcoming = ref.watch(upcomingTodayProvider);
 
     final firstName = (profile?.fullName ?? '').split(' ').first;
 
@@ -56,7 +55,32 @@ class HomePage extends ConsumerWidget {
           color: Colors.white,
         ),
       ),
-      child: Column(
+      // Le corps dépend du métier : le gérant pilote le salon, la réception
+      // tient le comptoir, le coiffeur suit sa journée et sa rémunération.
+      child: profile == null
+          // Le rôle décide de la mise en page : afficher un accueil au hasard
+          // en attendant le profil ferait clignoter le mauvais tableau de bord.
+          ? const AppLoader(compact: true)
+          : switch (profile.role) {
+              _ when !role.canViewFullAgenda =>
+                StylistHomePage(profile: profile),
+              _ when !role.canViewFinance => const ReceptionHomePage(),
+              _ => _managerBody(context, ref, today: today, upcoming: upcoming),
+            },
+    );
+  }
+
+  /// Accueil du gérant : les chiffres du salon.
+  Widget _managerBody(
+    BuildContext context,
+    WidgetRef ref, {
+    required List<Appointment> today,
+    required List<Appointment> upcoming,
+  }) {
+    final appointments = ref.watch(dayAppointmentsProvider);
+    final lowStock = ref.watch(lowStockProductsProvider);
+
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _statGrid(context, ref, todayCount: today.length, upcoming: upcoming.length),
@@ -160,7 +184,6 @@ class HomePage extends ConsumerWidget {
                   ),
           ),
         ],
-      ),
     );
   }
 
@@ -179,59 +202,67 @@ class HomePage extends ConsumerWidget {
 
     return Column(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _StatTile(
-                label: 'CA du jour',
-                value: Formatters.fcfa(ref.watch(todayCashTotalProvider)),
-                caption: trend == null
-                    ? 'aujourd\'hui'
-                    : '${trend < 0 ? '▼' : '▲'} '
-                        '${(trend.abs() * 100).round()} % vs sem. dern.',
-                captionColor:
-                    trend == null || trend >= 0 ? AppColors.primary : AppColors.expense,
+        // `IntrinsicHeight` borne la hauteur du `Row` à celle de la plus haute
+        // tuile : sans lui, `stretch` hérite de la hauteur infinie du
+        // `SingleChildScrollView` qui enveloppe la page.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _StatTile(
+                  label: 'CA du jour',
+                  value: Formatters.fcfa(ref.watch(todayCashTotalProvider)),
+                  caption: trend == null
+                      ? 'aujourd\'hui'
+                      : '${trend < 0 ? '▼' : '▲'} '
+                          '${(trend.abs() * 100).round()} % vs sem. dern.',
+                  captionColor: trend == null || trend >= 0
+                      ? AppColors.primary
+                      : AppColors.expense,
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _StatTile(
-                label: 'Rendez-vous',
-                value: '$todayCount',
-                caption: '$upcoming à venir',
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatTile(
+                  label: 'Rendez-vous',
+                  value: '$todayCount',
+                  caption: '$upcoming à venir',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 10),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _StatTile(
-                label: 'Panier moyen',
-                value: basket.saleCount == 0
-                    ? '—'
-                    : Formatters.fcfa(basket.valueFcfa),
-                caption: basket.saleCount == 0
-                    ? 'aucune vente'
-                    : 'sur ${basket.saleCount} vente'
-                        '${basket.saleCount > 1 ? 's' : ''}',
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _StatTile(
+                  label: 'Panier moyen',
+                  value: basket.saleCount == 0
+                      ? '—'
+                      : Formatters.fcfa(basket.valueFcfa),
+                  caption: basket.saleCount == 0
+                      ? 'aucune vente'
+                      : 'sur ${basket.saleCount} vente'
+                          '${basket.saleCount > 1 ? 's' : ''}',
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _StatTile(
-                label: 'Remplissage',
-                value: rate == null ? '—' : '${(rate * 100).round()} %',
-                caption: rate == null
-                    ? 'horaires à renseigner'
-                    : '${occupancy.freeSlots} créneaux libres',
-                captionColor: AppColors.amber,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _StatTile(
+                  label: 'Remplissage',
+                  value: rate == null ? '—' : '${(rate * 100).round()} %',
+                  caption: rate == null
+                      ? 'horaires à renseigner'
+                      : '${occupancy.freeSlots} créneaux libres',
+                  captionColor: AppColors.amber,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

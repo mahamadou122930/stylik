@@ -12,6 +12,7 @@ abstract final class Formatters {
   static final DateFormat _dayMonth = DateFormat('d MMM', locale);
   static final DateFormat _weekdayDayMonth = DateFormat('EEE d MMM', locale);
   static final DateFormat _weekdayShort = DateFormat('E', locale);
+  static final DateFormat _month = DateFormat('MMMM', locale);
 
   /// `12500` → `"12 500 F"` — notation courte utilisée dans la maquette.
   static String fcfa(num value) => '${_amount.format(value)} F';
@@ -43,6 +44,9 @@ abstract final class Formatters {
       _weekdayDayMonth.format(date.toLocal());
 
   static String dayTime(DateTime date) => _dayTime.format(date.toLocal());
+
+  /// `2026-08-13` → `"août"` — période de paie affichée au coiffeur.
+  static String monthName(DateTime date) => _month.format(date.toLocal());
 
   /// `95` → `"1h35"`, `45` → `"45 min"`.
   static String duration(int minutes) {

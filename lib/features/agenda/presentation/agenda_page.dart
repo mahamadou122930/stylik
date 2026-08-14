@@ -6,6 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../../staff/presentation/staff_providers.dart';
 import '../domain/appointment.dart';
 import 'agenda_providers.dart';
@@ -27,6 +28,14 @@ class AgendaPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Sans la permission « planning du salon », l'onglet Agenda n'est pas la
+    // grille multi-colonnes mais le planning individuel : le coiffeur ne voit
+    // que sa propre journée, et jamais la liste de ses collègues.
+    final profile = ref.watch(currentProfileProvider).valueOrNull;
+    if (profile != null && !profile.role.canViewFullAgenda) {
+      return StylistAgendaPage(stylist: profile, showBack: false);
+    }
+
     final day = ref.watch(selectedDayProvider);
     final stylists = ref.watch(stylistsProvider).valueOrNull ?? const <Profile>[];
     final appointments = ref.watch(dayAppointmentsProvider);

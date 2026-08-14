@@ -6,6 +6,8 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
+import '../../auth/domain/user_role.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../domain/appointment.dart';
 import 'agenda_providers.dart';
 import 'appointment_detail_page.dart';
@@ -13,11 +15,19 @@ import 'appointment_form_page.dart';
 
 /// 2.2 — Planning individuel : la journée d'un seul coiffeur.
 class StylistAgendaPage extends ConsumerStatefulWidget {
-  const StylistAgendaPage({super.key, required this.stylist});
+  const StylistAgendaPage({
+    super.key,
+    required this.stylist,
+    this.showBack = true,
+  });
 
   static const routeName = '/agenda/stylist';
 
   final Profile stylist;
+
+  /// `false` quand la page est la racine de l'onglet Agenda — c'est le cas du
+  /// coiffeur, pour qui son planning *est* l'agenda : il n'y a rien derrière.
+  final bool showBack;
 
   @override
   ConsumerState<StylistAgendaPage> createState() => _StylistAgendaPageState();
@@ -32,6 +42,8 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
     final mine = (appointments.valueOrNull ?? const <Appointment>[])
         .where((appointment) => appointment.stylistId == widget.stylist.id)
         .toList();
+    final canBook =
+        (ref.watch(currentRoleProvider) ?? UserRole.coiffeur).canBookAppointments;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -92,7 +104,11 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
                       ],
                     ),
                   ),
-                  const AppIconButton(icon: Icons.arrow_back_ios_new_rounded),
+                  if (widget.showBack)
+                    AppIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () => Navigator.of(context).maybePop(),
+                    ),
                 ],
               ),
             ),
@@ -113,11 +129,15 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
                 data: (_) => mine.isEmpty
                     ? AppEmptyState(
                         title: 'Journée libre',
-                        message: 'Aucun rendez-vous pour ce coiffeur.',
+                        message: canBook
+                            ? 'Aucun rendez-vous pour ce coiffeur.'
+                            : 'Aucun rendez-vous prévu aujourd\'hui.',
                         icon: Icons.event_available_outlined,
-                        actionLabel: 'Nouveau RDV',
-                        onAction: () => Navigator.of(context)
-                            .pushNamed(AppointmentFormPage.routeName),
+                        actionLabel: canBook ? 'Nouveau RDV' : null,
+                        onAction: canBook
+                            ? () => Navigator.of(context)
+                                .pushNamed(AppointmentFormPage.routeName)
+                            : null,
                       )
                     : _Timeline(appointments: mine),
               ),
@@ -317,83 +337,92 @@ class _TimelineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNow = appointment.isNow;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(
-          width: 44,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  Formatters.time(appointment.startTime),
-                  style: AppTypography.sora(
-                    13,
-                    FontWeight.w700,
-                    color: isNow ? AppColors.primary : AppColors.textPrimary,
-                  ),
-                ),
-                if (isNow)
-                  Text(
-                    'en cours',
-                    style: AppTypography.manrope(
-                      9.5,
-                      FontWeight.w700,
-                      color: AppColors.accent,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-              decoration: BoxDecoration(
-                color: isNow ? AppColors.tintGreenSoft : AppColors.surface,
-                borderRadius: BorderRadius.circular(14),
-                border: Border(
-                  top: BorderSide(
-                    color: isNow ? AppColors.tintGreenBorder : AppColors.border,
-                  ),
-                  right: BorderSide(
-                    color: isNow ? AppColors.tintGreenBorder : AppColors.border,
-                  ),
-                  bottom: BorderSide(
-                    color: isNow ? AppColors.tintGreenBorder : AppColors.border,
-                  ),
-                  left: BorderSide(color: appointment.status.color, width: 3),
-                ),
-                boxShadow: isNow ? null : AppColors.cardShadow,
-              ),
+    // Enfant direct d'un `ListView` : la hauteur disponible est infinie, et
+    // `stretch` la propagerait telle quelle aux enfants. `IntrinsicHeight` la
+    // borne à celle de la carte du rendez-vous.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 44,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    appointment.clientName ?? 'Client de passage',
-                    style: AppTypography.manrope(14, FontWeight.w700),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    '${appointment.summary} · '
-                    '${Formatters.duration(appointment.duration.inMinutes)}',
-                    style: AppTypography.manrope(
-                      12,
-                      FontWeight.w500,
-                      color: AppColors.textSecondary,
+                    Formatters.time(appointment.startTime),
+                    style: AppTypography.sora(
+                      13,
+                      FontWeight.w700,
+                      color: isNow ? AppColors.primary : AppColors.textPrimary,
                     ),
                   ),
+                  if (isNow)
+                    Text(
+                      'en cours',
+                      style: AppTypography.manrope(
+                        9.5,
+                        FontWeight.w700,
+                        color: AppColors.accent,
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                decoration: BoxDecoration(
+                  color: isNow ? AppColors.tintGreenSoft : AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border(
+                    top: BorderSide(
+                      color:
+                          isNow ? AppColors.tintGreenBorder : AppColors.border,
+                    ),
+                    right: BorderSide(
+                      color:
+                          isNow ? AppColors.tintGreenBorder : AppColors.border,
+                    ),
+                    bottom: BorderSide(
+                      color:
+                          isNow ? AppColors.tintGreenBorder : AppColors.border,
+                    ),
+                    left: BorderSide(color: appointment.status.color, width: 3),
+                  ),
+                  boxShadow: isNow ? null : AppColors.cardShadow,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      appointment.clientName ?? 'Client de passage',
+                      style: AppTypography.manrope(14, FontWeight.w700),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '${appointment.summary} · '
+                      '${Formatters.duration(appointment.duration.inMinutes)}',
+                      style: AppTypography.manrope(
+                        12,
+                        FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

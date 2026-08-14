@@ -13,6 +13,7 @@ import 'features/agenda/presentation/stylist_agenda_page.dart';
 import 'features/agenda/presentation/walk_in_queue_page.dart';
 import 'features/auth/domain/profile.dart';
 import 'features/auth/domain/registration_draft.dart';
+import 'features/auth/domain/user_role.dart';
 import 'features/auth/presentation/auth_providers.dart';
 import 'features/auth/presentation/join_salon_page.dart';
 import 'features/auth/presentation/login_page.dart';
@@ -33,6 +34,7 @@ import 'features/finance/presentation/expense_form_page.dart';
 import 'features/finance/presentation/expenses_page.dart';
 import 'features/finance/presentation/export_page.dart';
 import 'features/finance/presentation/finance_page.dart';
+import 'features/finance/presentation/my_commission_page.dart';
 import 'features/finance/presentation/service_report_page.dart';
 import 'features/finance/presentation/stylist_report_page.dart';
 import 'features/home/presentation/home_page.dart';
@@ -159,6 +161,7 @@ class AtelierApp extends ConsumerWidget {
     ConsumptionPage.routeName: const ConsumptionPage(),
     FinancePage.routeName: const FinancePage(),
     StylistReportPage.routeName: const StylistReportPage(),
+    MyCommissionPage.routeName: const MyCommissionPage(),
     ServiceReportPage.routeName: const ServiceReportPage(),
     ExpensesPage.routeName: const ExpensesPage(),
     ExpenseFormPage.routeName: const ExpenseFormPage(),
@@ -226,40 +229,48 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   int _index = 0;
   final Set<int> _visitedIndices = {0};
 
-  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-    GlobalKey<NavigatorState>(),
-  ];
+  /// Indexées plutôt que listées : le nombre d'onglets dépend du rôle.
+  final Map<int, GlobalKey<NavigatorState>> _navigatorKeys = {};
 
-  static const List<_Tab> _tabs = [
-    _Tab('Accueil', Icons.home_outlined, Icons.home_rounded, HomePage()),
-    _Tab(
-      'Agenda',
-      Icons.calendar_today_outlined,
-      Icons.calendar_today_rounded,
-      AgendaPage(),
-    ),
-    _Tab(
-      'Caisse',
-      Icons.receipt_long_outlined,
-      Icons.receipt_long_rounded,
-      PosPage(),
-    ),
-    _Tab(
-      'Clients',
-      Icons.people_outline_rounded,
-      Icons.people_rounded,
-      ClientsPage(),
-    ),
-    _Tab('Plus', Icons.grid_view_outlined, Icons.grid_view_rounded, MorePage()),
-  ];
+  static const _Tab _homeTab =
+      _Tab('Accueil', Icons.home_outlined, Icons.home_rounded, HomePage());
+  static const _Tab _agendaTab = _Tab(
+    'Agenda',
+    Icons.calendar_today_outlined,
+    Icons.calendar_today_rounded,
+    AgendaPage(),
+  );
+  static const _Tab _posTab = _Tab(
+    'Caisse',
+    Icons.receipt_long_outlined,
+    Icons.receipt_long_rounded,
+    PosPage(),
+  );
+  static const _Tab _clientsTab = _Tab(
+    'Clients',
+    Icons.people_outline_rounded,
+    Icons.people_rounded,
+    ClientsPage(),
+  );
+  static const _Tab _moreTab =
+      _Tab('Plus', Icons.grid_view_outlined, Icons.grid_view_rounded, MorePage());
+
+  /// La caisse n'apparaît que pour qui a le droit d'encaisser. Le coiffeur
+  /// réalise la prestation ; c'est la réception qui encaisse.
+  List<_Tab> _tabsFor(UserRole role) => [
+        _homeTab,
+        _agendaTab,
+        if (role.canOperatePos) _posTab,
+        _clientsTab,
+        _moreTab,
+      ];
+
+  GlobalKey<NavigatorState> _navigatorKey(int index) =>
+      _navigatorKeys.putIfAbsent(index, GlobalKey<NavigatorState>.new);
 
   void _onTabSelected(int index) {
     if (_index == index) {
-      _navigatorKeys[index].currentState?.popUntil((route) => route.isFirst);
+      _navigatorKey(index).currentState?.popUntil((route) => route.isFirst);
     } else {
       if (!_visitedIndices.contains(index)) {
         setState(() {
@@ -272,12 +283,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
-  Widget _buildTabNavigator(int index) {
+  Widget _buildTabNavigator(List<_Tab> tabs, int index) {
     return Navigator(
-      key: _navigatorKeys[index],
+      key: _navigatorKey(index),
       onGenerateRoute: (settings) {
         if (settings.name == '/' || settings.name == null) {
-          return MaterialPageRoute(builder: (_) => _tabs[index].page);
+          return MaterialPageRoute(builder: (_) => tabs[index].page);
         }
         return AtelierApp.buildRoute(settings);
       },
@@ -286,11 +297,22 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final role = ref.watch(currentRoleProvider) ?? UserRole.coiffeur;
+    final tabs = _tabsFor(role);
+
+    // La caisse est le bouton central surélevé. Sans elle, la barre retombe
+    // sur quatre onglets réguliers et le bouton disparaît.
+    final posIndex = tabs.indexOf(_posTab);
+
+    // Le rôle peut arriver après le premier rendu : si l'onglet courant sort
+    // de la liste, on se replie sur l'accueil plutôt que d'indexer hors bornes.
+    if (_index >= tabs.length) _index = 0;
+
     final body = PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        final currentNav = _navigatorKeys[_index].currentState;
+        final currentNav = _navigatorKey(_index).currentState;
         if (currentNav != null && currentNav.canPop()) {
           currentNav.pop();
         } else if (_index != 0) {
@@ -300,9 +322,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       child: IndexedStack(
         index: _index,
         children: [
-          for (var i = 0; i < _tabs.length; i++)
+          for (var i = 0; i < tabs.length; i++)
             _visitedIndices.contains(i)
-                ? _buildTabNavigator(i)
+                ? _buildTabNavigator(tabs, i)
                 : const SizedBox.shrink(),
         ],
       ),
@@ -318,7 +340,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               labelType: NavigationRailLabelType.all,
               onDestinationSelected: _onTabSelected,
               destinations: [
-                for (final tab in _tabs)
+                for (final tab in tabs)
                   NavigationRailDestination(
                     icon: Icon(tab.icon),
                     selectedIcon: Icon(tab.activeIcon),
@@ -363,85 +385,68 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      // Onglets Gauche
-                      Expanded(
-                        child: _TabButton(
-                          tab: _tabs[0],
-                          selected: _index == 0,
-                          onTap: () => _onTabSelected(0),
-                        ),
-                      ),
-                      Expanded(
-                        child: _TabButton(
-                          tab: _tabs[1],
-                          selected: _index == 1,
-                          onTap: () => _onTabSelected(1),
-                        ),
-                      ),
-                      // Espace réservé pour le bouton central surélevé
-                      const SizedBox(width: 58),
-                      // Onglets Droite
-                      Expanded(
-                        child: _TabButton(
-                          tab: _tabs[3],
-                          selected: _index == 3,
-                          onTap: () => _onTabSelected(3),
-                        ),
-                      ),
-                      Expanded(
-                        child: _TabButton(
-                          tab: _tabs[4],
-                          selected: _index == 4,
-                          onTap: () => _onTabSelected(4),
-                        ),
-                      ),
+                      for (var i = 0; i < tabs.length; i++)
+                        if (i == posIndex)
+                          // Espace réservé au bouton central surélevé.
+                          const SizedBox(width: 58)
+                        else
+                          Expanded(
+                            child: _TabButton(
+                              tab: tabs[i],
+                              selected: _index == i,
+                              onTap: () => _onTabSelected(i),
+                            ),
+                          ),
                     ],
                   ),
                 ),
               ),
 
               // 2. Bouton d'action central vert surélevé (Caisse / POS)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: GestureDetector(
-                    onTap: () => _onTabSelected(2),
-                    child: Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1C1E1B),
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Color(0x4D20251F),
-                            blurRadius: 18,
-                            offset: Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(4),
+              if (posIndex >= 0)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () => _onTabSelected(posIndex),
                       child: Container(
+                        width: 58,
+                        height: 58,
                         decoration: BoxDecoration(
-                          color: _index == 2
-                              ? const Color(0xFF22D65C)
-                              : AppColors.primary,
+                          color: const Color(0xFF1C1E1B),
                           shape: BoxShape.circle,
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x4D20251F),
+                              blurRadius: 18,
+                              offset: Offset(0, 8),
+                            ),
+                          ],
                         ),
-                        child: Icon(
-                          _index == 2
-                              ? Icons.receipt_long_rounded
-                              : Icons.add_rounded,
-                          size: 28,
-                          color: _index == 2 ? const Color(0xFF0A2A16) : Colors.white,
+                        padding: const EdgeInsets.all(4),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _index == posIndex
+                                ? const Color(0xFF22D65C)
+                                : AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _index == posIndex
+                                ? Icons.receipt_long_rounded
+                                : Icons.add_rounded,
+                            size: 28,
+                            color: _index == posIndex
+                                ? const Color(0xFF0A2A16)
+                                : Colors.white,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),

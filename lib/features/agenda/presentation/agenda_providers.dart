@@ -24,6 +24,19 @@ final selectedDayProvider = StateProvider<DateTime>((ref) {
 /// Coiffeur filtré (null = planning global).
 final selectedStylistProvider = StateProvider<String?>((ref) => null);
 
+/// Coiffeur réellement interrogé en base.
+///
+/// Sans la permission « planning du salon », le filtre est verrouillé sur la
+/// fiche du membre connecté : le choix est fait ici, et non dans les écrans,
+/// pour qu'aucune page ne puisse charger par mégarde la journée des collègues.
+/// Le verrou côté base reste la politique RLS `appointments`.
+final agendaStylistFilterProvider = Provider<String?>((ref) {
+  final profile = ref.watch(currentProfileProvider).valueOrNull;
+  if (profile == null) return null;
+  if (!profile.role.canViewFullAgenda) return profile.id;
+  return ref.watch(selectedStylistProvider);
+});
+
 /// Rendez-vous du jour sélectionné.
 final dayAppointmentsProvider = FutureProvider<List<Appointment>>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
@@ -32,7 +45,7 @@ final dayAppointmentsProvider = FutureProvider<List<Appointment>>((ref) async {
   return ref.watch(agendaRepositoryProvider).fetchDay(
         salonId: salonId,
         day: ref.watch(selectedDayProvider),
-        stylistId: ref.watch(selectedStylistProvider),
+        stylistId: ref.watch(agendaStylistFilterProvider),
       );
 });
 

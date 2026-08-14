@@ -5,6 +5,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../auth/domain/user_role.dart';
+import '../../auth/presentation/auth_providers.dart';
 import '../domain/salon_service.dart';
 import 'catalog_providers.dart';
 import 'packages_page.dart';
@@ -23,15 +25,23 @@ class CatalogPage extends ConsumerWidget {
     final grouped = ref.watch(servicesByCategoryProvider);
     final packages = ref.watch(packagesProvider);
 
+    // Le coiffeur consulte le catalogue — il a besoin des durées et des prix
+    // pour travailler — mais n'ouvre ni la création ni la fiche d'édition.
+    final canEdit =
+        (ref.watch(currentRoleProvider) ?? UserRole.coiffeur).canManageCatalog;
+
     return AppScreen(
       title: 'Services',
       largeTitle: true,
       showBack: false,
-      action: AppIconButton(
-        icon: Icons.add_rounded,
-        filled: true,
-        onTap: () => Navigator.of(context).pushNamed(ServiceEditPage.routeName),
-      ),
+      action: canEdit
+          ? AppIconButton(
+              icon: Icons.add_rounded,
+              filled: true,
+              onTap: () =>
+                  Navigator.of(context).pushNamed(ServiceEditPage.routeName),
+            )
+          : null,
       header: categories.length <= 1
           ? null
           : Padding(
@@ -53,11 +63,16 @@ class CatalogPage extends ConsumerWidget {
         data: (items) => items.isEmpty
             ? AppEmptyState(
                 title: 'Catalogue vide',
-                message: 'Ajoutez vos prestations et vos forfaits.',
+                message: canEdit
+                    ? 'Ajoutez vos prestations et vos forfaits.'
+                    : 'Votre gérant n\'a pas encore renseigné les '
+                        'prestations du salon.',
                 icon: Icons.content_cut_rounded,
-                actionLabel: 'Ajouter une prestation',
-                onAction: () =>
-                    Navigator.of(context).pushNamed(ServiceEditPage.routeName),
+                actionLabel: canEdit ? 'Ajouter une prestation' : null,
+                onAction: canEdit
+                    ? () => Navigator.of(context)
+                        .pushNamed(ServiceEditPage.routeName)
+                    : null,
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,10 +92,12 @@ class CatalogPage extends ConsumerWidget {
                         for (final service in entry.value)
                           ServiceRow(
                             service: service,
-                            onTap: () => Navigator.of(context).pushNamed(
-                              ServiceEditPage.routeName,
-                              arguments: service,
-                            ),
+                            onTap: canEdit
+                                ? () => Navigator.of(context).pushNamed(
+                                      ServiceEditPage.routeName,
+                                      arguments: service,
+                                    )
+                                : null,
                           ),
                       ],
                     ),
@@ -142,7 +159,9 @@ class ServiceRow extends StatelessWidget {
           if (trailing != null) ...[
             const SizedBox(width: 6),
             trailing!,
-          ] else ...[
+          ] else if (onTap != null) ...[
+            // Pas de chevron sans destination : en lecture seule, la ligne ne
+            // doit pas avoir l'air cliquable.
             const SizedBox(width: 2),
             const Icon(
               Icons.chevron_right_rounded,
