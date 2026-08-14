@@ -4,6 +4,7 @@ import '../../../core/services/providers.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/finance_repository.dart';
 import '../domain/finance_summary.dart';
+import '../domain/payout.dart';
 
 import '../../../core/services/local_db_service.dart';
 
@@ -94,6 +95,209 @@ final myMonthCommissionProvider =
   }
   return null;
 });
+
+/// Demandes de versement du membre connecté, la plus récente d'abord.
+final myPayoutsProvider = FutureProvider<List<PayoutRequest>>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  final profile = ref.watch(currentProfileProvider).valueOrNull;
+  if (salonId == null || profile == null) return const [];
+
+  return ref.watch(financeRepositoryProvider).fetchPayouts(
+        salonId: salonId,
+        profileId: profile.id,
+      );
+});
+
+/// Total déjà versé sur le mois en cours.
+///
+/// Daté du règlement et non de la demande : une demande de fin juillet réglée
+/// le 2 août pèse sur août, comme dans un livre de paie.
+final paidThisMonthProvider = Provider<int>((ref) {
+  final payouts = ref.watch(myPayoutsProvider).valueOrNull ?? const [];
+  final now = DateTime.now();
+
+  return payouts
+      .where((payout) =>
+          payout.isSettled &&
+          payout.paidAt != null &&
+          payout.paidAt!.year == now.year &&
+          payout.paidAt!.month == now.month)
+      .fold(0, (sum, payout) => sum + payout.amountFcfa);
+});
+
+/// Reste dû sur le mois : commission acquise moins ce qui a déjà été versé,
+/// moins ce qui est déjà demandé et attend le gérant.
+final payoutBalanceProvider =
+    Provider<({int earned, int paid, int pending, int available})>((ref) {
+  final earned =
+      ref.watch(myMonthCommissionProvider).valueOrNull?.commissionFcfa ?? 0;
+  final paid = ref.watch(paidThisMonthProvider);
+  final pending = (ref.watch(myPayoutsProvider).valueOrNull ?? const [])
+      .where((payout) => payout.status == PayoutStatus.pending)
+      .fold(0, (sum, payout) => sum + payout.amountFcfa);
+
+  return (
+    earned: earned,
+    paid: paid,
+    pending: pending,
+    // Jamais négatif : une avance dépassant la commission du mois ne doit pas
+    // afficher un « à recevoir » en rouge côté employé.
+    available: (earned - paid - pending).clamp(0, earned),
+  );
+});
+
+/// Toutes les demandes de versement du salon (vue gérant).
+final allPayoutsProvider = FutureProvider<List<PayoutRequest>>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  if (salonId == null) return const [];
+  return ref.watch(financeRepositoryProvider).fetchPayouts(salonId: salonId);
+});
+
+/// Demandes et versements d'un membre spécifique (vue gérant).
+final stylistPayoutsProvider =
+    FutureProvider.family<List<PayoutRequest>, String>((ref, profileId) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  if (salonId == null) return const [];
+  return ref.watch(financeRepositoryProvider).fetchPayouts(
+        salonId: salonId,
+        profileId: profileId,
+      );
+});
+
+/// Solde et cumul des versements d'un coiffeur spécifique sur le mois.
+final stylistPayoutBalanceProvider = Provider.family<
+    ({int earned, int paid, int pending, int available}),
+    ({String profileId, int earned})>((ref, arg) {
+  final payouts =
+      ref.watch(stylistPayoutsProvider(arg.profileId)).valueOrNull ?? const [];
+  final now = DateTime.now();
+
+  final paid = payouts
+      .where((payout) =>
+          payout.isSettled &&
+          payout.paidAt != null &&
+          payout.paidAt!.year == now.year &&
+          payout.paidAt!.month == now.month)
+      .fold(0, (sum, payout) => sum + payout.amountFcfa);
+
+  final pending = payouts
+      .where((payout) => payout.status == PayoutStatus.pending)
+      .fold(0, (sum, payout) => sum + payout.amountFcfa);
+
+  return (
+    earned: arg.earned,
+    paid: paid,
+    pending: pending,
+    available: (arg.earned - paid - pending).clamp(0, arg.earned),
+  );
+});
+
+/// Dépose ou gère une demande de versement.
+final payoutRequestControllerProvider =
+    StateNotifierProvider<PayoutRequestController, AsyncValue<void>>(
+  PayoutRequestController.new,
+);
+
+class PayoutRequestController extends StateNotifier<AsyncValue<void>> {
+  PayoutRequestController(this._ref) : super(const AsyncData(null));
+
+  final Ref _ref;
+
+  Future<bool> submit({
+    int? amountFcfa,
+    String? profileId,
+    String? note,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      await _ref.read(financeRepositoryProvider).requestPayout(
+            amountFcfa: amountFcfa,
+            profileId: profileId,
+            note: note,
+          );
+      _invalidateAll();
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stack) {
+      state = AsyncError(error, stack);
+      return false;
+    }
+  }
+
+  Future<bool> settle({
+    required String requestId,
+    required PayoutMethod method,
+    String? reference,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      await _ref.read(financeRepositoryProvider).settlePayout(
+            requestId: requestId,
+            method: method,
+            reference: reference,
+          );
+      _invalidateAll();
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stack) {
+      state = AsyncError(error, stack);
+      return false;
+    }
+  }
+
+  Future<bool> reject({
+    required String requestId,
+    String? reason,
+  }) async {
+    state = const AsyncLoading();
+    try {
+      await _ref.read(financeRepositoryProvider).rejectPayout(
+            requestId: requestId,
+            reason: reason,
+          );
+      _invalidateAll();
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stack) {
+      state = AsyncError(error, stack);
+      return false;
+    }
+  }
+
+  Future<bool> createDirect({
+    required String profileId,
+    required int amountFcfa,
+    required PayoutMethod method,
+    String? reference,
+    String? note,
+  }) async {
+    final salonId = _ref.read(currentSalonIdProvider);
+    if (salonId == null) return false;
+
+    state = const AsyncLoading();
+    try {
+      await _ref.read(financeRepositoryProvider).createDirectPayout(
+            salonId: salonId,
+            profileId: profileId,
+            amountFcfa: amountFcfa,
+            method: method,
+            reference: reference,
+            note: note,
+          );
+      _invalidateAll();
+      state = const AsyncData(null);
+      return true;
+    } catch (error, stack) {
+      state = AsyncError(error, stack);
+      return false;
+    }
+  }
+
+  void _invalidateAll() {
+    _ref.invalidate(myPayoutsProvider);
+    _ref.invalidate(allPayoutsProvider);
+  }
+}
 
 /// Rapport par service sur la période sélectionnée.
 final servicePerformanceProvider =

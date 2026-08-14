@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
 import 'finance_providers.dart';
+import 'stylist_commission_detail_page.dart';
 
 /// 8.2 — Rapport par coiffeur : CA généré et commission due.
 class StylistReportPage extends ConsumerWidget {
@@ -77,6 +78,10 @@ class _StylistCard extends StatelessWidget {
     return AppCard(
       radius: 18,
       padding: const EdgeInsets.all(16),
+      onTap: () => Navigator.of(context).pushNamed(
+        StylistCommissionDetailPage.routeName,
+        arguments: commission,
+      ),
       child: Column(
         children: [
           Row(

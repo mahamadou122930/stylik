@@ -6,6 +6,7 @@ import '../../../core/constants/supabase_tables.dart';
 import '../../../core/services/local_db_service.dart';
 import '../../pos/domain/payment_method.dart';
 import '../domain/finance_summary.dart';
+import '../domain/payout.dart';
 
 /// Chiffre d'affaires, rapports, dépenses et export comptable avec support Offline-First et tolérance aux erreurs RPC.
 class FinanceRepository {
@@ -13,6 +14,118 @@ class FinanceRepository {
 
   final SupabaseClient _client;
   final LocalDbService _localDb;
+
+  // --- Versements de commission -------------------------------------------
+
+  /// Demandes de versement d'un salon (ou filtrées par membre).
+  Future<List<PayoutRequest>> fetchPayouts({
+    required String salonId,
+    String? profileId,
+  }) async {
+    var query = _client
+        .from(SupabaseTables.payoutRequests)
+        .select('*, profiles(full_name)')
+        .eq('salon_id', salonId);
+
+    if (profileId != null) {
+      query = query.eq('profile_id', profileId);
+    }
+
+    final data = await query.order('requested_at', ascending: false);
+    return data.map((row) => PayoutRequest.fromMap(row)).toList();
+  }
+
+  /// Dépose une demande de versement (pour soi-même ou pour un coiffeur).
+  Future<PayoutRequest> requestPayout({
+    int? amountFcfa,
+    String? profileId,
+    String? note,
+  }) async {
+    final data = await _client.rpc<Map<String, dynamic>>(
+      'request_payout',
+      params: {
+        'p_amount_fcfa': amountFcfa,
+        'p_profile_id': profileId,
+        'p_note': note,
+      },
+    );
+    return PayoutRequest.fromMap(data);
+  }
+
+  /// Valide et règle une demande de versement (gérant).
+  Future<PayoutRequest> settlePayout({
+    required String requestId,
+    required PayoutMethod method,
+    String? reference,
+  }) async {
+    try {
+      final data = await _client.rpc<Map<String, dynamic>>(
+        'settle_payout',
+        params: {
+          'p_request_id': requestId,
+          'p_method': method.value,
+          'p_reference': reference,
+        },
+      );
+      return PayoutRequest.fromMap(data);
+    } catch (_) {
+      final data = await _client
+          .from(SupabaseTables.payoutRequests)
+          .update({
+            'status': PayoutStatus.paid.value,
+            'method': method.value,
+            'reference': reference,
+            'paid_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', requestId)
+          .select('*, profiles(full_name)')
+          .single();
+      return PayoutRequest.fromMap(data);
+    }
+  }
+
+  /// Refuse une demande de versement (gérant).
+  Future<PayoutRequest> rejectPayout({
+    required String requestId,
+    String? reason,
+  }) async {
+    final data = await _client
+        .from(SupabaseTables.payoutRequests)
+        .update({
+          'status': PayoutStatus.rejected.value,
+          'note': reason,
+        })
+        .eq('id', requestId)
+        .select('*, profiles(full_name)')
+        .single();
+    return PayoutRequest.fromMap(data);
+  }
+
+  /// Enregistre un versement direct à un coiffeur (gérant).
+  Future<PayoutRequest> createDirectPayout({
+    required String salonId,
+    required String profileId,
+    required int amountFcfa,
+    required PayoutMethod method,
+    String? reference,
+    String? note,
+  }) async {
+    final data = await _client
+        .from(SupabaseTables.payoutRequests)
+        .insert({
+          'salon_id': salonId,
+          'profile_id': profileId,
+          'amount_fcfa': amountFcfa,
+          'status': PayoutStatus.paid.value,
+          'method': method.value,
+          'reference': reference,
+          'note': note,
+          'paid_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .select('*, profiles(full_name)')
+        .single();
+    return PayoutRequest.fromMap(data);
+  }
 
   /// Synthèse du CA sur une période.
   Future<FinanceSummary> fetchSummary({

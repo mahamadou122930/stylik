@@ -14,6 +14,7 @@ abstract final class SupabaseTables {
 
   // Extensions couvertes par la maquette
   static const String timeOff = 'time_off';
+  static const String payoutRequests = 'payout_requests';
   static const String stockMovements = 'stock_movements';
   static const String expenses = 'expenses';
   static const String promotions = 'promotions';

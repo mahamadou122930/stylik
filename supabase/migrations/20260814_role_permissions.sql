@@ -192,7 +192,47 @@ CREATE POLICY "Only front desk updates transactions"
   WITH CHECK (public.auth_is_front_desk());
 
 -- ==========================================================================
--- 5. `stylist_commissions` : sa propre ligne, et rien que son salon
+-- 5. Congés : chacun pose et consulte les siens, le gérant valide
+-- ==========================================================================
+
+DROP POLICY IF EXISTS "Members read only their own time off" ON public.time_off;
+CREATE POLICY "Members read only their own time off"
+  ON public.time_off
+  AS RESTRICTIVE
+  FOR SELECT
+  TO authenticated
+  USING (
+    public.auth_is_front_desk()
+    OR profile_id = public.get_auth_profile_id()
+  );
+
+-- On ne dépose une demande que pour soi, et jamais déjà validée : sans le
+-- contrôle sur `status`, il suffirait de poser 'approved' pour s'auto-accorder
+-- ses congés.
+DROP POLICY IF EXISTS "Members request time off only for themselves"
+  ON public.time_off;
+CREATE POLICY "Members request time off only for themselves"
+  ON public.time_off
+  AS RESTRICTIVE
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    profile_id = public.get_auth_profile_id()
+    AND status = 'pending'
+  );
+
+-- Valider ou refuser relève du gérant.
+DROP POLICY IF EXISTS "Only the manager decides time off" ON public.time_off;
+CREATE POLICY "Only the manager decides time off"
+  ON public.time_off
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO authenticated
+  USING (public.auth_is_manager())
+  WITH CHECK (public.auth_is_manager());
+
+-- ==========================================================================
+-- 6. `stylist_commissions` : sa propre ligne, et rien que son salon
 -- ==========================================================================
 
 -- Deux corrections au passage :

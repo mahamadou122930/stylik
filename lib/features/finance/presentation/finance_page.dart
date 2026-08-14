@@ -6,9 +6,11 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
+import '../domain/payout.dart';
 import 'expenses_page.dart';
 import 'export_page.dart';
 import 'finance_providers.dart';
+import 'payout_requests_page.dart';
 import 'service_report_page.dart';
 import 'stylist_report_page.dart';
 
@@ -22,6 +24,9 @@ class FinancePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(financePeriodProvider);
     final summary = ref.watch(financeSummaryProvider);
+    final allPayouts = ref.watch(allPayoutsProvider).valueOrNull ?? const [];
+    final pendingPayoutCount =
+        allPayouts.where((p) => p.status == PayoutStatus.pending).length;
 
     return AppScreen(
       title: 'Chiffre d\'affaires',
@@ -43,6 +48,40 @@ class FinancePage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _RevenueCard(summary: data, period: period),
+            if (pendingPayoutCount > 0) ...[
+              const SizedBox(height: 12),
+              AppCard(
+                onTap: () => Navigator.of(context)
+                    .pushNamed(PayoutRequestsPage.routeName),
+                radius: 14,
+                shadow: false,
+                color: AppColors.tintAmber,
+                borderColor: AppColors.amberBorder,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.payments_outlined,
+                      size: 20,
+                      color: AppColors.amberDeep,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '$pendingPayoutCount demande(s) de versement en attente',
+                        style: AppTypography.manrope(
+                          13,
+                          FontWeight.w600,
+                          color: AppColors.amberDeep,
+                        ),
+                      ),
+                    ),
+                    const AppChevron(),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -102,6 +141,27 @@ class FinancePage extends ConsumerWidget {
                   trailing: const AppChevron(),
                   onTap: () => Navigator.of(context)
                       .pushNamed(StylistReportPage.routeName),
+                ),
+                AppListRow(
+                  label: 'Demandes de versement',
+                  subtitle: 'Valider et régler les versements aux coiffeurs',
+                  strong: true,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  leading: const AppIconTile(
+                    icon: Icons.payments_outlined,
+                    color: AppColors.amberDeep,
+                    background: AppColors.tintAmber,
+                  ),
+                  trailing: pendingPayoutCount == 0
+                      ? const AppChevron()
+                      : AppBadge(
+                          label: '$pendingPayoutCount',
+                          color: AppColors.amberDeep,
+                          background: AppColors.tintAmber,
+                          dense: true,
+                        ),
+                  onTap: () => Navigator.of(context)
+                      .pushNamed(PayoutRequestsPage.routeName),
                 ),
                 AppListRow(
                   label: 'Par service',

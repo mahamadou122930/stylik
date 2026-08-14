@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/providers.dart';
 import '../../auth/domain/profile.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../finance/presentation/finance_providers.dart';
 import '../data/staff_repository.dart';
 import '../domain/staff_schedule.dart';
 
@@ -38,7 +39,30 @@ final staffScheduleProvider =
 
 /// Statistiques du mois d'un membre (CA, clients, note).
 final staffStatsProvider =
-    FutureProvider.family<Map<String, dynamic>?, String>((ref, profileId) {
+    FutureProvider.family<Map<String, dynamic>?, String>((ref, profileId) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  if (salonId != null) {
+    try {
+      final now = DateTime.now();
+      final commissions =
+          await ref.watch(financeRepositoryProvider).fetchCommissions(
+                salonId: salonId,
+                from: DateTime(now.year, now.month),
+                to: DateTime(now.year, now.month + 1),
+              );
+
+      for (final c in commissions) {
+        if (c.stylistId == profileId) {
+          return {
+            'revenue_fcfa': c.revenueFcfa,
+            'commission_fcfa': c.commissionFcfa,
+            'client_count': c.clientCount > 0 ? c.clientCount : c.serviceCount,
+            'service_count': c.serviceCount,
+          };
+        }
+      }
+    } catch (_) {}
+  }
   return ref.watch(staffRepositoryProvider).fetchStats(profileId);
 });
 

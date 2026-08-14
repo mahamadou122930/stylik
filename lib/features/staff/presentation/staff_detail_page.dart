@@ -229,7 +229,8 @@ class _StaffBody extends ConsumerWidget {
               color: null,
             ),
             (
-              value: '${(stats?['client_count'] as num?)?.toInt() ?? 0}',
+              value:
+                  '${((stats?['client_count'] ?? stats?['service_count']) as num?)?.toInt() ?? 0}',
               label: 'Clients',
               color: null,
             ),

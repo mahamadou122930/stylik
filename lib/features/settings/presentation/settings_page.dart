@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../auth/presentation/profile_page.dart';
 import '../../staff/presentation/staff_page.dart';
@@ -23,6 +24,9 @@ class SettingsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final salon = ref.watch(currentSalonProvider);
     final profile = ref.watch(currentProfileProvider).valueOrNull;
+    final role = profile?.role ?? UserRole.coiffeur;
+    final isManager = role.canManageSettings;
+    final canManageStaff = role.canManageStaff;
 
     return AppScreen(
       title: 'Paramètres',
@@ -39,8 +43,10 @@ class SettingsPage extends ConsumerWidget {
               onRetry: () => ref.invalidate(currentSalonProvider),
             ),
             data: (data) => AppCard(
-              onTap: () => Navigator.of(context)
-                  .pushNamed(SalonInfoPage.routeName),
+              onTap: isManager
+                  ? () => Navigator.of(context)
+                      .pushNamed(SalonInfoPage.routeName)
+                  : null,
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
@@ -92,45 +98,50 @@ class SettingsPage extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const AppChevron(),
+                  if (isManager) const AppChevron(),
                 ],
               ),
             ),
           ),
-          const AppSectionTitle('Salon'),
-          AppListCard(
-            children: [
-              AppListRow(
-                label: 'Infos & horaires',
-                subtitle: 'Contact, ouverture du salon',
-                leading: const AppIconTile(icon: Icons.schedule_rounded),
-                trailing: const AppChevron(),
-                strong: true,
-                onTap: () => Navigator.of(context)
-                    .pushNamed(SalonInfoPage.routeName),
-              ),
-              AppListRow(
-                label: 'Équipe',
-                subtitle: 'Coiffeurs, réceptionnistes, horaires',
-                leading: const AppIconTile(icon: Icons.groups_rounded),
-                trailing: const AppChevron(),
-                strong: true,
-                onTap: () =>
-                    Navigator.of(context).pushNamed(StaffPage.routeName),
-              ),
-              AppListRow(
-                label: 'Rôles & permissions',
-                subtitle: 'Ce que chaque rôle peut faire',
-                leading: const AppIconTile(
-                  icon: Icons.admin_panel_settings_rounded,
-                ),
-                trailing: const AppChevron(),
-                strong: true,
-                onTap: () =>
-                    Navigator.of(context).pushNamed(RolesPage.routeName),
-              ),
-            ],
-          ),
+          if (isManager || canManageStaff) ...[
+            const AppSectionTitle('Salon'),
+            AppListCard(
+              children: [
+                if (isManager)
+                  AppListRow(
+                    label: 'Infos & horaires',
+                    subtitle: 'Contact, ouverture du salon',
+                    leading: const AppIconTile(icon: Icons.schedule_rounded),
+                    trailing: const AppChevron(),
+                    strong: true,
+                    onTap: () => Navigator.of(context)
+                        .pushNamed(SalonInfoPage.routeName),
+                  ),
+                if (canManageStaff)
+                  AppListRow(
+                    label: 'Équipe',
+                    subtitle: 'Coiffeurs, réceptionnistes, horaires',
+                    leading: const AppIconTile(icon: Icons.groups_rounded),
+                    trailing: const AppChevron(),
+                    strong: true,
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(StaffPage.routeName),
+                  ),
+                if (isManager)
+                  AppListRow(
+                    label: 'Rôles & permissions',
+                    subtitle: 'Ce que chaque rôle peut faire',
+                    leading: const AppIconTile(
+                      icon: Icons.admin_panel_settings_rounded,
+                    ),
+                    trailing: const AppChevron(),
+                    strong: true,
+                    onTap: () =>
+                        Navigator.of(context).pushNamed(RolesPage.routeName),
+                  ),
+              ],
+            ),
+          ],
           const AppSectionTitle('Application'),
           AppListCard(
             children: [
@@ -160,19 +171,20 @@ class SettingsPage extends ConsumerWidget {
                 onTap: () => Navigator.of(context)
                     .pushNamed(NotificationsPage.routeName),
               ),
-              AppListRow(
-                label: 'Abonnement',
-                subtitle: 'Formule et facturation',
-                leading: const AppIconTile(
-                  icon: Icons.workspace_premium_rounded,
-                  color: AppColors.violet,
-                  background: AppColors.tintViolet,
+              if (isManager)
+                AppListRow(
+                  label: 'Abonnement',
+                  subtitle: 'Formule et facturation',
+                  leading: const AppIconTile(
+                    icon: Icons.workspace_premium_rounded,
+                    color: AppColors.violet,
+                    background: AppColors.tintViolet,
+                  ),
+                  trailing: const AppChevron(),
+                  strong: true,
+                  onTap: () => Navigator.of(context)
+                      .pushNamed(SubscriptionPage.routeName),
                 ),
-                trailing: const AppChevron(),
-                strong: true,
-                onTap: () => Navigator.of(context)
-                    .pushNamed(SubscriptionPage.routeName),
-              ),
             ],
           ),
           const SizedBox(height: 24),

@@ -401,20 +401,22 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 trailing: const AppChevron(),
                 onTap: _changePassword,
               ),
-              AppListRow(
-                label: 'Mon rôle & permissions',
-                strong: true,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                leading: const AppIconTile(
-                  icon: Icons.star_outline_rounded,
-                  color: AppColors.amber,
-                  background: AppColors.tintAmber,
-                  size: 38,
-                  radius: 12,
+              if (profile?.role.canManageSettings ?? false)
+                AppListRow(
+                  label: 'Mon rôle & permissions',
+                  strong: true,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  leading: const AppIconTile(
+                    icon: Icons.star_outline_rounded,
+                    color: AppColors.amber,
+                    background: AppColors.tintAmber,
+                    size: 38,
+                    radius: 12,
+                  ),
+                  trailing: const AppChevron(),
+                  onTap: () =>
+                      Navigator.of(context).pushNamed(RolesPage.routeName),
                 ),
-                trailing: const AppChevron(),
-                onTap: () => Navigator.of(context).pushNamed(RolesPage.routeName),
-              ),
             ],
           ),
 

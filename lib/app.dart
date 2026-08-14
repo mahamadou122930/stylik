@@ -30,12 +30,15 @@ import 'features/catalog/presentation/service_edit_page.dart';
 import 'features/clients/presentation/client_detail_page.dart';
 import 'features/clients/presentation/client_form_page.dart';
 import 'features/clients/presentation/clients_page.dart';
+import 'features/finance/domain/finance_summary.dart';
 import 'features/finance/presentation/expense_form_page.dart';
 import 'features/finance/presentation/expenses_page.dart';
 import 'features/finance/presentation/export_page.dart';
 import 'features/finance/presentation/finance_page.dart';
 import 'features/finance/presentation/my_commission_page.dart';
+import 'features/finance/presentation/payout_requests_page.dart';
 import 'features/finance/presentation/service_report_page.dart';
+import 'features/finance/presentation/stylist_commission_detail_page.dart';
 import 'features/finance/presentation/stylist_report_page.dart';
 import 'features/home/presentation/home_page.dart';
 import 'features/home/presentation/more_page.dart';
@@ -68,6 +71,7 @@ import 'features/staff/presentation/staff_form_page.dart';
 import 'features/staff/presentation/staff_page.dart';
 import 'features/staff/presentation/staff_schedule_page.dart';
 import 'features/staff/presentation/time_off_page.dart';
+import 'features/staff/presentation/time_off_request_page.dart';
 
 import 'core/services/sync_engine.dart';
 import 'core/widgets/offline_banner.dart';
@@ -130,6 +134,11 @@ class AtelierApp extends ConsumerWidget {
         page(RefundPage(transaction: settings.arguments! as SalonTransaction)),
       PlanCheckoutPage.routeName =>
         page(PlanCheckoutPage(plan: settings.arguments! as SubscriptionPlan)),
+      StylistCommissionDetailPage.routeName => page(
+          StylistCommissionDetailPage(
+            commission: settings.arguments! as StylistCommission,
+          ),
+        ),
       _ => null,
     };
   }
@@ -162,6 +171,7 @@ class AtelierApp extends ConsumerWidget {
     FinancePage.routeName: const FinancePage(),
     StylistReportPage.routeName: const StylistReportPage(),
     MyCommissionPage.routeName: const MyCommissionPage(),
+    PayoutRequestsPage.routeName: const PayoutRequestsPage(),
     ServiceReportPage.routeName: const ServiceReportPage(),
     ExpensesPage.routeName: const ExpensesPage(),
     ExpenseFormPage.routeName: const ExpenseFormPage(),
@@ -172,6 +182,7 @@ class AtelierApp extends ConsumerWidget {
     RemindersPage.routeName: const RemindersPage(),
     StaffPage.routeName: const StaffPage(),
     TimeOffPage.routeName: const TimeOffPage(),
+    TimeOffRequestPage.routeName: const TimeOffRequestPage(),
     SettingsPage.routeName: const SettingsPage(),
     SalonInfoPage.routeName: const SalonInfoPage(),
     RolesPage.routeName: const RolesPage(),

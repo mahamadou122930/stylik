@@ -13,6 +13,7 @@ import '../../inventory/presentation/inventory_page.dart';
 import '../../loyalty/presentation/loyalty_page.dart';
 import '../../settings/presentation/settings_page.dart';
 import '../../staff/presentation/staff_page.dart';
+import '../../staff/presentation/time_off_request_page.dart';
 
 /// Onglet « Plus » : accès aux modules qui ne tiennent pas dans la barre.
 class MorePage extends ConsumerWidget {
@@ -48,6 +49,17 @@ class MorePage extends ConsumerWidget {
           color: AppColors.blue,
           background: AppColors.tintBlue,
           route: StaffPage.routeName,
+        )
+      // Sans accès à l'écran Personnel, chacun doit tout de même pouvoir
+      // poser une demande de congé.
+      else
+        const _MoreEntry(
+          label: 'Mes congés',
+          description: 'Demander une absence',
+          icon: Icons.beach_access_rounded,
+          color: AppColors.blue,
+          background: AppColors.tintBlue,
+          route: TimeOffRequestPage.routeName,
         ),
       if (role.canViewFinance)
         const _MoreEntry(
