@@ -31,7 +31,7 @@ class AppInput extends StatelessWidget {
   const AppInput.phone({
     super.key,
     this.label = 'Téléphone',
-    this.hint = '77 000 00 00',
+    this.hint = '76 00 00 00',
     this.controller,
     this.initialValue,
     this.onChanged,

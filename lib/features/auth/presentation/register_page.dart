@@ -99,14 +99,14 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             const SizedBox(height: 16),
             AppInput.phone(
               controller: _salonPhone,
-              hint: '+221 77 123 45 67',
+              hint: '+223 76 12 34 56',
               textInputAction: TextInputAction.next,
               validator: _required,
             ),
             const SizedBox(height: 16),
             AppInput(
               label: 'Adresse',
-              hint: 'Rue 10, Almadies, Dakar',
+              hint: 'Rue 224, Hamdallaye ACI 2000, Bamako',
               controller: _salonAddress,
               prefixIcon: Icons.place_outlined,
               textInputAction: TextInputAction.next,
@@ -116,7 +116,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             const AppSectionTitle('Votre compte'),
             AppInput(
               label: 'Nom complet',
-              hint: 'Léa Fall',
+              hint: 'Fatoumata Traoré',
               controller: _fullName,
               textInputAction: TextInputAction.next,
               validator: _required,
@@ -124,7 +124,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
             const SizedBox(height: 16),
             AppInput(
               label: 'Email',
-              hint: 'lea@latelier.sn',
+              hint: 'fatoumata@latelier.ml',
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               prefixIcon: Icons.email_outlined,

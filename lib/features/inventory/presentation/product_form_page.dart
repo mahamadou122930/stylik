@@ -396,7 +396,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       controller: _supplierController,
                       decoration: const InputDecoration(
                         labelText: 'Fournisseur (Optionnel)',
-                        hintText: 'ex: L\'Oréal Sénégal',
+                        hintText: 'ex: L\'Oréal Mali',
                       ),
                     ),
                   ],

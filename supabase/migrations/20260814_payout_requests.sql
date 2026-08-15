@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS public.payout_requests (
     -- le gérant n'a pas encore choisi comment il paie.
     method TEXT CHECK (
       method IS NULL
-      OR method IN ('wave', 'orange_money', 'cash', 'transfer')
+      OR method IN ('orange_money', 'moov_money', 'wave', 'cash', 'transfer')
     ),
     paid_at TIMESTAMPTZ,
     reference TEXT,

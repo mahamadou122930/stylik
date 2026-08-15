@@ -226,7 +226,7 @@ class _RequestPayoutSheetState extends State<_RequestPayoutSheet> {
             AppInput(
               controller: _noteController,
               label: 'Message / Note (optionnel)',
-              hint: 'Par Wave si possible',
+              hint: 'Par Orange Money si possible',
               maxLines: 2,
             ),
             const SizedBox(height: 16),

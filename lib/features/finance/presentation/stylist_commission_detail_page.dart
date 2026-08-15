@@ -498,7 +498,7 @@ class _SettlePayoutSheetState extends State<_SettlePayoutSheet> {
   @override
   void initState() {
     super.initState();
-    _selectedMethod = widget.request.method ?? PayoutMethod.wave;
+    _selectedMethod = widget.request.method ?? PayoutMethod.orangeMoney;
     _refController = TextEditingController();
   }
 
@@ -595,7 +595,7 @@ class _RegisterPayoutSheetState extends State<_RegisterPayoutSheet> {
   late final TextEditingController _amountController;
   late final TextEditingController _refController;
   late final TextEditingController _noteController;
-  PayoutMethod _method = PayoutMethod.wave;
+  PayoutMethod _method = PayoutMethod.orangeMoney;
 
   @override
   void initState() {

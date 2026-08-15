@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/providers.dart';
+import '../../../core/utils/formatters.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/finance_repository.dart';
 import '../domain/finance_summary.dart';
@@ -29,22 +30,63 @@ enum FinancePeriod {
   /// Nombre de colonnes de l'histogramme.
   final int bucketCount;
 
-  ({DateTime from, DateTime to}) get range {
+  ({DateTime from, DateTime to}) get range => rangeAt(0);
+
+  /// Fenêtre décalée de [offset] période(s) : `-1` désigne la précédente.
+  ///
+  /// Le pas est la durée de la période elle-même — reculer d'un cran sur
+  /// « Jour » donne la veille, sur « Mois » les trente jours d'avant.
+  ({DateTime from, DateTime to}) rangeAt(int offset) {
     final now = DateTime.now();
-    final endOfDay =
+    final endOfToday =
         DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
-    return (from: endOfDay.subtract(Duration(days: days)), to: endOfDay);
+    final end = endOfToday.add(Duration(days: days * offset));
+    return (from: end.subtract(Duration(days: days)), to: end);
+  }
+
+  /// Libellé de la fenêtre décalée, tel qu'affiché entre les deux flèches.
+  String labelAt(int offset) {
+    final range = rangeAt(offset);
+    if (offset == 0) {
+      return switch (this) {
+        day => 'Aujourd\'hui',
+        week => 'Cette semaine',
+        month => 'Ce mois-ci',
+      };
+    }
+    if (this == day) {
+      return offset == -1
+          ? 'Hier'
+          : Formatters.weekdayDayMonth(range.from);
+    }
+    // La borne haute est exclusive : afficher `to` donnerait un jour de trop.
+    final last = range.to.subtract(const Duration(days: 1));
+    return '${Formatters.dayMonth(range.from)} – ${Formatters.dayMonth(last)}';
   }
 }
 
 final financePeriodProvider =
     StateProvider<FinancePeriod>((ref) => FinancePeriod.month);
 
+/// Décalage de la fenêtre affichée : `0` = période en cours, `-1` = précédente.
+///
+/// Jamais positif — il n'y a pas de chiffre d'affaires à venir.
+final financePeriodOffsetProvider = StateProvider<int>((ref) => 0);
+
+/// Fenêtre effectivement interrogée : la période choisie, décalée du nombre de
+/// crans demandé. Centralisée ici pour que la synthèse, les commissions, les
+/// dépenses et les rapports parlent tous de la même tranche de temps.
+final financeRangeProvider = Provider<({DateTime from, DateTime to})>((ref) {
+  return ref
+      .watch(financePeriodProvider)
+      .rangeAt(ref.watch(financePeriodOffsetProvider));
+});
+
 /// Synthèse du chiffre d'affaires sur la période sélectionnée.
 final financeSummaryProvider = FutureProvider<FinanceSummary>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
   final period = ref.watch(financePeriodProvider);
-  final range = period.range;
+  final range = ref.watch(financeRangeProvider);
 
   if (salonId == null) {
     return FinanceSummary.empty(from: range.from, to: range.to);
@@ -64,7 +106,7 @@ final commissionsProvider =
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
-  final range = ref.watch(financePeriodProvider).range;
+  final range = ref.watch(financeRangeProvider);
   return ref.watch(financeRepositoryProvider).fetchCommissions(
         salonId: salonId,
         from: range.from,
@@ -305,7 +347,7 @@ final servicePerformanceProvider =
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
-  final range = ref.watch(financePeriodProvider).range;
+  final range = ref.watch(financeRangeProvider);
   return ref.watch(financeRepositoryProvider).fetchServicePerformance(
         salonId: salonId,
         from: range.from,
@@ -318,7 +360,7 @@ final expensesProvider = FutureProvider<List<Expense>>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
-  final range = ref.watch(financePeriodProvider).range;
+  final range = ref.watch(financeRangeProvider);
   return ref.watch(financeRepositoryProvider).fetchExpenses(
         salonId: salonId,
         from: range.from,

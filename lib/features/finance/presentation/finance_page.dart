@@ -14,6 +14,160 @@ import 'payout_requests_page.dart';
 import 'service_report_page.dart';
 import 'stylist_report_page.dart';
 
+/// Histogramme de la période, dont chaque colonne est sélectionnable pour
+/// lire son montant — sinon la hauteur relative des barres est la seule
+/// information disponible, et un creux ne se chiffre pas.
+class _BreakdownCard extends StatefulWidget {
+  const _BreakdownCard({required this.buckets, required this.period});
+
+  final List<FinanceBucket> buckets;
+  final FinancePeriod period;
+
+  @override
+  State<_BreakdownCard> createState() => _BreakdownCardState();
+}
+
+class _BreakdownCardState extends State<_BreakdownCard> {
+  int? _selected;
+
+  @override
+  void didUpdateWidget(_BreakdownCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Changer de période ou reculer d'un cran recompose les colonnes : garder
+    // l'ancienne sélection ferait pointer un montant qui n'est plus le sien.
+    if (oldWidget.period != widget.period ||
+        oldWidget.buckets.length != widget.buckets.length) {
+      _selected = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = (_selected != null && _selected! < widget.buckets.length)
+        ? _selected
+        : null;
+    final bucket = selected == null ? null : widget.buckets[selected];
+
+    return AppCard(
+      radius: 18,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  bucket == null
+                      ? (widget.period == FinancePeriod.month
+                          ? 'Par semaine'
+                          : 'Répartition')
+                      : bucket.label,
+                  style: AppTypography.sora(14.5, FontWeight.w700),
+                ),
+              ),
+              if (bucket != null)
+                Text(
+                  Formatters.fcfa(bucket.revenueFcfa),
+                  style: AppTypography.sora(
+                    13,
+                    FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          AppBarChart(
+            highlightMax: selected == null,
+            highlightIndex: selected,
+            onSliceTap: (index) => setState(
+              () => _selected = _selected == index ? null : index,
+            ),
+            slices: [
+              for (final item in widget.buckets)
+                ChartSlice(label: item.label, value: item.revenueFcfa),
+            ],
+          ),
+          if (bucket != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              bucket.revenueFcfa == 0
+                  ? 'Aucun encaissement sur cette tranche.'
+                  : 'Touchez à nouveau la colonne pour revenir à la vue '
+                      'd\'ensemble.',
+              style: AppTypography.manrope(
+                11.5,
+                FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Recul et avance d'une période, avec le libellé de la fenêtre au milieu.
+class _PeriodNavigator extends ConsumerWidget {
+  const _PeriodNavigator();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final period = ref.watch(financePeriodProvider);
+    final offset = ref.watch(financePeriodOffsetProvider);
+
+    void shift(int step) =>
+        ref.read(financePeriodOffsetProvider.notifier).state = offset + step;
+
+    return Row(
+      children: [
+        AppIconButton(
+          icon: Icons.chevron_left_rounded,
+          onTap: () => shift(-1),
+        ),
+        Expanded(
+          child: GestureDetector(
+            // Revenir au présent en un geste, sans remonter cran par cran.
+            onTap: offset == 0
+                ? null
+                : () => ref.read(financePeriodOffsetProvider.notifier).state = 0,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              children: [
+                Text(
+                  period.labelAt(offset),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.sora(13.5, FontWeight.w700),
+                ),
+                if (offset != 0)
+                  Text(
+                    'Revenir à aujourd\'hui',
+                    style: AppTypography.manrope(
+                      10.5,
+                      FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        AppIconButton(
+          icon: Icons.chevron_right_rounded,
+          // Pas de chiffre d'affaires à venir : l'avance s'arrête au présent,
+          // et la flèche se grise pour que ce soit visible.
+          onTap: offset >= 0 ? null : () => shift(1),
+          color: offset >= 0 ? AppColors.textFaint : null,
+        ),
+      ],
+    );
+  }
+}
+
 /// 8.1 — Chiffre d'affaires : jour / semaine / mois.
 class FinancePage extends ConsumerWidget {
   const FinancePage({super.key});
@@ -23,6 +177,7 @@ class FinancePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(financePeriodProvider);
+    final offset = ref.watch(financePeriodOffsetProvider);
     final summary = ref.watch(financeSummaryProvider);
     final allPayouts = ref.watch(allPayoutsProvider).valueOrNull ?? const [];
     final pendingPayoutCount =
@@ -31,12 +186,25 @@ class FinancePage extends ConsumerWidget {
     return AppScreen(
       title: 'Chiffre d\'affaires',
       showBack: false,
-      header: AppSegmented(
-        boxed: true,
-        items: [for (final value in FinancePeriod.values) value.label],
-        selectedIndex: FinancePeriod.values.indexOf(period),
-        onChanged: (index) => ref.read(financePeriodProvider.notifier).state =
-            FinancePeriod.values[index],
+      header: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppSegmented(
+            boxed: true,
+            items: [for (final value in FinancePeriod.values) value.label],
+            selectedIndex: FinancePeriod.values.indexOf(period),
+            onChanged: (index) {
+              ref.read(financePeriodProvider.notifier).state =
+                  FinancePeriod.values[index];
+              // Changer de granularité ramène à la période en cours : garder
+              // « −3 crans » en passant de Jour à Mois ferait sauter de trois
+              // jours à trois mois en arrière sans que rien ne le dise.
+              ref.read(financePeriodOffsetProvider.notifier).state = 0;
+            },
+          ),
+          const SizedBox(height: 10),
+          const _PeriodNavigator(),
+        ],
       ),
       child: summary.when(
         loading: () => const AppLoader(),
@@ -47,7 +215,7 @@ class FinancePage extends ConsumerWidget {
         data: (data) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _RevenueCard(summary: data, period: period),
+            _RevenueCard(summary: data, period: period, offset: offset),
             if (pendingPayoutCount > 0) ...[
               const SizedBox(height: 12),
               AppCard(
@@ -103,31 +271,7 @@ class FinancePage extends ConsumerWidget {
             ),
             if (data.buckets.isNotEmpty) ...[
               const SizedBox(height: 12),
-              AppCard(
-                radius: 18,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      period == FinancePeriod.month
-                          ? 'Par semaine'
-                          : 'Répartition',
-                      style: AppTypography.sora(14.5, FontWeight.w700),
-                    ),
-                    const SizedBox(height: 14),
-                    AppBarChart(
-                      slices: [
-                        for (final bucket in data.buckets)
-                          ChartSlice(
-                            label: bucket.label,
-                            value: bucket.revenueFcfa,
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+              _BreakdownCard(buckets: data.buckets, period: period),
             ],
             const AppSectionTitle('Rapports'),
             AppListCard(
@@ -216,10 +360,17 @@ class FinancePage extends ConsumerWidget {
 
 /// Carte verte du CA de la période, avec écart vs période précédente.
 class _RevenueCard extends StatelessWidget {
-  const _RevenueCard({required this.summary, required this.period});
+  const _RevenueCard({
+    required this.summary,
+    required this.period,
+    required this.offset,
+  });
 
   final FinanceSummary summary;
   final FinancePeriod period;
+
+  /// Décalage de la fenêtre affichée, `0` pour la période en cours.
+  final int offset;
 
   @override
   Widget build(BuildContext context) {
@@ -289,9 +440,15 @@ class _RevenueCard extends StatelessWidget {
     );
   }
 
-  String _periodLabel() => switch (period) {
-        FinancePeriod.day => 'aujourd\'hui',
-        FinancePeriod.week => '7 derniers jours',
-        FinancePeriod.month => '30 derniers jours',
-      };
+  /// Hors période en cours, on nomme la fenêtre réellement affichée : garder
+  /// « aujourd'hui » au-dessus du chiffre d'avant-hier serait un contresens.
+  String _periodLabel() {
+    if (offset != 0) return period.labelAt(offset).toLowerCase();
+
+    return switch (period) {
+      FinancePeriod.day => 'aujourd\'hui',
+      FinancePeriod.week => '7 derniers jours',
+      FinancePeriod.month => '30 derniers jours',
+    };
+  }
 }

@@ -115,19 +115,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               AppInput(
                 controller: nameController,
                 label: 'Nom complet',
-                hint: 'Ex: Léa Fall',
+                hint: 'Ex: Fatoumata Traoré',
               ),
               const SizedBox(height: 12),
               AppInput.phone(
                 controller: phoneController,
                 label: 'Téléphone',
-                hint: '+221 77 123 45 67',
+                hint: '+223 76 12 34 56',
               ),
               const SizedBox(height: 12),
               AppInput(
                 controller: emailController,
                 label: 'Email',
-                hint: 'lea@latelier.sn',
+                hint: 'fatoumata@latelier.ml',
                 keyboardType: TextInputType.emailAddress,
               ),
               const SizedBox(height: 20),
@@ -285,8 +285,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final profile = ref.watch(currentProfileProvider).valueOrNull;
     final salon = ref.watch(currentSalonProvider).valueOrNull;
 
-    final fullName = profile?.fullName ?? 'Léa Fall';
-    final email = profile?.email ?? 'lea@latelier.sn';
+    final fullName = profile?.fullName ?? 'Fatoumata Traoré';
+    final email = profile?.email ?? 'fatoumata@latelier.ml';
     final roleLabel = profile?.role.label ?? 'Gérante';
     final salonName = salon?.name ?? 'L\'Atelier Coiffure';
 

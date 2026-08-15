@@ -66,7 +66,8 @@ class PlanSelectionPage extends ConsumerWidget {
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    'Facturation en FCFA via Wave, Orange Money ou carte. '
+                    'Facturation en FCFA via Orange Money, Moov Money ou '
+                    'carte. '
                     'Résiliable à tout moment.',
                     textAlign: TextAlign.center,
                     style: AppTypography.manrope(

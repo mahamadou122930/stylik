@@ -17,10 +17,10 @@ import 'package:stylik/features/auth/presentation/welcome_page.dart';
 void main() {
   const draft = RegistrationDraft(
     salonName: 'L\'Atelier Coiffure',
-    salonPhone: '+221 77 123 45 67',
-    salonAddress: 'Rue 10, Almadies, Dakar',
-    fullName: 'Léa Fall',
-    email: 'lea@latelier.sn',
+    salonPhone: '+223 76 12 34 56',
+    salonAddress: 'Rue 224, Hamdallaye ACI 2000, Bamako',
+    fullName: 'Fatoumata Traoré',
+    email: 'fatoumata@latelier.ml',
     password: 'motdepasse',
   );
 

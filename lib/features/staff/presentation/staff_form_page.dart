@@ -152,7 +152,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
             AppInput(
               label: 'Nom complet',
               controller: _fullName,
-              hint: 'Karim Sy',
+              hint: 'Bakary Keïta',
               textInputAction: TextInputAction.next,
               validator: (value) =>
                   (value == null || value.trim().isEmpty) ? 'Requis' : null,
@@ -189,7 +189,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
             AppInput(
               label: 'Email (optionnel)',
               controller: _email,
-              hint: 'karim@latelier.sn',
+              hint: 'bakary@latelier.ml',
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 final email = value?.trim() ?? '';

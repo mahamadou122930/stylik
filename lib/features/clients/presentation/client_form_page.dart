@@ -164,7 +164,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
             AppInput(
               label: 'Nom complet',
               controller: _fullName,
-              hint: 'Khady Ndour',
+              hint: 'Kadiatou Coulibaly',
               textInputAction: TextInputAction.next,
               validator: (value) =>
                   (value == null || value.trim().isEmpty) ? 'Requis' : null,

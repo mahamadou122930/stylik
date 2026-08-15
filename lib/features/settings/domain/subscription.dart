@@ -36,7 +36,7 @@ class Subscription {
   /// Fonctionnalités incluses, affichées avec une coche.
   final List<String> features;
 
-  /// Moyen de paiement masqué (« Wave · **** 4218 »).
+  /// Moyen de paiement masqué (« Orange Money · **** 4218 »).
   final String? paymentLabel;
 
   final DateTime? nextChargeAt;

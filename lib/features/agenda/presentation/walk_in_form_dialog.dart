@@ -128,7 +128,7 @@ class _WalkInFormDialogState extends ConsumerState<WalkInFormDialog> {
               AppInput(
                 controller: _nameController,
                 label: 'Nom du client',
-                hint: 'Ex: Awa Sow',
+                hint: 'Ex: Awa Traoré',
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Champ obligatoire' : null,
               ),
@@ -136,7 +136,7 @@ class _WalkInFormDialogState extends ConsumerState<WalkInFormDialog> {
               AppInput(
                 controller: _phoneController,
                 label: 'Téléphone (Optionnel)',
-                hint: '+221 77 000 00 00',
+                hint: '+223 76 00 00 00',
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 14),

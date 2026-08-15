@@ -503,19 +503,19 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
                 AppInput.phone(
                   controller: _phoneController,
                   label: 'Téléphone',
-                  hint: '+221 77 123 45 67',
+                  hint: '+223 76 12 34 56',
                 ),
                 const SizedBox(height: 12),
                 AppInput(
                   controller: _addressController,
                   label: 'Adresse',
-                  hint: 'Ex: Almadies, Dakar',
+                  hint: 'Ex: Hamdallaye ACI 2000, Bamako',
                 ),
                 const SizedBox(height: 12),
                 AppInput(
                   controller: _emailController,
                   label: 'Email de contact',
-                  hint: 'Ex: contact@latelier.sn',
+                  hint: 'Ex: contact@latelier.ml',
                   keyboardType: TextInputType.emailAddress,
                 ),
               ],

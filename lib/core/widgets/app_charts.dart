@@ -23,6 +23,7 @@ class AppBarChart extends StatelessWidget {
     this.height = 96,
     this.highlightMax = true,
     this.highlightIndex,
+    this.onSliceTap,
   });
 
   final List<ChartSlice> slices;
@@ -32,6 +33,11 @@ class AppBarChart extends StatelessWidget {
   /// Barre mise en avant par sa position plutôt que par sa valeur — le jour
   /// courant de la semaine, qui n'est pas forcément le plus haut.
   final int? highlightIndex;
+
+  /// Rend les barres sélectionnables. La zone tactile couvre toute la hauteur
+  /// de la colonne, libellé compris : viser une barre de six pixels de haut —
+  /// un jour sans recette — serait sinon impossible.
+  final ValueChanged<int>? onSliceTap;
 
   @override
   Widget build(BuildContext context) {
@@ -50,12 +56,27 @@ class AppBarChart extends StatelessWidget {
           for (var i = 0; i < slices.length; i++) ...[
             if (i > 0) const SizedBox(width: 12),
             Expanded(
-              child: _Bar(
-                slice: slices[i],
-                ratio: maxValue == 0 ? 0 : slices[i].value / maxValue,
-                highlighted: i == highlightIndex ||
-                    (highlightMax && slices[i].value == maxValue),
-                maxBarHeight: height - 22,
+              child: Builder(
+                builder: (context) {
+                  final bar = _Bar(
+                    slice: slices[i],
+                    ratio: maxValue == 0 ? 0 : slices[i].value / maxValue,
+                    highlighted: i == highlightIndex ||
+                        (highlightMax && slices[i].value == maxValue),
+                    maxBarHeight: height - 22,
+                  );
+
+                  if (onSliceTap == null) return bar;
+
+                  final index = i;
+                  return GestureDetector(
+                    // `opaque` : la colonne réagit sur toute sa surface, y
+                    // compris au-dessus d'une barre basse.
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => onSliceTap!(index),
+                    child: bar,
+                  );
+                },
               ),
             ),
           ],

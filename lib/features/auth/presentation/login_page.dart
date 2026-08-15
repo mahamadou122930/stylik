@@ -205,7 +205,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         const SizedBox(height: 28),
         AppInput(
           dark: true,
-          hint: 'lea@latelier.sn',
+          hint: 'fatoumata@latelier.ml',
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,

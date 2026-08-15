@@ -13,8 +13,8 @@ import 'settings_providers.dart';
 
 /// Moyens de paiement acceptés pour l'abonnement (pas d'espèces en SaaS).
 const List<PaymentMethod> _billingMethods = [
-  PaymentMethod.wave,
   PaymentMethod.orangeMoney,
+  PaymentMethod.moovMoney,
   PaymentMethod.card,
 ];
 
@@ -348,7 +348,7 @@ class _PriceRecap extends StatelessWidget {
   }
 }
 
-/// Tuile de choix du moyen de paiement (Wave, Orange Money, carte).
+/// Tuile de choix du moyen de paiement (Orange Money, Moov Money, carte).
 class _MethodTile extends StatelessWidget {
   const _MethodTile({
     required this.method,

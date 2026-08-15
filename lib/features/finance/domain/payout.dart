@@ -4,8 +4,9 @@ import '../../../core/constants/app_colors.dart';
 
 /// Moyen par lequel le salon règle une commission.
 enum PayoutMethod {
-  wave('wave', 'Wave', Icons.smartphone_rounded),
   orangeMoney('orange_money', 'Orange Money', Icons.smartphone_rounded),
+  moovMoney('moov_money', 'Moov Money', Icons.smartphone_rounded),
+  wave('wave', 'Wave', Icons.smartphone_rounded),
   cash('cash', 'Espèces', Icons.payments_outlined),
   transfer('transfer', 'Virement', Icons.mail_outline_rounded);
 

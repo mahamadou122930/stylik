@@ -172,7 +172,7 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
             const SizedBox(height: 20),
             const _FieldLabel('Votre nom'),
             AppInput(
-              hint: 'Karim Sy',
+              hint: 'Bakary Keïta',
               controller: _fullName,
               textInputAction: TextInputAction.next,
               validator: (value) => (value == null || value.trim().isEmpty)
@@ -182,7 +182,7 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
             const SizedBox(height: 14),
             const _FieldLabel('Email'),
             AppInput(
-              hint: 'karim@latelier.sn',
+              hint: 'bakary@latelier.ml',
               controller: _email,
               keyboardType: TextInputType.emailAddress,
               prefixIcon: Icons.email_outlined,

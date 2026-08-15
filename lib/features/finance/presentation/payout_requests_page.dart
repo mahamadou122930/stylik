@@ -530,7 +530,7 @@ class _SettleSheetState extends State<_SettleSheet> {
   @override
   void initState() {
     super.initState();
-    _method = widget.request.method ?? PayoutMethod.wave;
+    _method = widget.request.method ?? PayoutMethod.orangeMoney;
     _refController = TextEditingController();
   }
 

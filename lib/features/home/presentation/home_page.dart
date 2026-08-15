@@ -324,11 +324,19 @@ class _StatTile extends StatelessWidget {
 }
 
 /// « Semaine en cours » : total encaissé et barres du lundi au dimanche.
-class _WeekCard extends ConsumerWidget {
+class _WeekCard extends ConsumerStatefulWidget {
   const _WeekCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WeekCard> createState() => _WeekCardState();
+}
+
+class _WeekCardState extends ConsumerState<_WeekCard> {
+  /// Jour sélectionné dans le graphe. `null` = vue d'ensemble de la semaine.
+  int? _selected;
+
+  @override
+  Widget build(BuildContext context) {
     final week = ref.watch(weekRevenueProvider);
     final total = week.fold<int>(0, (sum, day) => sum + day.totalFcfa);
     final today = DateTime.now();
@@ -338,6 +346,12 @@ class _WeekCard extends ConsumerWidget {
           entry.day.month == today.month &&
           entry.day.day == today.day,
     );
+
+    // Une semaine plus courte que prévu (données partielles) invaliderait
+    // l'indice mémorisé.
+    final selected =
+        (_selected != null && _selected! < week.length) ? _selected : null;
+    final entry = selected == null ? null : week[selected];
 
     return AppCard(
       radius: 18,
@@ -351,16 +365,20 @@ class _WeekCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Semaine en cours',
+                  entry == null
+                      ? 'Semaine en cours'
+                      : Formatters.weekdayDayMonth(entry.day),
                   style: AppTypography.sora(14.5, FontWeight.w700),
                 ),
               ),
               Text(
-                Formatters.fcfa(total),
+                Formatters.fcfa(entry?.totalFcfa ?? total),
                 style: AppTypography.sora(
                   13,
                   FontWeight.w700,
-                  color: AppColors.textSecondary,
+                  color: entry == null
+                      ? AppColors.textSecondary
+                      : AppColors.primary,
                 ),
               ),
             ],
@@ -369,20 +387,57 @@ class _WeekCard extends ConsumerWidget {
           AppBarChart(
             height: 88,
             highlightMax: false,
-            highlightIndex: todayIndex,
+            // Hors sélection, c'est le jour courant qui ressort.
+            highlightIndex: selected ?? todayIndex,
+            // Retaper le jour déjà choisi revient à la semaine : sans ça, on
+            // ne pourrait plus quitter la vue d'un jour.
+            onSliceTap: (index) => setState(
+              () => _selected = _selected == index ? null : index,
+            ),
             slices: [
-              for (final entry in week)
+              for (final day in week)
                 ChartSlice(
-                  label: Formatters.weekdayShort(entry.day)
+                  label: Formatters.weekdayShort(day.day)
                       .substring(0, 1)
                       .toUpperCase(),
-                  value: entry.totalFcfa,
+                  value: day.totalFcfa,
                   // Un jour sans encaissement reste visible en piste neutre :
                   // une barre verte au ras du sol se lirait comme un montant.
-                  color: entry.totalFcfa == 0 ? AppColors.toggleOff : null,
+                  color: day.totalFcfa == 0 ? AppColors.toggleOff : null,
                 ),
             ],
           ),
+          if (entry != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    entry.totalFcfa == 0
+                        ? 'Aucun encaissement ce jour-là.'
+                        : 'Encaissé le ${Formatters.dayMonth(entry.day)}, '
+                            'remboursements déduits.',
+                    style: AppTypography.manrope(
+                      11.5,
+                      FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => setState(() => _selected = null),
+                  child: Text(
+                    'Voir la semaine',
+                    style: AppTypography.manrope(
+                      11.5,
+                      FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

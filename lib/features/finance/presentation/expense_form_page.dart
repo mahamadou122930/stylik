@@ -109,7 +109,7 @@ class _ExpenseFormPageState extends ConsumerState<ExpenseFormPage> {
             AppInput(
               controller: _titleController,
               label: 'Libellé de la dépense',
-              hint: 'Ex: Facture SENELEC Février',
+              hint: 'Ex: Facture EDM Février',
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Champ obligatoire' : null,
             ),
