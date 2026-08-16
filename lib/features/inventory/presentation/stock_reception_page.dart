@@ -21,7 +21,34 @@ class StockReceptionPage extends ConsumerStatefulWidget {
 class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
   /// Quantités saisies par produit.
   final Map<String, int> _quantities = {};
+
+  /// Recherche propre à cet écran, volontairement séparée de celle de
+  /// l'inventaire : filtrer une liste de réception ne doit pas modifier ce
+  /// que le gérant voit ensuite dans son stock.
+  String _search = '';
+
   bool _isSaving = false;
+
+  /// Produits proposés à la saisie, filtrés par la recherche.
+  ///
+  /// Une ligne déjà saisie reste visible même si elle ne correspond plus au
+  /// texte : sinon on la croirait perdue en affinant sa recherche.
+  List<Product> _visible(List<Product> products) {
+    final query = Formatters.searchable(_search.trim());
+    if (query.isEmpty) return products;
+
+    return products.where((product) {
+      if ((_quantities[product.id] ?? 0) > 0) return true;
+
+      final haystack = Formatters.searchable([
+        product.name,
+        product.brand,
+        product.category,
+        product.supplier ?? '',
+      ].join(' '));
+      return haystack.contains(query);
+    }).toList();
+  }
 
   int _totalFcfa(List<Product> products) {
     var total = 0;
@@ -68,8 +95,17 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
     final items = products.valueOrNull ?? const <Product>[];
     final hasLines = _quantities.values.any((quantity) => quantity > 0);
 
+    final visible = _visible(items);
+
     return AppScreen(
       title: 'Réception',
+      header: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+        child: AppSearchField(
+          hint: 'Nom, marque, catégorie, fournisseur…',
+          onChanged: (value) => setState(() => _search = value),
+        ),
+      ),
       footer: AppButton(
         label: 'Valider la réception',
         icon: Icons.check_rounded,
@@ -96,8 +132,18 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
                     'Produits livrés',
                     padding: EdgeInsets.fromLTRB(2, 2, 2, 10),
                   ),
-                  for (final product in data) ...[
+                  if (visible.isEmpty)
+                    AppEmptyState(
+                      compact: true,
+                      title: 'Aucun produit trouvé',
+                      message: 'Aucun produit ne correspond à « $_search ».',
+                      icon: Icons.search_off_rounded,
+                    ),
+                  for (final product in visible) ...[
                     _ReceptionRow(
+                      // Clé stable : sans elle, filtrer la liste recomposerait
+                      // les lignes et viderait le champ en cours de saisie.
+                      key: ValueKey(product.id),
                       product: product,
                       quantity: _quantities[product.id] ?? 0,
                       onChanged: (value) => setState(
@@ -142,8 +188,9 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
   }
 }
 
-class _ReceptionRow extends StatelessWidget {
+class _ReceptionRow extends StatefulWidget {
   const _ReceptionRow({
+    super.key,
     required this.product,
     required this.quantity,
     required this.onChanged,
@@ -154,7 +201,41 @@ class _ReceptionRow extends StatelessWidget {
   final ValueChanged<int> onChanged;
 
   @override
+  State<_ReceptionRow> createState() => _ReceptionRowState();
+}
+
+class _ReceptionRowState extends State<_ReceptionRow> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.quantity == 0 ? '' : '${widget.quantity}');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(_ReceptionRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Ne réécrit le champ que si la valeur vient d'ailleurs (les boutons) :
+    // le remplacer à chaque frappe déplacerait le curseur.
+    final shown = int.tryParse(_controller.text.trim()) ?? 0;
+    if (shown != widget.quantity) {
+      _controller.text = widget.quantity == 0 ? '' : '${widget.quantity}';
+      _controller.selection =
+          TextSelection.collapsed(offset: _controller.text.length);
+    }
+  }
+
+  void _bump(int step) {
+    final next = (widget.quantity + step).clamp(0, 1 << 31);
+    widget.onChanged(next);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final lineTotal = widget.quantity * widget.product.unitCostFcfa;
+
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       child: Row(
@@ -163,23 +244,53 @@ class _ReceptionRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(product.name, style: AppTypography.rowTitleStrong),
+                Text(widget.product.name, style: AppTypography.rowTitleStrong),
                 const SizedBox(height: 1),
                 Text(
                   [
-                    if (product.packaging?.isNotEmpty ?? false)
-                      product.packaging!,
-                    Formatters.fcfa(product.unitCostFcfa),
+                    if (widget.product.packaging?.isNotEmpty ?? false)
+                      widget.product.packaging!,
+                    Formatters.fcfa(widget.product.unitCostFcfa),
+                    // Total de la ligne dès qu'une quantité est saisie : c'est
+                    // ce qu'on rapproche du bon de livraison.
+                    if (widget.quantity > 0)
+                      '= ${Formatters.fcfa(lineTotal)}',
                   ].join(' · '),
                   style: AppTypography.rowSubtitle,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 11),
-          AppStepper(
-            value: quantity,
-            onChanged: onChanged,
+          const SizedBox(width: 8),
+          AppIconButton(
+            icon: Icons.remove_rounded,
+            enabled: widget.quantity > 0,
+            onTap: () => _bump(-1),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 58,
+            child: TextField(
+              controller: _controller,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.center,
+              style: AppTypography.sora(16, FontWeight.w800),
+              decoration: const InputDecoration(
+                hintText: '0',
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 10),
+              ),
+              onChanged: (value) {
+                final parsed = int.tryParse(value.trim()) ?? 0;
+                widget.onChanged(parsed < 0 ? 0 : parsed);
+              },
+            ),
+          ),
+          const SizedBox(width: 6),
+          AppIconButton(
+            icon: Icons.add_rounded,
+            filled: true,
+            onTap: () => _bump(1),
           ),
         ],
       ),
