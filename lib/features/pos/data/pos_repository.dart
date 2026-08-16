@@ -72,8 +72,15 @@ class PosRepository {
       }
 
       return created;
+    } on PostgrestException catch (e) {
+      // Une erreur de schéma — colonne inconnue, clé étrangère violée — n'a
+      // rien de passager : la rejouer à l'identique échouera pareil. La faire
+      // remonter évite d'afficher un reçu pour une vente jamais enregistrée.
+      // Seules les pannes réseau justifient la file d'attente hors ligne.
+      debugPrint('Encaissement refusé par Supabase : ${e.code} ${e.message}');
+      rethrow;
     } catch (e) {
-      debugPrint('Erreur lors de l\'encaissement Supabase: $e');
+      debugPrint('Erreur réseau lors de l\'encaissement, mise en file : $e');
       // 3. En cas d'échec réseau, mise en file d'attente pour rejeu idempotent avec le même UUID v4
       await _localDb.enqueueMutation(
         action: 'UPSERT',
@@ -168,7 +175,7 @@ class PosRepository {
     try {
       final data = await _client
           .from(SupabaseTables.transactions)
-          .select('*, clients(full_name)')
+          .select('*, clients(full_name, phone)')
           .eq('salon_id', salonId)
           .gte('created_at', start.toUtc().toIso8601String())
           .lt('created_at', end.toUtc().toIso8601String())

@@ -11,6 +11,10 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # Libellés natifs (sélecteurs de date et d'heure) en français
+  flutter_localizations:
+    sdk: flutter
+
   # Backend
   supabase_flutter: ^2.16.0
   flutter_dotenv: ^6.0.1
@@ -23,7 +27,8 @@ dependencies:
   cupertino_icons: ^1.0.9
 
   # Formatage (dates, montants FCFA)
-  intl: ^0.20.3
+  # Épinglé sur la version qu'impose `flutter_localizations` du SDK.
+  intl: ^0.20.2
   
   # Photos avant / après  
   image_picker: ^1.1.2
@@ -35,6 +40,10 @@ dependencies:
   uuid: ^4.6.0
   share_plus: ^11.1.0
   path_provider: ^2.1.6
+
+  # Facture : génération du document et impression / partage
+  pdf: ^3.11.1
+  printing: ^5.13.4
 
 dev_dependencies:
   flutter_test:

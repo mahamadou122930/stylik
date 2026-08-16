@@ -1,19 +1,76 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../settings/domain/salon.dart';
 import '../../settings/presentation/settings_providers.dart';
+import '../data/invoice_pdf.dart';
 import '../domain/ticket.dart';
 import 'pos_providers.dart';
 
-/// 6.3 — Ticket / facture : reçu affiché après encaissement.
+/// 6.3 — Facture émise à la validation du ticket.
+///
+/// Un document, pas un écran de confirmation : en-tête du salon, destinataire,
+/// détail des lignes, total, et la mention de règlement avec sa référence.
+/// C'est ce que le client emporte ou reçoit.
 class ReceiptPage extends ConsumerWidget {
   const ReceiptPage({super.key});
 
   static const routeName = '/pos/receipt';
+
+  /// Ouvre l'aperçu d'impression du système, imprimante réelle ou « PDF ».
+  Future<void> _print(
+    BuildContext context,
+    WidgetRef ref,
+    SalonTransaction transaction,
+    Salon? salon,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await Printing.layoutPdf(
+        name: 'Facture ${transaction.invoiceNumber}',
+        onLayout: (_) async => Uint8List.fromList(
+          await InvoicePdf.build(transaction: transaction, salon: salon),
+        ),
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Impression impossible : $error')),
+      );
+    }
+  }
+
+  /// Passe le document à la feuille de partage du téléphone.
+  Future<void> _share(
+    BuildContext context,
+    WidgetRef ref,
+    SalonTransaction transaction,
+    Salon? salon,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = await InvoicePdf.build(
+        transaction: transaction,
+        salon: salon,
+      );
+      await Printing.sharePdf(
+        bytes: Uint8List.fromList(bytes),
+        // Nom du fichier reçu par le client : il doit être reconnaissable
+        // dans une liste de téléchargements.
+        filename: 'facture-${transaction.invoiceNumber}.pdf',
+      );
+    } catch (error) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('Partage impossible : $error')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -22,181 +79,318 @@ class ReceiptPage extends ConsumerWidget {
 
     if (transaction == null) {
       return const AppScreen(
-        title: 'Ticket',
+        title: 'Facture',
         child: AppEmptyState(
-          title: 'Aucun ticket',
-          message: 'Encaissez une prestation pour générer un reçu.',
+          title: 'Aucune facture',
+          message: 'Encaissez une prestation pour générer une facture.',
           icon: Icons.receipt_long_outlined,
         ),
       );
     }
 
     return AppScreen(
-      title: '',
-      showBack: false,
+      title: 'Facture',
       bodyPadding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
+      action: AppIconButton(
+        icon: Icons.print_outlined,
+        onTap: () => _print(context, ref, transaction, salon),
+      ),
       footer: Row(
         children: [
-          Expanded(
-            child: AppButton.outline(
-              label: 'Imprimer',
-              icon: Icons.print_outlined,
-              onPressed: () {
-                // TODO(pos): impression sur imprimante thermique.
-              },
-            ),
+          AppIconButton(
+            icon: Icons.file_download_outlined,
+            onTap: () => _share(context, ref, transaction, salon),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: AppButton(
-              label: 'Envoyer',
-              icon: Icons.ios_share_rounded,
+              label: 'Envoyer au client',
+              icon: Icons.send_rounded,
               onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                // Le document part par le partage du téléphone (WhatsApp,
+                // SMS, mail) ; l'appel serveur ne fait que tracer l'envoi.
+                await _share(context, ref, transaction, salon);
                 await ref
                     .read(posRepositoryProvider)
                     .sendReceipt(transactionId: transaction.id);
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reçu envoyé au client')),
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Facture transmise.')),
                 );
               },
             ),
           ),
         ],
       ),
+      child: _InvoiceCard(transaction: transaction, salon: salon),
+    );
+  }
+}
+
+/// La facture : un seul bloc blanc, découpé par des séparateurs.
+class _InvoiceCard extends StatelessWidget {
+  const _InvoiceCard({required this.transaction, required this.salon});
+
+  final SalonTransaction transaction;
+  final Salon? salon;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      radius: 18,
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 8, 0, 18),
-            child: Column(
-              children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: const BoxDecoration(
-                    color: AppColors.tintGreen,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check_rounded,
-                    size: 34,
-                    color: AppColors.primary,
-                  ),
+          _Header(transaction: transaction, salon: salon),
+          const Divider(height: 1, color: AppColors.border),
+          if (transaction.clientName != null) ...[
+            _BilledTo(transaction: transaction),
+            const Divider(height: 1, color: AppColors.border),
+          ],
+          _Lines(lines: transaction.lines),
+          const Divider(height: 1, color: AppColors.border),
+          _Totals(transaction: transaction),
+          _PaymentBadge(transaction: transaction),
+        ],
+      ),
+    );
+  }
+}
+
+/// Émetteur à gauche, numéro et date à droite.
+class _Header extends StatelessWidget {
+  const _Header({required this.transaction, required this.salon});
+
+  final SalonTransaction transaction;
+  final Salon? salon;
+
+  @override
+  Widget build(BuildContext context) {
+    // Téléphone et adresse sur une seule ligne, en sautant ce qui manque :
+    // un salon sans adresse ne doit pas afficher « · » esseulé.
+    final contact = [
+      if (salon?.address.isNotEmpty ?? false) salon!.address,
+      if (salon?.phone.isNotEmpty ?? false) salon!.phone,
+    ].join(' · ');
+
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Paiement encaissé',
-                  style: AppTypography.sora(
-                    22,
-                    FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
+                child: const Icon(
+                  Icons.content_cut_rounded,
+                  size: 22,
+                  color: Colors.white,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  transaction.paymentMethod.fullLabel,
-                  style: AppTypography.manrope(
-                    13,
-                    FontWeight.w500,
-                    color: AppColors.textSecondary,
+              ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    'Facture',
+                    style: AppTypography.manrope(
+                      11.5,
+                      FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          AppCard(
-            radius: 18,
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            salon?.name ?? 'Salon',
-                            style: AppTypography.sora(16, FontWeight.w800),
-                          ),
-                          if (salon?.address.isNotEmpty ?? false)
-                            Text(
-                              salon!.address,
-                              style: AppTypography.rowSubtitle,
-                            ),
-                        ],
+                  const SizedBox(height: 2),
+                  Text(
+                    '#${transaction.invoiceNumber}',
+                    style: AppTypography.sora(15, FontWeight.w800),
+                  ),
+                  if (transaction.createdAt != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      Formatters.dayMonthYear(transaction.createdAt!),
+                      style: AppTypography.manrope(
+                        11.5,
+                        FontWeight.w500,
+                        color: AppColors.textSecondary,
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          transaction.reference,
-                          style: AppTypography.sora(12, FontWeight.w700),
-                        ),
-                        if (transaction.createdAt != null)
-                          Text(
-                            '${Formatters.dayMonth(transaction.createdAt!)} · '
-                            '${Formatters.time(transaction.createdAt!)}',
-                            style: AppTypography.manrope(
-                              11,
-                              FontWeight.w500,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                      ],
-                    ),
                   ],
-                ),
-                const SizedBox(height: 14),
-                const DashedDivider(),
-                const SizedBox(height: 14),
-                for (final line in transaction.lines) ...[
-                  _ReceiptLine(
-                    label: line.quantity > 1
-                        ? '${line.label} × ${line.quantity}'
-                        : line.label,
-                    value: Formatters.fcfa(line.totalFcfa),
-                  ),
-                  const SizedBox(height: 9),
                 ],
-                if (transaction.discountFcfa > 0)
-                  _ReceiptLine(
-                    label: 'Remise',
-                    value: '− ${Formatters.fcfa(transaction.discountFcfa)}',
-                    highlighted: true,
-                  ),
-                const SizedBox(height: 5),
-                const DashedDivider(),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total payé',
-                      style: AppTypography.sora(16, FontWeight.w700),
-                    ),
-                    Text(
-                      Formatters.fcfa(transaction.totalAmountFcfa),
-                      style: AppTypography.sora(
-                        20,
-                        FontWeight.w800,
-                        color: AppColors.primary,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            salon?.name ?? 'Salon',
+            style: AppTypography.sora(17, FontWeight.w800, letterSpacing: -0.4),
+          ),
+          if (contact.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              contact,
+              style: AppTypography.manrope(
+                12,
+                FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Destinataire de la facture.
+class _BilledTo extends StatelessWidget {
+  const _BilledTo({required this.transaction});
+
+  final SalonTransaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Facturé à',
+            style: AppTypography.manrope(
+              11.5,
+              FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            transaction.clientName!,
+            style: AppTypography.sora(15, FontWeight.w700),
+          ),
+          if (transaction.clientPhone?.isNotEmpty ?? false)
+            Text(
+              transaction.clientPhone!,
+              style: AppTypography.manrope(
+                12,
+                FontWeight.w500,
+                color: AppColors.primary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Détail facturé, une ligne par article.
+class _Lines extends StatelessWidget {
+  const _Lines({required this.lines});
+
+  final List<TicketLine> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < lines.length; i++) ...[
+          if (i > 0) const Divider(height: 1, color: AppColors.border),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 13, 18, 13),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        lines[i].label,
+                        style: AppTypography.sora(14, FontWeight.w700),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 1),
+                      Text(
+                        // Marque du produit ou catégorie de la prestation,
+                        // suivie de la quantité : « Kérastase · x2 ».
+                        [
+                          if (lines[i].category?.isNotEmpty ?? false)
+                            lines[i].category!,
+                          'x${lines[i].quantity}',
+                        ].join(' · '),
+                        style: AppTypography.manrope(
+                          11.5,
+                          FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  Formatters.fcfa(lines[i].totalFcfa),
+                  style: AppTypography.sora(14.5, FontWeight.w800),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          AppButton(
-            label: 'Nouvelle vente',
-            variant: AppButtonVariant.ghost,
-            onPressed: () => Navigator.of(context).pop(),
+        ],
+      ],
+    );
+  }
+}
+
+/// Sous-total, remise et total dû.
+class _Totals extends StatelessWidget {
+  const _Totals({required this.transaction});
+
+  final SalonTransaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDiscount = transaction.discountFcfa > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      child: Column(
+        children: [
+          // Sous-total et remise n'apparaissent que s'il y a une remise :
+          // sinon ils répéteraient le total.
+          if (hasDiscount) ...[
+            _TotalRow(
+              label: 'Sous-total',
+              value: Formatters.fcfa(transaction.subtotalFcfa),
+            ),
+            const SizedBox(height: 6),
+            _TotalRow(
+              label: 'Remise',
+              value: '− ${Formatters.fcfa(transaction.discountFcfa)}',
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 10),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Total', style: AppTypography.sora(16, FontWeight.w800)),
+              Text(
+                Formatters.fcfa(transaction.totalAmountFcfa),
+                style: AppTypography.sora(
+                  20,
+                  FontWeight.w800,
+                  color: AppColors.primary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -204,33 +398,24 @@ class ReceiptPage extends ConsumerWidget {
   }
 }
 
-class _ReceiptLine extends StatelessWidget {
-  const _ReceiptLine({
-    required this.label,
-    required this.value,
-    this.highlighted = false,
-  });
+class _TotalRow extends StatelessWidget {
+  const _TotalRow({required this.label, required this.value, this.color});
 
   final String label;
   final String value;
-  final bool highlighted;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final color = highlighted ? AppColors.primary : null;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Flexible(
-          child: Text(
-            label,
-            style: AppTypography.manrope(
-              13,
-              FontWeight.w500,
-              color: color ?? AppColors.textBody,
-            ),
-            overflow: TextOverflow.ellipsis,
+        Text(
+          label,
+          style: AppTypography.manrope(
+            12.5,
+            FontWeight.w500,
+            color: color ?? AppColors.textBody,
           ),
         ),
         Text(
@@ -246,5 +431,43 @@ class _ReceiptLine extends StatelessWidget {
   }
 }
 
-/// Type de ligne du reçu, réutilisé par l'écran de remboursement.
-typedef ReceiptLines = List<TicketLine>;
+/// Mention de règlement : statut, moyen de paiement, référence.
+class _PaymentBadge extends StatelessWidget {
+  const _PaymentBadge({required this.transaction});
+
+  final SalonTransaction transaction;
+
+  @override
+  Widget build(BuildContext context) {
+    final refunded = transaction.isRefund;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+      child: Row(
+        children: [
+          AppBadge(
+            label: refunded
+                ? 'Remboursé'
+                : 'Payé · ${transaction.paymentMethod.label}',
+            color: refunded ? AppColors.expense : AppColors.primary,
+            background:
+                refunded ? AppColors.tintExpense : AppColors.tintGreen,
+            dense: true,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Réf. ${transaction.reference.replaceFirst('#', '')}',
+              style: AppTypography.manrope(
+                11.5,
+                FontWeight.w500,
+                color: AppColors.textFaint,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

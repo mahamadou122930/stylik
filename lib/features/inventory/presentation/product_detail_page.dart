@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/product.dart';
 import 'inventory_providers.dart';
+import 'product_form_page.dart';
 
 /// 7.2 — Fiche produit : stock, seuil d'alerte, fournisseur.
 class ProductDetailPage extends ConsumerWidget {
@@ -32,18 +33,37 @@ class ProductDetailPage extends ConsumerWidget {
     ref.invalidate(productsProvider);
   }
 
+  /// Méthode A — voir `openConsumableUnit`.
+  Future<void> _openUnit(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = await openConsumableUnit(ref, product);
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final product = ref.watch(productDetailProvider(productId));
 
     return AppScreen(
       title: product.valueOrNull?.name ?? 'Produit',
-      action: AppIconButton(
-        icon: Icons.edit_outlined,
-        onTap: () {
-          // TODO(inventory): édition de la fiche produit.
-        },
-      ),
+      action: product.valueOrNull == null
+          ? null
+          : AppIconButton(
+              icon: Icons.edit_outlined,
+              onTap: () async {
+                final saved = await Navigator.of(context).pushNamed(
+                  ProductFormPage.routeName,
+                  arguments: product.value,
+                );
+                if (saved == true) {
+                  ref.invalidate(productDetailProvider(productId));
+                }
+              },
+            ),
       footer: product.valueOrNull == null
           ? null
           : Row(
@@ -57,12 +77,22 @@ class ProductDetailPage extends ConsumerWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: AppButton(
-                    label: 'Commander',
-                    onPressed: () {
-                      // TODO(inventory): générer une commande fournisseur.
-                    },
-                  ),
+                  // Un produit de revente sort du stock par la caisse ; un
+                  // consommable, lui, n'a que cette porte de sortie.
+                  child: product.value!.usage == ProductUsage.consumable
+                      ? AppButton(
+                          label: 'Ouvrir une unité',
+                          icon: Icons.local_drink_outlined,
+                          onPressed: product.value!.stockQuantity <= 0
+                              ? null
+                              : () => _openUnit(context, ref, product.value!),
+                        )
+                      : AppButton(
+                          label: 'Commander',
+                          onPressed: () {
+                            // TODO(inventory): générer une commande fournisseur.
+                          },
+                        ),
                 ),
               ],
             ),
@@ -197,15 +227,48 @@ class _AdjustStockSheet extends StatefulWidget {
 }
 
 class _AdjustStockSheetState extends State<_AdjustStockSheet> {
-  int _delta = 0;
+  /// Quantité **finale** saisie, et non l'écart : après un inventaire
+  /// physique, on connaît le nombre en rayon, pas l'écart avec la base. Le
+  /// delta se déduit, il n'a pas à être calculé de tête.
+  late final TextEditingController _target = TextEditingController(
+    text: '${widget.product.stockQuantity}',
+  );
+
+  @override
+  void dispose() {
+    _target.dispose();
+    super.dispose();
+  }
+
+  int? get _parsed {
+    final value = int.tryParse(_target.text.trim());
+    if (value == null || value < 0) return null;
+    return value;
+  }
+
+  void _bump(int step) {
+    final base = _parsed ?? widget.product.stockQuantity;
+    final next = (base + step).clamp(0, 1 << 31);
+    setState(() {
+      _target.text = '$next';
+      _target.selection =
+          TextSelection.collapsed(offset: _target.text.length);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final result = widget.product.stockQuantity + _delta;
+    final target = _parsed;
+    final delta = target == null ? 0 : target - widget.product.stockQuantity;
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+        padding: EdgeInsets.fromLTRB(
+          18,
+          4,
+          18,
+          MediaQuery.viewInsetsOf(context).bottom + 18,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -221,32 +284,55 @@ class _AdjustStockSheetState extends State<_AdjustStockSheet> {
             ),
             const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 AppIconButton(
                   icon: Icons.remove_rounded,
-                  onTap: () => setState(() => _delta--),
+                  onTap: () => _bump(-1),
                 ),
-                SizedBox(
-                  width: 96,
-                  child: Text(
-                    '$result',
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _target,
+                    keyboardType: TextInputType.number,
                     textAlign: TextAlign.center,
+                    autofocus: true,
+                    onChanged: (_) => setState(() {}),
                     style: AppTypography.sora(28, FontWeight.w800),
+                    decoration: const InputDecoration(
+                      labelText: 'Quantité en stock',
+                      counterText: '',
+                    ),
                   ),
                 ),
+                const SizedBox(width: 12),
                 AppIconButton(
                   icon: Icons.add_rounded,
                   filled: true,
-                  onTap: () => setState(() => _delta++),
+                  onTap: () => _bump(1),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              switch (delta) {
+                0 => target == null
+                    ? 'Saisissez un nombre entier positif.'
+                    : 'Aucun changement.',
+                > 0 => 'Entrée de $delta unité(s).',
+                _ => 'Sortie de ${delta.abs()} unité(s).',
+              },
+              textAlign: TextAlign.center,
+              style: AppTypography.manrope(
+                12.5,
+                FontWeight.w600,
+                color: delta == 0 ? AppColors.textSecondary : AppColors.primary,
+              ),
             ),
             const SizedBox(height: 20),
             AppButton(
               label: 'Valider',
               onPressed:
-                  _delta == 0 ? null : () => Navigator.pop(context, _delta),
+                  delta == 0 ? null : () => Navigator.pop(context, delta),
             ),
           ],
         ),

@@ -41,6 +41,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
   late final TextEditingController _phone;
   late final TextEditingController _email;
   late final TextEditingController _commission;
+  late final TextEditingController _leaveBalance;
 
   late UserRole _role;
   late Set<String> _specialties;
@@ -56,6 +57,11 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
     _commission = TextEditingController(
       text: m != null ? m.commissionRate.toStringAsFixed(0) : '30',
     );
+    // Un nouvel employé démarre à zéro : c'est au gérant de poser le droit
+    // annuel qu'il accorde, aucune valeur par défaut ne serait légitime.
+    _leaveBalance = TextEditingController(
+      text: '${m?.leaveBalanceDays ?? 0}',
+    );
     _role = m?.role ?? UserRole.coiffeur;
     _specialties = m != null ? Set.from(m.specialties) : {};
   }
@@ -66,6 +72,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
     _phone.dispose();
     _email.dispose();
     _commission.dispose();
+    _leaveBalance.dispose();
     super.dispose();
   }
 
@@ -82,6 +89,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
             _commission.text.trim().replaceAll(',', '.'),
           ) ??
           0;
+      final leaveBalanceDays = int.tryParse(_leaveBalance.text.trim()) ?? 0;
       final repository = ref.read(staffRepositoryProvider);
 
       if (widget.member == null) {
@@ -91,6 +99,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
           role: _role,
           specialties: _specialties.toList(),
           commissionRate: commissionRate,
+          leaveBalanceDays: leaveBalanceDays,
           phone: phone.isEmpty ? null : phone,
           email: email.isEmpty ? null : email,
         );
@@ -100,6 +109,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
           role: _role,
           specialties: _specialties.toList(),
           commissionRate: commissionRate,
+          leaveBalanceDays: leaveBalanceDays,
           phone: phone.isEmpty ? null : phone,
           email: email.isEmpty ? null : email,
         );
@@ -197,6 +207,19 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
                 return email.contains('@') && email.contains('.')
                     ? null
                     : 'Email invalide';
+              },
+            ),
+            const SizedBox(height: 15),
+            // Hors du bloc réservé au coiffeur : tout le personnel prend des
+            // congés, y compris la réception.
+            AppInput(
+              label: 'Solde de congés (jours)',
+              controller: _leaveBalance,
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                final days = int.tryParse((value ?? '').trim());
+                if (days == null) return 'Nombre de jours attendu';
+                return days < 0 ? 'Ne peut pas être négatif' : null;
               },
             ),
             if (_role == UserRole.coiffeur) ...[

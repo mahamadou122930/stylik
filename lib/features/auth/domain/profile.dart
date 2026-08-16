@@ -1,6 +1,11 @@
 import 'user_role.dart';
 
-/// Membre du personnel — table `profiles` (id = auth.users.id).
+/// Membre du personnel — table `profiles`.
+///
+/// `id` est propre à la fiche : ce n'est **pas** l'identifiant de session.
+/// C'est [userId] qui pointe vers `auth.users`, et il reste nul tant que la
+/// personne ne s'est pas inscrite. Toutes les colonnes qui désignent un membre
+/// — `cashier_id`, `stylist_id`, `profile_id` — référencent `profiles(id)`.
 class Profile {
   const Profile({
     required this.id,

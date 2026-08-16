@@ -18,11 +18,26 @@ class InventoryPage extends ConsumerWidget {
 
   static const routeName = '/inventory';
 
+  /// Méthode A — voir `openConsumableUnit`.
+  Future<void> _openUnit(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = await openConsumableUnit(ref, product);
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final products = ref.watch(productsProvider);
     final lowStock = ref.watch(lowStockProductsProvider);
     final stockValue = ref.watch(stockValueProvider);
+    final missingCost = ref.watch(productsWithoutCostProvider);
+    final items = ref.watch(filteredProductsProvider);
+    final search = ref.watch(productSearchProvider);
+    final usageFilter = ref.watch(productUsageFilterProvider);
 
     return AppScreen(
       title: 'Inventaire',
@@ -41,7 +56,34 @@ class InventoryPage extends ConsumerWidget {
       ),
       header: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
-        child: Row(
+        child: Column(
+          children: [
+            AppSearchField(
+              hint: 'Nom, marque, catégorie, fournisseur…',
+              onChanged: (value) =>
+                  ref.read(productSearchProvider.notifier).state = value,
+            ),
+            const SizedBox(height: 10),
+            // Revente et consommables ne se pilotent pas pareil : l'un se
+            // vend, l'autre s'ouvre. Pouvoir n'afficher que l'un des deux
+            // évite de les chercher dans une liste mêlée.
+            AppFilterChips(
+              items: const ['Tous', 'Revente', 'Consommables'],
+              selectedIndex: switch (usageFilter) {
+                null => 0,
+                ProductUsage.resale => 1,
+                ProductUsage.consumable => 2,
+              },
+              onChanged: (index) =>
+                  ref.read(productUsageFilterProvider.notifier).state = switch (
+                      index) {
+                1 => ProductUsage.resale,
+                2 => ProductUsage.consumable,
+                _ => null,
+              },
+            ),
+            const SizedBox(height: 12),
+            Row(
           children: [
             Expanded(
               child: AppStatTile(
@@ -83,6 +125,8 @@ class InventoryPage extends ConsumerWidget {
                 ),
               ),
             ),
+              ],
+            ),
           ],
         ),
       ),
@@ -100,33 +144,87 @@ class InventoryPage extends ConsumerWidget {
           message: '$error',
           onRetry: () => ref.invalidate(productsProvider),
         ),
-        data: (items) => items.isEmpty
+        data: (all) => all.isEmpty
             ? const AppEmptyState(
                 title: 'Stock vide',
                 message: 'Ajoutez vos produits de revente et consommables.',
                 icon: Icons.inventory_2_outlined,
               )
+            // Filtre ou recherche sans résultat : ne pas laisser croire au
+            // stock vide, et dire lequel des deux critères ne donne rien.
+            : items.isEmpty
+            ? AppEmptyState(
+                title: search.isNotEmpty
+                    ? 'Aucun produit trouvé'
+                    : usageFilter == ProductUsage.consumable
+                        ? 'Aucun consommable'
+                        : 'Aucun produit de revente',
+                message: search.isNotEmpty
+                    ? 'Aucun produit ne correspond à « $search ».'
+                    : usageFilter == ProductUsage.consumable
+                        // Le cas le plus fréquent : les fiches ont été créées
+                        // en « Revente », l'usage par défaut du formulaire.
+                        ? 'Aucune fiche n\'est marquée « Consommé en soin ». '
+                            'Ouvrez un produit et changez sa destination pour '
+                            'pouvoir en déduire les unités ouvertes.'
+                        : 'Aucune fiche n\'est marquée « Revendu au client ».',
+                icon: Icons.search_off_rounded,
+                actionLabel: search.isNotEmpty
+                    ? 'Effacer la recherche'
+                    : 'Voir tous les produits',
+                onAction: () {
+                  if (search.isNotEmpty) {
+                    ref.read(productSearchProvider.notifier).state = '';
+                  } else {
+                    ref.read(productUsageFilterProvider.notifier).state = null;
+                  }
+                },
+              )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AppListCard(
-                    children: [
-                      for (final product in items)
-                        ProductRow(
-                          product: product,
-                          onTap: () => Navigator.of(context).pushNamed(
-                            ProductDetailPage.routeName,
-                            arguments: product.id,
+                  if (missingCost.isNotEmpty) ...[
+                    AppCard(
+                      radius: 14,
+                      shadow: false,
+                      color: AppColors.tintAmber,
+                      borderColor: AppColors.amberBorder,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 13,
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            size: 20,
+                            color: AppColors.amber,
                           ),
-                        ),
-                    ],
-                  ),
-                  const AppSectionTitle('Suivi'),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              '${missingCost.length} produit(s) sans coût '
+                              'd\'achat ne comptent pas dans la valeur du '
+                              'stock.',
+                              style: AppTypography.manrope(
+                                12.5,
+                                FontWeight.w600,
+                                color: AppColors.amberDeep,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  // Placés avant la liste : sous quarante produits, personne
+                  // ne descendait jusqu'à eux.
                   AppListCard(
                     children: [
                       AppListRow(
                         label: 'Consommation en soin',
-                        subtitle: 'Produits utilisés, non revendus',
+                        subtitle: 'Ouvrir une unité, suivre le coût du mois',
                         strong: true,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         leading: const AppIconTile(icon: Icons.science_rounded),
@@ -150,6 +248,36 @@ class InventoryPage extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  const AppSectionTitle('Produits'),
+                  AppListCard(
+                    children: [
+                      for (final product in items)
+                        ProductRow(
+                          product: product,
+                          // Un consommable ne sort pas du stock par la caisse :
+                          // son unique geste, c'est l'ouverture d'une unité.
+                          // La proposer ici évite d'ouvrir la fiche pour ça.
+                          trailing: product.usage == ProductUsage.consumable
+                              ? AppPillButton(
+                                  label: 'Ouvrir',
+                                  color: product.isOutOfStock
+                                      ? AppColors.textFaint
+                                      : AppColors.primary,
+                                  background: product.isOutOfStock
+                                      ? AppColors.toggleOff
+                                      : AppColors.tintGreen,
+                                  onTap: product.isOutOfStock
+                                      ? null
+                                      : () => _openUnit(context, ref, product),
+                                )
+                              : null,
+                          onTap: () => Navigator.of(context).pushNamed(
+                            ProductDetailPage.routeName,
+                            arguments: product.id,
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
       ),
@@ -159,10 +287,19 @@ class InventoryPage extends ConsumerWidget {
 
 /// Ligne de produit avec puce de niveau de stock.
 class ProductRow extends StatelessWidget {
-  const ProductRow({super.key, required this.product, this.onTap});
+  const ProductRow({
+    super.key,
+    required this.product,
+    this.onTap,
+    this.trailing,
+  });
 
   final Product product;
   final VoidCallback? onTap;
+
+  /// Action ajoutée à droite de la puce de stock (« Ouvrir » d'un
+  /// consommable). La puce reste affichée : c'est elle qui dit s'il en reste.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -192,16 +329,25 @@ class ProductRow extends StatelessWidget {
           color: AppColors.primary,
         ),
       ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          product.stockLabel,
-          style: AppTypography.sora(12, FontWeight.w700, color: color),
-        ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              product.stockLabel,
+              style: AppTypography.sora(12, FontWeight.w700, color: color),
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: 6),
+            trailing!,
+          ],
+        ],
       ),
     );
   }

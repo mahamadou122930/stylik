@@ -184,6 +184,8 @@ class SalonTransaction {
     this.lines = const [],
     this.createdAt,
     this.clientName,
+    this.clientPhone,
+    this.invoiceSeq,
   });
 
   final String id;
@@ -199,12 +201,34 @@ class SalonTransaction {
   final List<TicketLine> lines;
   final DateTime? createdAt;
 
-  /// Nom du client, issu de la jointure `clients(full_name)`.
+  /// Client facturé, issu de la jointure `clients(full_name, phone)`.
   final String? clientName;
+  final String? clientPhone;
+
+  /// Rang de la facture dans son salon et son année, posé par la base au
+  /// règlement. `null` sur un brouillon, ou avant la migration.
+  final int? invoiceSeq;
 
   /// Numéro affiché sur le ticket (« #2024-0847 »).
   String get reference =>
       '#${createdAt?.year ?? ''}-${id.length >= 4 ? id.substring(0, 4).toUpperCase() : id}';
+
+  /// Numéro de facture (« FA-2026-0261 »).
+  ///
+  /// Attribué en base par le déclencheur `assign_invoice_seq`, continu par
+  /// salon et par année. Le repli dérivé de l'identifiant ne sert qu'aux
+  /// tickets antérieurs à la numérotation : stable et unique, mais pas
+  /// séquentiel — c'est justement ce qu'il fallait corriger.
+  String get invoiceNumber {
+    final year = createdAt?.year ?? DateTime.now().year;
+
+    final seq = invoiceSeq;
+    if (seq != null) return 'FA-$year-${seq.toString().padLeft(4, '0')}';
+
+    final digits =
+        id.codeUnits.fold<int>(0, (sum, unit) => (sum * 31 + unit) % 10000);
+    return 'FA-$year-${digits.toString().padLeft(4, '0')}';
+  }
 
   bool get isRefund => status == TransactionStatus.refunded;
 
@@ -233,6 +257,10 @@ class SalonTransaction {
         clientName: map['clients'] is Map<String, dynamic>
             ? (map['clients'] as Map<String, dynamic>)['full_name'] as String?
             : null,
+        clientPhone: map['clients'] is Map<String, dynamic>
+            ? (map['clients'] as Map<String, dynamic>)['phone'] as String?
+            : null,
+        invoiceSeq: (map['invoice_seq'] as num?)?.toInt(),
       );
 
   Map<String, dynamic> toMap() => {

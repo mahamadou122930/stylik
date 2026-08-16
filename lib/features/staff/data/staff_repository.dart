@@ -48,6 +48,7 @@ class StaffRepository {
     required UserRole role,
     List<String> specialties = const [],
     double commissionRate = 0,
+    int leaveBalanceDays = 0,
     String? phone,
     String? email,
   }) async {
@@ -59,6 +60,7 @@ class StaffRepository {
           'role': role.value,
           'specialties': specialties,
           'commission_rate': commissionRate,
+          'leave_balance_days': leaveBalanceDays,
           'phone': phone,
           'email': email,
           'is_active': true,
@@ -131,14 +133,57 @@ class StaffRepository {
     return data.map((row) => TimeOff.fromMap(row)).toList();
   }
 
-  Future<void> setTimeOffStatus({
-    required String timeOffId,
+  /// Tranche une demande d'absence et répercute l'effet sur le solde de congés.
+  ///
+  /// Le solde n'est ajusté qu'à la décision, jamais au dépôt : une demande
+  /// refusée ne doit pas avoir amputé les jours entre-temps.
+  ///
+  /// Passe par la RPC `decide_time_off`, qui verrouille la demande et applique
+  /// un incrément relatif — deux gérants tranchant en même temps ne peuvent
+  /// donc plus s'écraser. Le repli n'existe que pour les bases où la migration
+  /// n'est pas encore appliquée ; il refait le calcul en deux temps, avec la
+  /// fenêtre de concurrence que cela suppose.
+  Future<void> decideTimeOff({
+    required TimeOff request,
     required TimeOffStatus status,
-  }) =>
-      _client
-          .from(SupabaseTables.timeOff)
-          .update({'status': status.value})
-          .eq('id', timeOffId);
+  }) async {
+    try {
+      await _client.rpc<dynamic>(
+        'decide_time_off',
+        params: {'p_request_id': request.id, 'p_status': status.value},
+      );
+      return;
+    } catch (_) {
+      await _decideTimeOffLocally(request: request, status: status);
+    }
+  }
+
+  Future<void> _decideTimeOffLocally({
+    required TimeOff request,
+    required TimeOffStatus status,
+  }) async {
+    final delta = request.balanceDeltaFor(status);
+
+    await _client
+        .from(SupabaseTables.timeOff)
+        .update({'status': status.value})
+        .eq('id', request.id);
+
+    if (delta == 0) return;
+
+    final row = await _client
+        .from(SupabaseTables.profiles)
+        .select('leave_balance_days')
+        .eq('id', request.profileId)
+        .single();
+
+    final current = (row['leave_balance_days'] as num?)?.toInt() ?? 0;
+
+    await _client
+        .from(SupabaseTables.profiles)
+        .update({'leave_balance_days': current + delta})
+        .eq('id', request.profileId);
+  }
 
   Future<TimeOff> requestTimeOff(TimeOff request) async {
     final data = await _client

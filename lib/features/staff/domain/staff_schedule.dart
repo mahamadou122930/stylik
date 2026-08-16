@@ -201,4 +201,29 @@ class TimeOff {
         'end_date': endDate.toUtc().toIso8601String(),
         'note': note,
       };
+
+  /// Effet du passage au statut [to] sur le solde de congés du membre.
+  ///
+  /// Négatif quand les jours sont retirés, positif quand ils sont rendus,
+  /// nul quand le solde n'est pas concerné. Trois règles s'y cachent :
+  ///
+  ///  * seul le congé payé touche au solde — une absence maladie ou non payée
+  ///    ne consomme pas des jours de vacances ;
+  ///  * seule la bascule *vers* ou *depuis* « validé » compte, ce qui rend
+  ///    l'opération idempotente : revalider une demande déjà validée ne
+  ///    retire pas les jours une seconde fois ;
+  ///  * revenir sur une validation rend les jours, sinon annuler une erreur
+  ///    de saisie obligerait le gérant à corriger le solde à la main.
+  int balanceDeltaFor(TimeOffStatus to) {
+    if (type != TimeOffType.vacation) return 0;
+
+    final wasApproved = status == TimeOffStatus.approved;
+    final willBeApproved = to == TimeOffStatus.approved;
+    if (wasApproved == willBeApproved) return 0;
+
+    return willBeApproved ? -dayCount : dayCount;
+  }
+
+  /// Demande tranchée : elle appartient à l'historique, plus au flux courant.
+  bool get isDecided => status != TimeOffStatus.pending;
 }

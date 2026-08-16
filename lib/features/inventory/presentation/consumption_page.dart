@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
+import '../domain/product.dart';
 import 'inventory_providers.dart';
 
 /// 7.4 — Consommation en soin : produits utilisés en cabine, non revendus.
@@ -13,11 +14,22 @@ class ConsumptionPage extends ConsumerWidget {
 
   static const routeName = '/inventory/consumption';
 
+  Future<void> _openUnit(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = await openConsumableUnit(ref, product);
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final today = ref.watch(todayConsumptionProvider);
     final monthCost = ref.watch(monthConsumptionCostProvider);
     final top = ref.watch(topConsumedProductsProvider);
+    final consumables = ref.watch(consumablesProvider);
     final maxCost = top.isEmpty ? 0 : top.first.costFcfa;
 
     return AppScreen(
@@ -55,6 +67,63 @@ class ConsumptionPage extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const AppSectionTitle(
+            'Ouvrir une unité',
+            padding: EdgeInsets.fromLTRB(2, 2, 2, 4),
+          ),
+          // Sans consommable en fiche, la section était entièrement masquée :
+          // on arrivait sur un écran muet, sans savoir quoi faire pour que le
+          // bouton apparaisse.
+          if (consumables.isEmpty)
+            const AppEmptyState(
+              compact: true,
+              title: 'Aucun consommable',
+              message: 'Aucune fiche produit n\'est marquée « Consommé en '
+                  'soin ». Ouvrez un produit depuis Stock et changez sa '
+                  'destination : le bouton « Ouvrir » apparaîtra ici.',
+              icon: Icons.science_outlined,
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.only(left: 2, bottom: 10),
+              child: Text(
+                'Une unité entière quitte le stock à l\'ouverture du '
+                'contenant, quel que soit le nombre de clients servis avec.',
+                style: AppTypography.manrope(
+                  11.5,
+                  FontWeight.w500,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ),
+            AppListCard(
+              children: [
+                for (final product in consumables)
+                  AppListRow(
+                    label: product.name,
+                    subtitle: product.packaging == null
+                        ? product.stockLabel
+                        : '${product.packaging} · ${product.stockLabel}',
+                    strong: true,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    trailing: AppPillButton(
+                      label: 'Ouvrir',
+                      color: product.isOutOfStock
+                          ? AppColors.textFaint
+                          : AppColors.primary,
+                      background: product.isOutOfStock
+                          ? AppColors.toggleOff
+                          : AppColors.tintGreen,
+                      onTap: product.isOutOfStock
+                          ? null
+                          : () => _openUnit(context, ref, product),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
           const AppSectionTitle(
             'Utilisés aujourd\'hui',
             padding: EdgeInsets.fromLTRB(2, 2, 2, 10),

@@ -8,11 +8,14 @@ import '../../auth/presentation/auth_providers.dart';
 import '../domain/product.dart';
 import 'inventory_providers.dart';
 
-/// Formulaire de création d'un nouveau produit en stock.
+/// Formulaire de fiche produit — création et modification.
 class ProductFormPage extends ConsumerStatefulWidget {
-  const ProductFormPage({super.key});
+  const ProductFormPage({super.key, this.product});
 
   static const routeName = '/inventory/product-form';
+
+  /// Fiche existante à modifier, `null` pour une création.
+  final Product? product;
 
   @override
   ConsumerState<ProductFormPage> createState() => _ProductFormPageState();
@@ -21,18 +24,40 @@ class ProductFormPage extends ConsumerStatefulWidget {
 class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _nameController = TextEditingController();
-  final _brandController = TextEditingController();
-  final _categoryController = TextEditingController(text: 'Revente');
-  final _unitSalePriceController = TextEditingController(text: '0');
-  final _unitCostController = TextEditingController(text: '0');
-  final _stockQuantityController = TextEditingController(text: '10');
-  final _alertThresholdController = TextEditingController(text: '3');
-  final _supplierController = TextEditingController();
-  final _packagingController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _brandController;
+  late final TextEditingController _categoryController;
+  late final TextEditingController _unitSalePriceController;
+  late final TextEditingController _unitCostController;
+  late final TextEditingController _stockQuantityController;
+  late final TextEditingController _alertThresholdController;
+  late final TextEditingController _supplierController;
+  late final TextEditingController _packagingController;
 
-  ProductUsage _usage = ProductUsage.resale;
+  late ProductUsage _usage;
   bool _isSubmitting = false;
+
+  bool get _isEditing => widget.product != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.product;
+
+    _nameController = TextEditingController(text: p?.name ?? '');
+    _brandController = TextEditingController(text: p?.brand ?? '');
+    _categoryController = TextEditingController(text: p?.category ?? 'Revente');
+    _unitSalePriceController =
+        TextEditingController(text: '${p?.unitSalePriceFcfa ?? 0}');
+    _unitCostController = TextEditingController(text: '${p?.unitCostFcfa ?? 0}');
+    _stockQuantityController =
+        TextEditingController(text: '${p?.stockQuantity ?? 10}');
+    _alertThresholdController =
+        TextEditingController(text: '${p?.alertThreshold ?? 3}');
+    _supplierController = TextEditingController(text: p?.supplier ?? '');
+    _packagingController = TextEditingController(text: p?.packaging ?? '');
+    _usage = p?.usage ?? ProductUsage.resale;
+  }
 
   final List<String> _suggestedCategories = const [
     'Revente',
@@ -72,16 +97,23 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     setState(() => _isSubmitting = true);
 
     try {
+      final existing = widget.product;
       final product = Product(
-        id: '',
-        salonId: salonId,
+        id: existing?.id ?? '',
+        salonId: existing?.salonId ?? salonId,
         name: _nameController.text.trim(),
         brand: _brandController.text.trim(),
         category: _categoryController.text.trim().isEmpty
             ? 'Autre'
             : _categoryController.text.trim(),
-        unitSalePriceFcfa:
-            int.tryParse(_unitSalePriceController.text.replaceAll(' ', '')) ?? 0,
+        // Un consommable n'est jamais vendu : son prix de vente reste à zéro
+        // quoi qu'il arrive.
+        unitSalePriceFcfa: _usage == ProductUsage.consumable
+            ? 0
+            : int.tryParse(
+                  _unitSalePriceController.text.replaceAll(' ', ''),
+                ) ??
+                0,
         unitCostFcfa:
             int.tryParse(_unitCostController.text.replaceAll(' ', '')) ?? 0,
         stockQuantity:
@@ -95,20 +127,39 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
             ? null
             : _packagingController.text.trim(),
         usage: _usage,
+        isActive: existing?.isActive ?? true,
       );
 
-      await ref.read(inventoryRepositoryProvider).create(product);
+      final repository = ref.read(inventoryRepositoryProvider);
+      if (_isEditing) {
+        await repository.update(product);
+        ref.invalidate(productDetailProvider(product.id));
+      } else {
+        await repository.create(product);
+      }
       ref.invalidate(productsProvider);
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Produit « ${product.name} » ajouté au stock.')),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Fiche « ${product.name} » mise à jour.'
+                : 'Produit « ${product.name} » ajouté au stock.',
+          ),
+        ),
       );
       Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Impossible d\'ajouter le produit : $e')),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Impossible d\'enregistrer la fiche : $e'
+                : 'Impossible d\'ajouter le produit : $e',
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -118,9 +169,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
   @override
   Widget build(BuildContext context) {
     return AppScreen(
-      title: 'Nouveau produit',
+      title: _isEditing ? 'Modifier le produit' : 'Nouveau produit',
       footer: AppButton(
-        label: 'Enregistrer le produit',
+        label: _isEditing ? 'Enregistrer les modifications' : 'Enregistrer le produit',
         height: 56,
         isLoading: _isSubmitting,
         onPressed: _submit,
@@ -196,34 +247,52 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                         padding: EdgeInsets.only(bottom: 12)),
                     Row(
                       children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _unitSalePriceController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Prix de vente (FCFA) *',
-                              suffixText: 'F',
+                        // Le prix de vente n'a de sens que pour un produit
+                        // revendu : l'exiger sur un consommable empêchait
+                        // purement et simplement d'enregistrer la fiche.
+                        if (_usage == ProductUsage.resale) ...[
+                          Expanded(
+                            child: TextFormField(
+                              controller: _unitSalePriceController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Prix de vente (FCFA) *',
+                                suffixText: 'F',
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) {
+                                  return 'Obligatoire';
+                                }
+                                if (int.tryParse(
+                                      value.replaceAll(' ', ''),
+                                    ) ==
+                                    null) {
+                                  return 'Nombre invalide';
+                                }
+                                return null;
+                              },
                             ),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatoire';
-                              }
-                              if (int.tryParse(value.replaceAll(' ', '')) == null) {
-                                return 'Nombre invalide';
-                              }
-                              return null;
-                            },
                           ),
-                        ),
-                        const SizedBox(width: 12),
+                          const SizedBox(width: 12),
+                        ],
                         Expanded(
                           child: TextFormField(
                             controller: _unitCostController,
                             keyboardType: TextInputType.number,
                             decoration: const InputDecoration(
-                              labelText: 'Coût d\'achat (FCFA)',
+                              // Obligatoire des deux côtés : c'est la seule
+                              // base de la valeur du stock, et le laisser à
+                              // zéro faisait disparaître le produit du total.
+                              labelText: 'Coût d\'achat (FCFA) *',
                               suffixText: 'F',
                             ),
+                            validator: (value) {
+                              final cost =
+                                  int.tryParse((value ?? '').replaceAll(' ', ''));
+                              if (cost == null) return 'Nombre invalide';
+                              if (cost <= 0) return 'Requis pour la valeur du stock';
+                              return null;
+                            },
                           ),
                         ),
                       ],

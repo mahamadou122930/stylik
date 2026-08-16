@@ -13,7 +13,7 @@ import '../../inventory/presentation/inventory_page.dart';
 import '../../loyalty/presentation/loyalty_page.dart';
 import '../../settings/presentation/settings_page.dart';
 import '../../staff/presentation/staff_page.dart';
-import '../../staff/presentation/time_off_request_page.dart';
+import '../../staff/presentation/time_off_history_page.dart';
 
 /// Onglet « Plus » : accès aux modules qui ne tiennent pas dans la barre.
 class MorePage extends ConsumerWidget {
@@ -55,11 +55,11 @@ class MorePage extends ConsumerWidget {
       else
         const _MoreEntry(
           label: 'Mes congés',
-          description: 'Demander une absence',
+          description: 'Solde, demandes, historique',
           icon: Icons.beach_access_rounded,
           color: AppColors.blue,
           background: AppColors.tintBlue,
-          route: TimeOffRequestPage.routeName,
+          route: TimeOffHistoryPage.routeName,
         ),
       if (role.canViewFinance)
         const _MoreEntry(

@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../pos/presentation/transactions_page.dart';
 import '../domain/finance_summary.dart';
 import '../domain/payout.dart';
 import 'expenses_page.dart';
@@ -276,6 +277,23 @@ class FinancePage extends ConsumerWidget {
             const AppSectionTitle('Rapports'),
             AppListCard(
               children: [
+                // Le journal de caisse n'était atteignable que depuis l'onglet
+                // Caisse : un gérant qui pilote son salon depuis Finance ne le
+                // trouvait pas.
+                AppListRow(
+                  label: 'Journal de caisse',
+                  subtitle: 'Toutes les transactions du jour',
+                  strong: true,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  leading: const AppIconTile(
+                    icon: Icons.receipt_long_rounded,
+                    color: AppColors.amber,
+                    background: AppColors.tintAmber,
+                  ),
+                  trailing: const AppChevron(),
+                  onTap: () => Navigator.of(context)
+                      .pushNamed(TransactionsPage.routeName),
+                ),
                 AppListRow(
                   label: 'Par coiffeur',
                   subtitle: 'Performance et commissions',

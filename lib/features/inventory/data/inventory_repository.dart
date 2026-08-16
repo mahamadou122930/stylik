@@ -167,8 +167,47 @@ class InventoryRepository {
           'p_context': contextLabel,
         },
       );
+      return;
     } catch (e) {
-      debugPrint('Erreur lors de l\'ajustement du stock Supabase: $e');
+      debugPrint('RPC adjust_stock indisponible, ajustement direct : $e');
+    }
+
+    // Repli en deux écritures, pour les bases où `adjust_stock` n'est pas
+    // encore corrigée. Il n'est pas atomique — deux ajustements simultanés
+    // sur le même produit peuvent s'écraser — mais sans lui le bouton reste
+    // sans effet, ce qui est pire qu'une fenêtre de concurrence.
+    try {
+      final row = await _client
+          .from(SupabaseTables.products)
+          .select('salon_id, name, stock_quantity, unit_cost_fcfa')
+          .eq('id', productId)
+          .single();
+
+      final salonId = row['salon_id'] as String;
+      final current = (row['stock_quantity'] as num?)?.toInt() ?? 0;
+      final unitCost = (row['unit_cost_fcfa'] as num?)?.toInt() ?? 0;
+      // Même borne que la RPC : un stock négatif n'a pas de sens physique.
+      final next = (current + delta).clamp(0, 1 << 31);
+
+      await _client
+          .from(SupabaseTables.products)
+          .update({'stock_quantity': next})
+          .eq('id', productId);
+
+      await _client.from(SupabaseTables.stockMovements).insert({
+        'salon_id': salonId,
+        'product_id': productId,
+        // Quantité signée : c'est le signe qui distingue une entrée d'une
+        // sortie, la table n'ayant pas de colonne de type.
+        'quantity': delta,
+        'reason': reason,
+        'occurred_at': DateTime.now().toUtc().toIso8601String(),
+        'product_name': row['name'],
+        'context_label': contextLabel,
+        'cost_fcfa': delta.abs() * unitCost,
+      });
+    } catch (e) {
+      debugPrint('Ajustement du stock impossible : $e');
       if (cached != null) {
         await _localDb.enqueueMutation(
           action: 'UPDATE',
@@ -179,6 +218,7 @@ class InventoryRepository {
           },
         );
       }
+      rethrow;
     }
   }
 

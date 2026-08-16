@@ -7,6 +7,7 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/staff_schedule.dart';
 import 'staff_providers.dart';
+import 'time_off_history_page.dart';
 
 /// 4.4 — Congés & absences : demandes à valider et calendrier.
 class TimeOffPage extends ConsumerWidget {
@@ -19,13 +20,36 @@ class TimeOffPage extends ConsumerWidget {
     final requests = ref.watch(timeOffProvider);
     final pending = ref.watch(pendingTimeOffProvider);
     final upcoming = ref.watch(upcomingTimeOffProvider);
+    final history = ref.watch(timeOffHistoryProvider);
 
     Future<void> decide(TimeOff request, TimeOffStatus status) async {
-      await ref.read(staffRepositoryProvider).setTimeOffStatus(
-            timeOffId: request.id,
+      final messenger = ScaffoldMessenger.of(context);
+      final delta = request.balanceDeltaFor(status);
+
+      await ref.read(staffRepositoryProvider).decideTimeOff(
+            request: request,
             status: status,
           );
+
+      // Le solde vient d'être touché : les fiches employé le portent.
       ref.invalidate(timeOffProvider);
+      ref.invalidate(myTimeOffProvider);
+      if (delta != 0) {
+        ref.invalidate(teamProvider);
+        ref.invalidate(staffDetailProvider(request.profileId));
+      }
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            delta == 0
+                ? 'Demande ${status.label.toLowerCase()}.'
+                : 'Demande ${status.label.toLowerCase()} · '
+                    '${delta.abs()} jour(s) '
+                    '${delta < 0 ? 'retirés du' : 'rendus au'} solde.',
+          ),
+        ),
+      );
     }
 
     return AppScreen(
@@ -65,6 +89,18 @@ class TimeOffPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 10),
                     ],
+                  ],
+                  if (history.isNotEmpty) ...[
+                    const AppSectionTitle('Historique'),
+                    AppListCard(
+                      children: [
+                        for (final request in history.take(20))
+                          TimeOffHistoryRow(
+                            request: request,
+                            title: request.profileName ?? 'Membre',
+                          ),
+                      ],
+                    ),
                   ],
                   if (upcoming.isNotEmpty) ...[
                     const AppSectionTitle('Absences à venir'),

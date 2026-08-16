@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_colors.dart';
@@ -42,6 +43,7 @@ import 'features/finance/presentation/stylist_commission_detail_page.dart';
 import 'features/finance/presentation/stylist_report_page.dart';
 import 'features/home/presentation/home_page.dart';
 import 'features/home/presentation/more_page.dart';
+import 'features/inventory/domain/product.dart';
 import 'features/inventory/presentation/consumption_page.dart';
 import 'features/inventory/presentation/inventory_page.dart';
 import 'features/inventory/presentation/product_detail_page.dart';
@@ -70,6 +72,7 @@ import 'features/staff/presentation/staff_detail_page.dart';
 import 'features/staff/presentation/staff_form_page.dart';
 import 'features/staff/presentation/staff_page.dart';
 import 'features/staff/presentation/staff_schedule_page.dart';
+import 'features/staff/presentation/time_off_history_page.dart';
 import 'features/staff/presentation/time_off_page.dart';
 import 'features/staff/presentation/time_off_request_page.dart';
 
@@ -89,6 +92,16 @@ class AtelierApp extends ConsumerWidget {
       title: 'L\'Atelier',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      // Sans ces délégués, `showDatePicker` et `showTimePicker` ne trouvent
+      // que l'anglais : demander une date en français faisait échouer la
+      // résolution des `MaterialLocalizations` et cassait le sélecteur.
+      locale: const Locale('fr', 'FR'),
+      supportedLocales: const [Locale('fr', 'FR'), Locale('en')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       builder: (context, child) {
         return OfflineBanner(child: child ?? const SizedBox.shrink());
       },
@@ -128,6 +141,8 @@ class AtelierApp extends ConsumerWidget {
         page(StaffSchedulePage(member: settings.arguments! as Profile)),
       ProductDetailPage.routeName =>
         page(ProductDetailPage(productId: settings.arguments! as String)),
+      ProductFormPage.routeName =>
+        page(ProductFormPage(product: settings.arguments as Product?)),
       ServiceEditPage.routeName =>
         page(ServiceEditPage(service: settings.arguments as SalonService?)),
       RefundPage.routeName =>
@@ -165,7 +180,6 @@ class AtelierApp extends ConsumerWidget {
     ReceiptPage.routeName: const ReceiptPage(),
     TransactionsPage.routeName: const TransactionsPage(),
     InventoryPage.routeName: const InventoryPage(),
-    ProductFormPage.routeName: const ProductFormPage(),
     StockReceptionPage.routeName: const StockReceptionPage(),
     ConsumptionPage.routeName: const ConsumptionPage(),
     FinancePage.routeName: const FinancePage(),
@@ -183,6 +197,7 @@ class AtelierApp extends ConsumerWidget {
     StaffPage.routeName: const StaffPage(),
     TimeOffPage.routeName: const TimeOffPage(),
     TimeOffRequestPage.routeName: const TimeOffRequestPage(),
+    TimeOffHistoryPage.routeName: const TimeOffHistoryPage(),
     SettingsPage.routeName: const SettingsPage(),
     SalonInfoPage.routeName: const SalonInfoPage(),
     RolesPage.routeName: const RolesPage(),

@@ -73,6 +73,39 @@ final timeOffProvider = FutureProvider<List<TimeOff>>((ref) async {
   return ref.watch(staffRepositoryProvider).fetchTimeOff(salonId: salonId);
 });
 
+/// Absences du membre connecté — son propre historique.
+final myTimeOffProvider = FutureProvider<List<TimeOff>>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  final profile = ref.watch(currentProfileProvider).valueOrNull;
+  if (salonId == null || profile == null) return const [];
+
+  return ref.watch(staffRepositoryProvider).fetchTimeOff(
+        salonId: salonId,
+        profileId: profile.id,
+      );
+});
+
+/// Demandes déjà tranchées, la plus récente d'abord.
+///
+/// `fetchTimeOff` trie par date de début croissante, ce qui convient à un
+/// calendrier mais met les vieilles absences en tête d'un historique.
+final timeOffHistoryProvider = Provider<List<TimeOff>>((ref) {
+  final items = ref.watch(timeOffProvider).valueOrNull ?? const [];
+  return _decidedFirst(items);
+});
+
+/// Même historique, restreint au membre connecté.
+final myTimeOffHistoryProvider = Provider<List<TimeOff>>((ref) {
+  final items = ref.watch(myTimeOffProvider).valueOrNull ?? const [];
+  return _decidedFirst(items);
+});
+
+List<TimeOff> _decidedFirst(List<TimeOff> items) {
+  final decided = items.where((request) => request.isDecided).toList()
+    ..sort((a, b) => b.startDate.compareTo(a.startDate));
+  return decided;
+}
+
 /// Demandes en attente de validation.
 final pendingTimeOffProvider = Provider<List<TimeOff>>((ref) {
   final items = ref.watch(timeOffProvider).valueOrNull ?? const [];

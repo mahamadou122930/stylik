@@ -143,7 +143,10 @@ final checkoutControllerProvider =
           salonId: salonId,
           ticket: ticket,
           paymentMethod: ref.read(selectedPaymentProvider),
-          cashierId: ref.read(currentUserIdProvider),
+          // `transactions.cashier_id` référence `profiles(id)`, pas
+          // `auth.users(id)` : transmettre l'identifiant de session violait la
+          // clé étrangère et faisait échouer tout l'encaissement.
+          cashierId: ref.read(currentProfileProvider).valueOrNull?.id,
         );
 
     ref.read(lastTransactionProvider.notifier).state = transaction;
