@@ -182,20 +182,7 @@ class _Header extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(13),
-                ),
-                child: const Icon(
-                  Icons.content_cut_rounded,
-                  size: 22,
-                  color: Colors.white,
-                ),
-              ),
+              _SalonLogo(url: salon?.logoUrl),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -246,6 +233,45 @@ class _Header extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Logo du salon en tête de facture.
+///
+/// Le vrai logo, téléversé depuis « Mon salon », plutôt qu'une icône générique :
+/// c'est le document que le client emporte. Repli sur le glyphe de l'app tant
+/// qu'aucun logo n'a été déposé, et en cas d'image illisible ou hors ligne.
+class _SalonLogo extends StatelessWidget {
+  const _SalonLogo({required this.url});
+
+  final String? url;
+
+  static const double _size = 44;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = url != null && url!.isNotEmpty;
+
+    return Container(
+      width: _size,
+      height: _size,
+      clipBehavior: Clip.antiAlias,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: hasLogo ? AppColors.surfaceSubtle : AppColors.primary,
+        borderRadius: BorderRadius.circular(13),
+        border: hasLogo ? Border.all(color: AppColors.border) : null,
+      ),
+      child: hasLogo
+          ? Image.network(
+              url!,
+              width: _size,
+              height: _size,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const AppGlyph(size: 22),
+            )
+          : const AppGlyph(size: 22, color: Colors.white),
     );
   }
 }

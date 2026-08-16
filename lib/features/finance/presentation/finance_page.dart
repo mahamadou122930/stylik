@@ -159,10 +159,9 @@ class _PeriodNavigator extends ConsumerWidget {
         ),
         AppIconButton(
           icon: Icons.chevron_right_rounded,
-          // Pas de chiffre d'affaires à venir : l'avance s'arrête au présent,
-          // et la flèche se grise pour que ce soit visible.
-          onTap: offset >= 0 ? null : () => shift(1),
-          color: offset >= 0 ? AppColors.textFaint : null,
+          // Pas de chiffre d'affaires à venir : l'avance s'arrête au présent.
+          enabled: offset < 0,
+          onTap: () => shift(1),
         ),
       ],
     );

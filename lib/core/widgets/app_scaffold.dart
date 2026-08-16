@@ -237,25 +237,44 @@ class AppIconButton extends StatelessWidget {
     this.onTap,
     this.filled = false,
     this.color,
+    this.enabled = true,
   });
 
   final IconData icon;
+
+  /// Sans action, le bouton fait un retour arrière — c'est le comportement
+  /// voulu des flèches d'en-tête, qui s'écrivent sans `onTap`.
   final VoidCallback? onTap;
 
   /// `true` pour la variante pleine (fond accent, icône blanche).
   final bool filled;
+
+  /// Teinte de l'icône, ou du fond en variante pleine.
   final Color? color;
+
+  /// `false` grise le bouton et le rend inerte.
+  ///
+  /// Indispensable, car `onTap: null` ne désactive rien : le bouton retombe
+  /// alors sur le retour arrière, et une flèche censée être indisponible
+  /// quittait l'écran.
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    final background = filled ? (color ?? AppColors.accent) : AppColors.surface;
-    final foreground = filled ? Colors.white : AppColors.textPrimary;
+    final background = filled
+        ? (enabled ? (color ?? AppColors.accent) : AppColors.toggleOff)
+        : AppColors.surface;
+    final foreground = !enabled
+        ? AppColors.textFaint
+        : filled
+            ? Colors.white
+            : (color ?? AppColors.textPrimary);
 
     return Material(
       color: background,
       borderRadius: BorderRadius.circular(AppSizes.radiusMd),
       child: InkWell(
-        onTap: onTap ?? () => Navigator.maybePop(context),
+        onTap: enabled ? (onTap ?? () => Navigator.maybePop(context)) : null,
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         child: Ink(
           width: AppSizes.iconButtonSize,

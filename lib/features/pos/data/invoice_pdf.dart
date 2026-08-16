@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart' show networkImage;
 
 import '../../../core/utils/formatters.dart';
 import '../../settings/domain/salon.dart';
@@ -41,6 +42,21 @@ abstract final class InvoicePdf {
     return _theme = pw.ThemeData.withFont(base: manrope, bold: sora);
   }
 
+  /// Logo du salon, téléchargé pour être incorporé au document.
+  ///
+  /// `null` si le salon n'en a pas déposé, ou si l'image est injoignable —
+  /// une facture doit sortir même hors ligne, sans logo plutôt que pas du tout.
+  static Future<pw.ImageProvider?> _logo(Salon? salon) async {
+    final url = salon?.logoUrl;
+    if (url == null || url.isEmpty) return null;
+
+    try {
+      return await networkImage(url);
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Construit la facture et renvoie ses octets, prêts à imprimer ou partager.
   static Future<List<int>> build({
     required SalonTransaction transaction,
@@ -51,6 +67,7 @@ abstract final class InvoicePdf {
       author: salon?.name,
       theme: await _loadTheme(),
     );
+    final logo = await _logo(salon);
 
     document.addPage(
       pw.Page(
@@ -59,7 +76,7 @@ abstract final class InvoicePdf {
         build: (context) => pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.stretch,
           children: [
-            _header(transaction, salon),
+            _header(transaction, salon, logo),
             pw.SizedBox(height: 22),
             if (transaction.clientName != null) ...[
               _billedTo(transaction),
@@ -78,7 +95,11 @@ abstract final class InvoicePdf {
     return document.save();
   }
 
-  static pw.Widget _header(SalonTransaction transaction, Salon? salon) {
+  static pw.Widget _header(
+    SalonTransaction transaction,
+    Salon? salon,
+    pw.ImageProvider? logo,
+  ) {
     // Adresse et téléphone joints en sautant ce qui manque : un salon sans
     // adresse ne doit pas afficher un séparateur esseulé.
     final contact = [
@@ -89,6 +110,17 @@ abstract final class InvoicePdf {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
+        if (logo != null) ...[
+          pw.Container(
+            width: 44,
+            height: 44,
+            decoration: pw.BoxDecoration(
+              borderRadius: pw.BorderRadius.circular(8),
+              image: pw.DecorationImage(image: logo, fit: pw.BoxFit.cover),
+            ),
+          ),
+          pw.SizedBox(width: 12),
+        ],
         pw.Expanded(
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,

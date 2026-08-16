@@ -255,6 +255,23 @@ void main() {
       expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
     });
 
+    test('un logo injoignable ne bloque pas l emission', () async {
+      final bytes = await InvoicePdf.build(
+        transaction: transaction([line(label: 'Coupe', price: 5000)]),
+        salon: const Salon(
+          id: 'salon',
+          name: 'Salon test',
+          phone: '',
+          address: '',
+          // URL volontairement morte : une facture doit sortir sans logo
+          // plutot que pas du tout.
+          logoUrl: 'https://exemple.invalid/logo.png',
+        ),
+      );
+
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    });
+
     test('se genere sans salon ni client rattaches', () async {
       final bytes = await InvoicePdf.build(
         transaction: transaction([line(label: 'Coupe', price: 5000)]),
