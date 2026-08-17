@@ -46,6 +46,18 @@ enum FinancePeriod {
     return (from: end.subtract(Duration(days: days)), to: end);
   }
 
+  /// Libellé d'une colonne d'histogramme, d'après la date où elle commence.
+  ///
+  /// Les libellés renvoyés par la base sont génériques — « S1 », « S2 »… — et
+  /// ne veulent rien dire sur une journée ou une année. On les redérive de la
+  /// date réelle, à l'échelle affichée.
+  String bucketLabel(DateTime start) => switch (this) {
+        day => '${start.hour}h',
+        week => Formatters.weekdayShort(start),
+        month => Formatters.dayMonth(start),
+        year => Formatters.monthShort(start),
+      };
+
   /// Libellé de la fenêtre décalée, tel qu'affiché entre les deux flèches.
   String labelAt(int offset) {
     final range = rangeAt(offset);
@@ -461,6 +473,22 @@ final netResultProvider = Provider<int>((ref) {
   return revenue - commissions - expenses;
 });
 
+/// Libellés des colonnes de l'histogramme, datés plutôt que génériques.
+final bucketLabelsProvider = Provider<List<String>>((ref) {
+  final summary = ref.watch(financeSummaryProvider).valueOrNull;
+  if (summary == null || summary.buckets.isEmpty) return const [];
+
+  final period = ref.watch(financePeriodProvider);
+  final range = ref.watch(financeRangeProvider);
+  final count = summary.buckets.length;
+  final span = range.to.difference(range.from);
+
+  return [
+    for (var i = 0; i < count; i++)
+      period.bucketLabel(range.from.add(span * (i / count))),
+  ];
+});
+
 /// Marge nette de la période, en pourcentage du chiffre d'affaires.
 ///
 /// `null` sans chiffre d'affaires : une marge n'a pas de sens sur zéro, et
@@ -516,10 +544,12 @@ final netBucketsProvider =
           .catchError((_) => 0),
   ]);
 
+  final period = ref.watch(financePeriodProvider);
+
   return [
     for (var i = 0; i < count; i++)
       (
-        label: summary.buckets[i].label,
+        label: period.bucketLabel(sliceAt(i).from),
         netFcfa: summary.buckets[i].revenueFcfa -
             commissionsPerSlice[i] -
             expenses

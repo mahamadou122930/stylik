@@ -197,4 +197,53 @@ void main() {
       expect(FinancePeriod.year.labelAt(-1), contains('–'));
     });
   });
+
+  group('libelles des colonnes', () {
+    test('une journee est decoupee en heures', () {
+      final start = DateTime(2026, 8, 17, 8);
+      expect(FinancePeriod.day.bucketLabel(start), '8h');
+      expect(FinancePeriod.day.bucketLabel(DateTime(2026, 8, 17, 16)), '16h');
+    });
+
+    test('une semaine est decoupee en jours', () {
+      // Lundi 17 aout 2026.
+      final label = FinancePeriod.week.bucketLabel(DateTime(2026, 8, 17));
+      expect(label.toLowerCase(), startsWith('lun'));
+    });
+
+    test('un mois est decoupe en dates', () {
+      expect(
+        FinancePeriod.month.bucketLabel(DateTime(2026, 8, 3)),
+        contains('3'),
+      );
+    });
+
+    test('une annee est decoupee en mois', () {
+      final label = FinancePeriod.year.bucketLabel(DateTime(2026, 1, 15));
+      expect(label.toLowerCase(), startsWith('janv'));
+    });
+
+    test('les douze mois produisent un libelle', () {
+      // « mai » ne fait que trois lettres : une troncature fixe a quatre
+      // caracteres y levait une RangeError, et seul un mois court la revele.
+      for (var month = 1; month <= 12; month++) {
+        final label = FinancePeriod.year.bucketLabel(DateTime(2026, month, 1));
+        expect(label, isNotEmpty, reason: 'mois $month');
+      }
+
+      expect(
+        FinancePeriod.year.bucketLabel(DateTime(2026, 5, 1)).toLowerCase(),
+        contains('mai'),
+      );
+    });
+
+    test('aucun libelle generique ne subsiste', () {
+      // C'est le symptome rapporte : « S1 », « S2 »… ne disent rien de la
+      // periode qu'ils representent.
+      for (final period in FinancePeriod.values) {
+        final label = period.bucketLabel(DateTime(2026, 8, 17, 9));
+        expect(RegExp(r'^S\d+$').hasMatch(label), isFalse, reason: label);
+      }
+    });
+  });
 }

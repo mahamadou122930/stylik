@@ -20,16 +20,27 @@ import 'stylist_report_page.dart';
 /// lire son montant — sinon la hauteur relative des barres est la seule
 /// information disponible, et un creux ne se chiffre pas.
 class _BreakdownCard extends StatefulWidget {
-  const _BreakdownCard({required this.buckets, required this.period});
+  const _BreakdownCard({
+    required this.buckets,
+    required this.period,
+    required this.labels,
+  });
 
   final List<FinanceBucket> buckets;
   final FinancePeriod period;
+
+  /// Libellés datés, en remplacement des « S1 »… renvoyés par la base.
+  final List<String> labels;
 
   @override
   State<_BreakdownCard> createState() => _BreakdownCardState();
 }
 
 class _BreakdownCardState extends State<_BreakdownCard> {
+  String _labelAt(int index) => index < widget.labels.length
+      ? widget.labels[index]
+      : widget.buckets[index].label;
+
   int? _selected;
 
   @override
@@ -66,7 +77,7 @@ class _BreakdownCardState extends State<_BreakdownCard> {
                       ? (widget.period == FinancePeriod.month
                           ? 'Par semaine'
                           : 'Répartition')
-                      : bucket.label,
+                      : _labelAt(selected!),
                   style: AppTypography.sora(14.5, FontWeight.w700),
                 ),
               ),
@@ -89,8 +100,11 @@ class _BreakdownCardState extends State<_BreakdownCard> {
               () => _selected = _selected == index ? null : index,
             ),
             slices: [
-              for (final item in widget.buckets)
-                ChartSlice(label: item.label, value: item.revenueFcfa),
+              for (var i = 0; i < widget.buckets.length; i++)
+                ChartSlice(
+                  label: _labelAt(i),
+                  value: widget.buckets[i].revenueFcfa,
+                ),
             ],
           ),
           if (bucket != null) ...[
@@ -272,7 +286,11 @@ class FinancePage extends ConsumerWidget {
             ),
             if (data.buckets.isNotEmpty) ...[
               const SizedBox(height: 12),
-              _BreakdownCard(buckets: data.buckets, period: period),
+              _BreakdownCard(
+                buckets: data.buckets,
+                period: period,
+                labels: ref.watch(bucketLabelsProvider),
+              ),
             ],
             const AppSectionTitle('Rapports'),
             AppListCard(

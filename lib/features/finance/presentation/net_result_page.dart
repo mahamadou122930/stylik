@@ -66,8 +66,16 @@ class NetResultPage extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _Line(label: 'Chiffre d\'affaires', value: revenue),
-                  _Line(label: 'Dépenses / charges', value: -expenses),
-                  _Line(label: 'Commissions coiffeurs', value: -commissions),
+                  _Line(
+                    label: 'Dépenses / charges',
+                    value: expenses,
+                    isDeduction: true,
+                  ),
+                  _Line(
+                    label: 'Commissions coiffeurs',
+                    value: commissions,
+                    isDeduction: true,
+                  ),
                   const Divider(height: 20, color: AppColors.border),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -196,21 +204,35 @@ class _HeroCard extends StatelessWidget {
   }
 }
 
-/// Histogramme du net par sous-période.
-class _NetChartCard extends ConsumerWidget {
+/// Histogramme du net par sous-période, dont chaque colonne se touche pour
+/// lire son montant.
+class _NetChartCard extends ConsumerStatefulWidget {
   const _NetChartCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NetChartCard> createState() => _NetChartCardState();
+}
+
+class _NetChartCardState extends ConsumerState<_NetChartCard> {
+  int? _selected;
+
+  @override
+  Widget build(BuildContext context) {
     final period = ref.watch(financePeriodProvider);
     final buckets = ref.watch(netBucketsProvider);
 
     final title = switch (period) {
-      FinancePeriod.day => 'Net par tranche',
+      FinancePeriod.day => 'Net par tranche horaire',
       FinancePeriod.week => 'Net par jour',
       FinancePeriod.month => 'Net par semaine',
       FinancePeriod.year => 'Net par mois',
     };
+
+    final rows = buckets.valueOrNull ?? const [];
+    // Changer d'échelle recompose les colonnes : garder l'ancienne sélection
+    // ferait pointer un montant qui n'est plus le sien.
+    final selected =
+        (_selected != null && _selected! < rows.length) ? _selected : null;
 
     return AppCard(
       radius: 18,
@@ -218,7 +240,29 @@ class _NetChartCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTypography.sora(14.5, FontWeight.w700)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(
+                child: Text(
+                  selected == null ? title : rows[selected].label,
+                  style: AppTypography.sora(14.5, FontWeight.w700),
+                ),
+              ),
+              if (selected != null)
+                Text(
+                  Formatters.fcfa(rows[selected].netFcfa),
+                  style: AppTypography.sora(
+                    13,
+                    FontWeight.w700,
+                    color: rows[selected].netFcfa < 0
+                        ? AppColors.expense
+                        : AppColors.primary,
+                  ),
+                ),
+            ],
+          ),
           const SizedBox(height: 14),
           buckets.when(
             loading: () => const AppLoader(compact: true),
@@ -227,7 +271,7 @@ class _NetChartCard extends ConsumerWidget {
               compact: true,
               onRetry: () => ref.invalidate(netBucketsProvider),
             ),
-            data: (rows) => rows.isEmpty
+            data: (_) => rows.isEmpty
                 ? const AppEmptyState(
                     compact: true,
                     title: 'Aucune donnée',
@@ -236,6 +280,11 @@ class _NetChartCard extends ConsumerWidget {
                   )
                 : AppBarChart(
                     height: 96,
+                    highlightMax: selected == null,
+                    highlightIndex: selected,
+                    onSliceTap: (index) => setState(
+                      () => _selected = _selected == index ? null : index,
+                    ),
                     slices: [
                       for (final row in rows)
                         ChartSlice(
@@ -249,22 +298,46 @@ class _NetChartCard extends ConsumerWidget {
                     ],
                   ),
           ),
+          if (selected != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              rows[selected].netFcfa == 0
+                  ? 'Aucune activité sur cette tranche.'
+                  : 'Touchez à nouveau la colonne pour revenir à la vue '
+                      'd\'ensemble.',
+              style: AppTypography.manrope(
+                11.5,
+                FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// Ligne du récapitulatif : positif pour ce qui entre, négatif pour ce qui sort.
+/// Ligne du récapitulatif : ce qui entre, ce qui sort.
 class _Line extends StatelessWidget {
-  const _Line({required this.label, required this.value});
+  const _Line({
+    required this.label,
+    required this.value,
+    this.isDeduction = false,
+  });
 
   final String label;
+
+  /// Toujours positif : c'est [isDeduction] qui porte le sens. Se fier au
+  /// signe affichait « + 0 F » sur une charge nulle, ce qui se lit comme une
+  /// recette.
   final int value;
+
+  final bool isDeduction;
 
   @override
   Widget build(BuildContext context) {
-    final isOut = value < 0;
+    final isOut = isDeduction;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
