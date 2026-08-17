@@ -23,9 +23,19 @@ class StaffRepository {
     return data.map((row) => Profile.fromMap(row)).toList();
   }
 
-  /// Coiffeurs affectables à un rendez-vous.
-  Future<List<Profile>> fetchStylists(String salonId) =>
-      fetchTeam(salonId, role: UserRole.coiffeur);
+  /// Membres affectables à un rendez-vous ou à une ligne de ticket.
+  ///
+  /// Le gérant en fait partie : dans un salon, il coiffe aussi, et il touche
+  /// sa commission comme les autres. L'exclure le rendait inaffectable au
+  /// planning et faisait disparaître ses prestations du rapport par coiffeur.
+  /// Seule la réception, qui ne réalise pas de prestation, reste écartée.
+  Future<List<Profile>> fetchStylists(String salonId) async {
+    final team = await fetchTeam(salonId);
+    return team
+        .where((member) =>
+            member.isActive && member.role != UserRole.receptionniste)
+        .toList();
+  }
 
   Future<Profile?> fetchById(String profileId) async {
     final data = await _client

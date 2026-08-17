@@ -49,7 +49,16 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
     final ticket = ref.watch(ticketProvider);
     final currentProfile = ref.watch(currentProfileProvider).valueOrNull;
     final stylists = ref.watch(stylistsProvider).valueOrNull ?? const [];
-    final defaultStylist = currentProfile ?? (stylists.isNotEmpty ? stylists.first : null);
+    // Attribution par défaut de la commission. La personne connectée ne
+    // convient que si elle réalise elle-même des prestations : à la caisse,
+    // une réceptionniste encaisse le travail des autres, et lui créditer la
+    // ligne donnerait la commission à quelqu'un qui n'y a pas droit.
+    //
+    // À défaut, aucun coiffeur par défaut : mieux vaut une ligne à assigner
+    // explicitement qu'une commission versée au mauvais membre.
+    final defaultStylist = stylists.any((s) => s.id == currentProfile?.id)
+        ? currentProfile
+        : null;
 
     return AppScreen(
       title: 'Ajouter au ticket',

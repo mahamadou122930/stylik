@@ -67,10 +67,11 @@ class MorePage extends ConsumerWidget {
           description: 'CA, rapports, export',
           icon: Icons.bar_chart_rounded,
           route: FinancePage.routeName,
-        )
-      // La finance du salon lui étant fermée, le coiffeur accède quand même à
-      // sa propre rémunération — c'est la sienne.
-      else if (role.canViewOwnCommission)
+        ),
+      // Proposé à tous, gérant compris : il coiffe aussi et touche sa
+      // commission. La finance du salon et sa propre rémunération sont deux
+      // chiffres différents, il lui faut les deux entrées.
+      if (role.canViewOwnCommission)
         const _MoreEntry(
           label: 'Mes commissions',
           description: 'Ce que je gagne',

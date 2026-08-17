@@ -20,14 +20,27 @@
 -- et ne servent que des rôles autorisés à les lire en direct. Repasser en
 -- `INVOKER` les soumet à la RLS : un identifiant de salon étranger ne renvoie
 -- plus aucune ligne, sans qu'aucune garde explicite soit à maintenir.
-ALTER FUNCTION public.finance_summary(UUID, TIMESTAMPTZ, TIMESTAMPTZ)
-  SECURITY INVOKER;
-
-ALTER FUNCTION public.service_performance(UUID, TIMESTAMPTZ, TIMESTAMPTZ)
-  SECURITY INVOKER;
-
-ALTER FUNCTION public.reminder_stats(UUID)
-  SECURITY INVOKER;
+--
+-- Toutes ne sont pas présentes sur toutes les bases — `finance_summary` et
+-- `reminder_stats` manquent sur la nôtre, l'app retombant sur un calcul Dart.
+-- Un `ALTER` sur une fonction absente ferait échouer la migration entière, et
+-- avec elle le cloisonnement qui suit. D'où le passage par le catalogue.
+DO $$
+DECLARE
+  v_signature TEXT;
+BEGIN
+  FOREACH v_signature IN ARRAY ARRAY[
+    'public.finance_summary(uuid, timestamptz, timestamptz)',
+    'public.service_performance(uuid, timestamptz, timestamptz)',
+    'public.reminder_stats(uuid)'
+  ]
+  LOOP
+    IF to_regprocedure(v_signature) IS NOT NULL THEN
+      EXECUTE format('ALTER FUNCTION %s SECURITY INVOKER', v_signature);
+    END IF;
+  END LOOP;
+END;
+$$;
 
 -- ==========================================================================
 -- 2. Fonctions qui doivent rester `DEFINER` : garde explicite

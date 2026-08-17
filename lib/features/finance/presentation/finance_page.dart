@@ -11,6 +11,7 @@ import '../domain/payout.dart';
 import 'expenses_page.dart';
 import 'export_page.dart';
 import 'finance_providers.dart';
+import 'net_result_page.dart';
 import 'payout_requests_page.dart';
 import 'service_report_page.dart';
 import 'stylist_report_page.dart';
@@ -294,6 +295,20 @@ class FinancePage extends ConsumerWidget {
                       .pushNamed(TransactionsPage.routeName),
                 ),
                 AppListRow(
+                  label: 'Résultat net',
+                  subtitle: 'Ce qui reste après commissions et charges',
+                  strong: true,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  leading: const AppIconTile(
+                    icon: Icons.savings_rounded,
+                    color: AppColors.blue,
+                    background: AppColors.tintBlue,
+                  ),
+                  trailing: const AppChevron(),
+                  onTap: () => Navigator.of(context)
+                      .pushNamed(NetResultPage.routeName),
+                ),
+                AppListRow(
                   label: 'Par coiffeur',
                   subtitle: 'Performance et commissions',
                   strong: true,
@@ -466,6 +481,7 @@ class _RevenueCard extends StatelessWidget {
       FinancePeriod.day => 'aujourd\'hui',
       FinancePeriod.week => '7 derniers jours',
       FinancePeriod.month => '30 derniers jours',
+      FinancePeriod.year => '12 derniers mois',
     };
   }
 }

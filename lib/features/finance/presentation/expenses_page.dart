@@ -8,6 +8,7 @@ import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
 import 'expense_form_page.dart';
 import 'finance_providers.dart';
+import 'net_result_page.dart';
 
 /// 8.4 — Dépenses / charges : sorties du salon et résultat net.
 class ExpensesPage extends ConsumerWidget {
@@ -48,6 +49,10 @@ class ExpensesPage extends ConsumerWidget {
                 tinted: true,
                 valueColor:
                     net < 0 ? AppColors.expense : AppColors.primary,
+                // Le détail — CA, commissions, charges — et les quatre
+                // échelles de temps sont sur l'écran dédié.
+                onTap: () =>
+                    Navigator.of(context).pushNamed(NetResultPage.routeName),
               ),
             ),
           ],

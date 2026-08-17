@@ -280,7 +280,14 @@ class FinanceRepository {
           lines = rawLines;
         }
 
+        // Clé de comptage des clients servis : la fiche si elle existe, le
+        // ticket sinon. La caisse n'attache pas toujours un client — « Client
+        // de passage » n'en a pas — et ne compter que les fiches affichait
+        // « 0 clients » sur un coiffeur qui avait pourtant encaissé.
         final clientId = row['client_id'] as String?;
+        final servedKey = (clientId != null && clientId.isNotEmpty)
+            ? 'c:$clientId'
+            : 't:${row['id']}';
 
         for (final line in lines) {
           if (line is! Map<String, dynamic>) continue;
@@ -322,9 +329,7 @@ class FinanceRepository {
 
           entry['revenue_fcfa'] = (entry['revenue_fcfa'] as int) + amount;
           entry['service_count'] = (entry['service_count'] as int) + qty;
-          if (clientId != null && clientId.isNotEmpty) {
-            (entry['clients'] as Set<String>).add(clientId);
-          }
+          (entry['clients'] as Set<String>).add(servedKey);
         }
       }
 

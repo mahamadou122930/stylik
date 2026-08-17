@@ -290,8 +290,35 @@ class PosRepository {
           'p_reason': reason.value,
         },
       );
+      return;
     } catch (e) {
-      debugPrint('Erreur lors du remboursement Supabase: $e');
+      debugPrint('RPC refund_transaction indisponible, mise à jour directe : $e');
+    }
+
+    // Repli pour les bases où la fonction n'est pas encore créée. Le statut
+    // suffit : c'est lui que lisent la caisse du jour et les commissions.
+    try {
+      final updated = await _client
+          .from(SupabaseTables.transactions)
+          .update({'status': TransactionStatus.refunded.value})
+          .eq('id', transactionId)
+          // Même borne que la RPC : un ticket déjà remboursé ne l'est pas
+          // deux fois.
+          .eq('status', TransactionStatus.paid.value)
+          .select('id');
+
+      if (updated.isEmpty) {
+        throw StateError('Transaction introuvable ou déjà remboursée.');
+      }
+    } on PostgrestException catch (e) {
+      // Refus de la base — droits, contrainte : rejouer n'y changera rien.
+      // Sans ce `rethrow`, l'écran annonçait « Remboursement enregistré »
+      // alors que la vente restait payée en caisse.
+      debugPrint('Remboursement refusé : ${e.code} ${e.message}');
+      rethrow;
+    } catch (e) {
+      // Panne réseau : l'opération est légitime, on la rejouera.
+      debugPrint('Remboursement différé, mise en file : $e');
       await _localDb.enqueueMutation(
         action: 'UPDATE',
         tableName: SupabaseTables.transactions,

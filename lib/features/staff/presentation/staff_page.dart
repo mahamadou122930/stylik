@@ -6,6 +6,8 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../auth/domain/profile.dart';
+import '../../finance/domain/finance_summary.dart';
+import '../../finance/presentation/finance_providers.dart';
 import 'invite_code_card.dart';
 import 'staff_detail_page.dart';
 import 'staff_form_page.dart';
@@ -23,6 +25,8 @@ class StaffPage extends ConsumerWidget {
     final team = ref.watch(teamProvider);
     final absent = ref.watch(absentTodayIdsProvider);
     final presence = ref.watch(presenceCountProvider);
+    // Clients servis et prestations du mois, par membre.
+    final activity = ref.watch(monthActivityByStylistProvider);
 
     return AppScreen(
       title: 'Personnel',
@@ -78,6 +82,7 @@ class StaffPage extends ConsumerWidget {
                         _StaffCard(
                           member: members[i],
                           isAbsent: absent.contains(members[i].id),
+                          activity: activity[members[i].id],
                           accent: AppColors
                               .chartSeries[i % AppColors.chartSeries.length],
                           onTap: () => Navigator.of(context).pushNamed(
@@ -125,12 +130,18 @@ class _StaffCard extends StatelessWidget {
     required this.member,
     required this.isAbsent,
     required this.accent,
+    this.activity,
     this.onTap,
   });
 
   final Profile member;
   final bool isAbsent;
   final Color accent;
+
+  /// Activité du mois : clients servis et prestations réalisées. `null` pour
+  /// un membre qui n'encaisse pas, comme la réception.
+  final StylistCommission? activity;
+
   final VoidCallback? onTap;
 
   @override
@@ -194,9 +205,23 @@ class _StaffCard extends StatelessWidget {
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (activity != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    '${activity!.clientCount} client(s) · '
+                    '${activity!.serviceCount} prestation(s) ce mois',
+                    style: AppTypography.manrope(
+                      11.5,
+                      FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
             ),
           ),
+          const SizedBox(width: 8),
           AppBadge(
             label: isAbsent ? 'En congé' : 'Présent',
             color: isAbsent ? AppColors.amber : AppColors.primary,

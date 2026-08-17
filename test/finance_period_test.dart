@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:stylik/core/utils/formatters.dart';
+import 'package:stylik/features/finance/domain/finance_summary.dart';
 import 'package:stylik/features/finance/presentation/finance_providers.dart';
 
 /// Navigation dans le temps de l'écran Chiffre d'affaires. La fenêtre pilote
@@ -106,6 +107,94 @@ void main() {
 
       container.read(financePeriodOffsetProvider.notifier).state = 0;
       expect(container.read(financeRangeProvider), FinancePeriod.day.range);
+    });
+  });
+
+  group('resultat net', () {
+    ProviderContainer withFigures({
+      required int revenue,
+      required int commissions,
+      required int expenses,
+    }) {
+      final c = ProviderContainer(
+        overrides: [
+          financeSummaryProvider.overrideWith(
+            (ref) async => FinanceSummary(
+              from: DateTime(2026, 8),
+              to: DateTime(2026, 9),
+              revenueFcfa: revenue,
+              ticketCount: 4,
+            ),
+          ),
+          commissionsProvider.overrideWith(
+            (ref) async => [
+              StylistCommission(
+                stylistId: 'a',
+                stylistName: 'A',
+                revenueFcfa: revenue,
+                commissionFcfa: commissions,
+                serviceCount: 4,
+              ),
+            ],
+          ),
+          expensesProvider.overrideWith(
+            (ref) async => [
+              Expense(
+                id: 'e1',
+                salonId: 'salon',
+                label: 'Loyer',
+                amountFcfa: expenses,
+                category: ExpenseCategory.rent,
+                spentAt: DateTime(2026, 8, 5),
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      return c;
+    }
+
+    test('les commissions sont retranchees du net', () async {
+      final c = withFigures(revenue: 300000, commissions: 90000, expenses: 50000);
+      await c.read(financeSummaryProvider.future);
+      await c.read(commissionsProvider.future);
+      await c.read(expensesProvider.future);
+
+      // 300 000 - 90 000 - 50 000. Sans les commissions, le net afficherait
+      // 250 000 et surestimerait de 90 000 ce qui reste au gerant.
+      expect(c.read(periodCommissionsProvider), 90000);
+      expect(c.read(netResultProvider), 160000);
+    });
+
+    test('un net negatif reste negatif', () async {
+      final c = withFigures(revenue: 100000, commissions: 60000, expenses: 80000);
+      await c.read(financeSummaryProvider.future);
+      await c.read(commissionsProvider.future);
+      await c.read(expensesProvider.future);
+
+      // Une perte doit se voir, pas etre bornee a zero.
+      expect(c.read(netResultProvider), -40000);
+    });
+  });
+
+  group('periode annuelle', () {
+    test('l annee couvre douze colonnes sur 365 jours', () {
+      expect(FinancePeriod.year.days, 365);
+      expect(FinancePeriod.year.bucketCount, 12);
+
+      final range = FinancePeriod.year.range;
+      expect(range.to.difference(range.from).inDays, 365);
+    });
+
+    test('elle recule d une annee entiere', () {
+      final previous = FinancePeriod.year.rangeAt(-1);
+      expect(previous.to, FinancePeriod.year.range.from);
+    });
+
+    test('son libelle suit la meme regle que les autres', () {
+      expect(FinancePeriod.year.labelAt(0), 'Cette annee'.replaceAll('annee', 'année'));
+      expect(FinancePeriod.year.labelAt(-1), contains('–'));
     });
   });
 }

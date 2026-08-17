@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/providers.dart';
 import '../../../core/utils/formatters.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../staff/presentation/staff_providers.dart';
 import '../data/finance_repository.dart';
 import '../domain/finance_summary.dart';
 import '../domain/payout.dart';
@@ -20,7 +21,8 @@ final financeRepositoryProvider = Provider<FinanceRepository>(
 enum FinancePeriod {
   day('Jour', 1, 6),
   week('Semaine', 7, 7),
-  month('Mois', 30, 4);
+  month('Mois', 30, 4),
+  year('Année', 365, 12);
 
   const FinancePeriod(this.label, this.days, this.bucketCount);
 
@@ -52,6 +54,7 @@ enum FinancePeriod {
         day => 'Aujourd\'hui',
         week => 'Cette semaine',
         month => 'Ce mois-ci',
+        year => 'Cette année',
       };
     }
     if (this == day) {
@@ -112,6 +115,65 @@ final commissionsProvider =
         from: range.from,
         to: range.to,
       );
+});
+
+/// Rapport « Par coiffeur » complété de toute l'équipe.
+///
+/// `stylist_commissions` se construit à partir des ventes : un coiffeur qui
+/// n'a rien encaissé sur la période n'y a aucune ligne, et disparaît donc du
+/// rapport. Un nouvel arrivant semblait ne pas exister, et une commission
+/// attribuée par erreur à quelqu'un d'autre restait invisible faute de point
+/// de comparaison. On complète donc avec les membres affectables, à zéro.
+final stylistReportProvider = Provider<List<StylistCommission>>((ref) {
+  final earned = ref.watch(commissionsProvider).valueOrNull ?? const [];
+  final team = ref.watch(stylistsProvider).valueOrNull ?? const [];
+
+  final byId = {for (final row in earned) row.stylistId: row};
+
+  final rows = [
+    ...earned,
+    for (final member in team)
+      if (!byId.containsKey(member.id))
+        StylistCommission(
+          stylistId: member.id,
+          stylistName: member.fullName,
+          revenueFcfa: 0,
+          commissionFcfa: 0,
+          serviceCount: 0,
+          commissionRate: member.commissionRate,
+          speciality:
+              member.specialties.isEmpty ? null : member.specialties.first,
+        ),
+  ];
+
+  // Les plus productifs d'abord, les inactifs de la période en fin de liste.
+  rows.sort((a, b) => b.revenueFcfa.compareTo(a.revenueFcfa));
+  return rows;
+});
+
+/// Commissions de toute l'équipe sur le mois calendaire en cours.
+///
+/// Indépendante de `financePeriodProvider` : les écrans du personnel parlent
+/// du mois, pas de la période choisie dans Finance. Chargée une fois pour
+/// toute la liste, plutôt qu'un appel par membre.
+final monthCommissionsProvider =
+    FutureProvider<List<StylistCommission>>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  if (salonId == null) return const [];
+
+  final now = DateTime.now();
+  return ref.watch(financeRepositoryProvider).fetchCommissions(
+        salonId: salonId,
+        from: DateTime(now.year, now.month),
+        to: DateTime(now.year, now.month + 1),
+      );
+});
+
+/// Activité du mois par membre, indexée par identifiant de fiche.
+final monthActivityByStylistProvider =
+    Provider<Map<String, StylistCommission>>((ref) {
+  final rows = ref.watch(monthCommissionsProvider).valueOrNull ?? const [];
+  return {for (final row in rows) row.stylistId: row};
 });
 
 /// Commission du membre connecté sur le mois calendaire en cours.
@@ -374,10 +436,99 @@ final expensesTotalProvider = Provider<int>((ref) {
   return expenses.fold(0, (sum, expense) => sum + expense.amountFcfa);
 });
 
-/// Résultat net (CA encaissé − charges) de la période.
+/// Commissions dues à l'équipe sur la période.
+///
+/// Calculées depuis le rapport par coiffeur plutôt que depuis
+/// `FinanceSummary.commissionsFcfa`, qui est déclaré mais jamais renseigné :
+/// aucun des deux chemins de `fetchSummary` ne l'alimente.
+final periodCommissionsProvider = Provider<int>((ref) {
+  final rows = ref.watch(commissionsProvider).valueOrNull ?? const [];
+  return rows.fold<int>(0, (sum, row) => sum + row.commissionFcfa);
+});
+
+/// Résultat net de la période : CA encaissé, moins les commissions dues à
+/// l'équipe, moins les charges.
+///
+/// Les commissions manquaient au calcul. Or c'est la première dépense d'un
+/// salon : un « résultat net » qui les ignore surestime largement ce qui
+/// reste réellement au gérant.
 final netResultProvider = Provider<int>((ref) {
-  final revenue = ref.watch(financeSummaryProvider).valueOrNull?.revenueFcfa ?? 0;
-  return revenue - ref.watch(expensesTotalProvider);
+  final int revenue =
+      ref.watch(financeSummaryProvider).valueOrNull?.revenueFcfa ?? 0;
+  final int commissions = ref.watch(periodCommissionsProvider);
+  final int expenses = ref.watch(expensesTotalProvider);
+
+  return revenue - commissions - expenses;
+});
+
+/// Marge nette de la période, en pourcentage du chiffre d'affaires.
+///
+/// `null` sans chiffre d'affaires : une marge n'a pas de sens sur zéro, et
+/// afficher « 0 % » laisserait croire à une activité sans rentabilité plutôt
+/// qu'à une absence d'activité.
+final netMarginProvider = Provider<int?>((ref) {
+  final revenue =
+      ref.watch(financeSummaryProvider).valueOrNull?.revenueFcfa ?? 0;
+  if (revenue <= 0) return null;
+
+  return (ref.watch(netResultProvider) / revenue * 100).round();
+});
+
+/// Résultat net par sous-période, pour l'histogramme de l'écran dédié.
+///
+/// Le découpage reprend exactement celui de `fetchSummary` — la fenêtre
+/// partagée en parts égales — sans quoi les colonnes du graphe ne
+/// correspondraient pas aux montants du récapitulatif.
+///
+/// Les commissions sont interrogées tranche par tranche : elles dépendent du
+/// taux de chaque coiffeur, donc les répartir au prorata du chiffre
+/// d'affaires donnerait un résultat faux dès que deux taux diffèrent.
+final netBucketsProvider =
+    FutureProvider<List<({String label, int netFcfa})>>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  final summary = ref.watch(financeSummaryProvider).valueOrNull;
+  if (salonId == null || summary == null || summary.buckets.isEmpty) {
+    return const [];
+  }
+
+  final range = ref.watch(financeRangeProvider);
+  final expenses = ref.watch(expensesProvider).valueOrNull ?? const [];
+  final count = summary.buckets.length;
+  final span = range.to.difference(range.from);
+
+  ({DateTime from, DateTime to}) sliceAt(int index) {
+    final start = range.from.add(span * (index / count));
+    final end = range.from.add(span * ((index + 1) / count));
+    return (from: start, to: end);
+  }
+
+  final repository = ref.watch(financeRepositoryProvider);
+  final commissionsPerSlice = await Future.wait([
+    for (var i = 0; i < count; i++)
+      repository
+          .fetchCommissions(
+            salonId: salonId,
+            from: sliceAt(i).from,
+            to: sliceAt(i).to,
+          )
+          .then((rows) => rows.fold<int>(0, (s, r) => s + r.commissionFcfa))
+          // Une tranche en erreur ne doit pas vider tout le graphe.
+          .catchError((_) => 0),
+  ]);
+
+  return [
+    for (var i = 0; i < count; i++)
+      (
+        label: summary.buckets[i].label,
+        netFcfa: summary.buckets[i].revenueFcfa -
+            commissionsPerSlice[i] -
+            expenses
+                .where((e) =>
+                    !e.spentAt.isBefore(sliceAt(i).from) &&
+                    e.spentAt.isBefore(sliceAt(i).to))
+                .fold<int>(0, (s, e) => s + e.amountFcfa),
+      ),
+  ];
 });
 
 // --- Export comptable -----------------------------------------------------

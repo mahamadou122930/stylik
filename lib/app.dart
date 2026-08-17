@@ -37,6 +37,7 @@ import 'features/finance/presentation/expenses_page.dart';
 import 'features/finance/presentation/export_page.dart';
 import 'features/finance/presentation/finance_page.dart';
 import 'features/finance/presentation/my_commission_page.dart';
+import 'features/finance/presentation/net_result_page.dart';
 import 'features/finance/presentation/payout_requests_page.dart';
 import 'features/finance/presentation/service_report_page.dart';
 import 'features/finance/presentation/stylist_commission_detail_page.dart';
@@ -185,6 +186,7 @@ class AtelierApp extends ConsumerWidget {
     FinancePage.routeName: const FinancePage(),
     StylistReportPage.routeName: const StylistReportPage(),
     MyCommissionPage.routeName: const MyCommissionPage(),
+    NetResultPage.routeName: const NetResultPage(),
     PayoutRequestsPage.routeName: const PayoutRequestsPage(),
     ServiceReportPage.routeName: const ServiceReportPage(),
     ExpensesPage.routeName: const ExpensesPage(),

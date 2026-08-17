@@ -222,7 +222,10 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
                 return days < 0 ? 'Ne peut pas être négatif' : null;
               },
             ),
-            if (_role == UserRole.coiffeur) ...[
+            // Le gérant coiffe aussi et touche sa commission : réserver ce
+            // champ au rôle « coiffeur » l'empêchait de fixer son propre taux,
+            // et ses prestations ne rapportaient rien au rapport.
+            if (_role != UserRole.receptionniste) ...[
               const SizedBox(height: 15),
               AppInput(
                 label: 'Taux de commission (%)',

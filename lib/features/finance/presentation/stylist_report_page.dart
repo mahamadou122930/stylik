@@ -19,6 +19,8 @@ class StylistReportPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(financePeriodProvider);
     final commissions = ref.watch(commissionsProvider);
+    // Toute l'équipe, y compris qui n'a rien encaissé sur la période.
+    final items = ref.watch(stylistReportProvider);
 
     return AppScreen(
       title: 'Par coiffeur',
@@ -42,10 +44,11 @@ class StylistReportPage extends ConsumerWidget {
               message: '$error',
               onRetry: () => ref.invalidate(commissionsProvider),
             ),
-            data: (items) => items.isEmpty
+            data: (_) => items.isEmpty
                 ? const AppEmptyState(
-                    title: 'Aucune donnée',
-                    message: 'Aucune prestation encaissée sur cette période.',
+                    title: 'Aucun coiffeur',
+                    message: 'Ajoutez votre équipe pour suivre les '
+                        'commissions.',
                     icon: Icons.insights_outlined,
                   )
                 : Column(
@@ -113,7 +116,11 @@ class _StylistCard extends StatelessWidget {
                       [
                         if (commission.speciality?.isNotEmpty ?? false)
                           commission.speciality!,
-                        '${commission.clientCount} clients',
+                        '${commission.clientCount} client(s)',
+                        // Le nombre de prestations, lui, n'est jamais nul dès
+                        // qu'il y a eu une vente : il lève l'ambiguïté quand
+                        // aucune fiche client n'a été attachée au ticket.
+                        '${commission.serviceCount} prestation(s)',
                       ].join(' · '),
                       style: AppTypography.rowSubtitle,
                     ),
