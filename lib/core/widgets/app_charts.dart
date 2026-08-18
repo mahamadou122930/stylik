@@ -61,7 +61,8 @@ class AppBarChart extends StatelessWidget {
                   final bar = _Bar(
                     slice: slices[i],
                     ratio: maxValue == 0 ? 0 : slices[i].value / maxValue,
-                    highlighted: i == highlightIndex ||
+                    highlighted:
+                        i == highlightIndex ||
                         (highlightMax && slices[i].value == maxValue),
                     maxBarHeight: height - 22,
                   );
@@ -107,7 +108,8 @@ class _Bar extends StatelessWidget {
         Container(
           height: math.max(6, maxBarHeight * ratio),
           decoration: BoxDecoration(
-            color: slice.color ??
+            color:
+                slice.color ??
                 (highlighted ? AppColors.accent : AppColors.tintGreenBorder),
             borderRadius: BorderRadius.circular(7),
           ),
@@ -116,10 +118,16 @@ class _Bar extends StatelessWidget {
         Text(
           slice.label,
           style: highlighted
-              ? AppTypography.sora(10.5, FontWeight.w700,
-                  color: AppColors.primary)
-              : AppTypography.manrope(10.5, FontWeight.w600,
-                  color: AppColors.textFaint),
+              ? AppTypography.sora(
+                  10.5,
+                  FontWeight.w700,
+                  color: AppColors.primary,
+                )
+              : AppTypography.manrope(
+                  10.5,
+                  FontWeight.w600,
+                  color: AppColors.textFaint,
+                ),
         ),
       ],
     );
@@ -179,7 +187,9 @@ class AppDonutChart extends StatelessWidget {
             children: [
               for (var i = 0; i < slices.length; i++)
                 Padding(
-                  padding: EdgeInsets.only(bottom: i == slices.length - 1 ? 0 : 9),
+                  padding: EdgeInsets.only(
+                    bottom: i == slices.length - 1 ? 0 : 9,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -193,7 +203,12 @@ class AppDonutChart extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          slices[i].label,
+                          // Une pastille de couleur sans libellé ne se
+                          // rattache à rien : mieux vaut « Sans catégorie »
+                          // qu'une ligne muette.
+                          slices[i].label.trim().isEmpty
+                              ? 'Sans catégorie'
+                              : slices[i].label,
                           style: AppTypography.manrope(12.5, FontWeight.w600),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -259,7 +274,8 @@ class _DonutPainter extends CustomPainter {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = stroke
-          ..color = slices[i].color ??
+          ..color =
+              slices[i].color ??
               AppColors.chartSeries[i % AppColors.chartSeries.length],
       );
       start += sweep;
@@ -296,7 +312,10 @@ class AppSplitMetrics extends StatelessWidget {
               ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 11),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 11,
+                ),
                 child: Column(
                   children: [
                     Text(

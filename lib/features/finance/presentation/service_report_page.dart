@@ -30,7 +30,8 @@ class ServiceReportPage extends ConsumerWidget {
           if (items.isEmpty) {
             return const AppEmptyState(
               title: 'Aucune donnée',
-              message: 'Aucune prestation encaissée sur cette période.',
+              message:
+                  'Aucune prestation ni vente encaissée sur cette période.',
               icon: Icons.donut_small_outlined,
             );
           }
@@ -43,7 +44,12 @@ class ServiceReportPage extends ConsumerWidget {
           final categories = byCategory.entries.toList()
             ..sort((a, b) => b.value.compareTo(a.value));
 
-          final top = [...items]
+          // Prestations et produits se classent séparément : mis dans le même
+          // palmarès, le shampooing le plus vendu chasserait une coupe du
+          // top 5 sans qu'on puisse comparer les deux volumes.
+          final services = [...items.where((item) => !item.isProduct)]
+            ..sort((a, b) => b.revenueFcfa.compareTo(a.revenueFcfa));
+          final products = [...items.where((item) => item.isProduct)]
             ..sort((a, b) => b.revenueFcfa.compareTo(a.revenueFcfa));
 
           return Column(
@@ -62,13 +68,24 @@ class ServiceReportPage extends ConsumerWidget {
                   ],
                 ),
               ),
-              const AppSectionTitle('Top prestations'),
-              AppListCard(
-                children: [
-                  for (var i = 0; i < top.take(5).length; i++)
-                    _TopServiceRow(rank: i + 1, service: top[i]),
-                ],
-              ),
+              if (services.isNotEmpty) ...[
+                const AppSectionTitle('Top prestations'),
+                AppListCard(
+                  children: [
+                    for (var i = 0; i < services.take(5).length; i++)
+                      _TopServiceRow(rank: i + 1, service: services[i]),
+                  ],
+                ),
+              ],
+              if (products.isNotEmpty) ...[
+                const AppSectionTitle('Top produits vendus'),
+                AppListCard(
+                  children: [
+                    for (var i = 0; i < products.take(5).length; i++)
+                      _TopServiceRow(rank: i + 1, service: products[i]),
+                  ],
+                ),
+              ],
             ],
           );
         },
@@ -108,7 +125,7 @@ class _TopServiceRow extends StatelessWidget {
                 Text(service.name, style: AppTypography.rowTitleStrong),
                 const SizedBox(height: 1),
                 Text(
-                  '${service.count} prestations',
+                  service.countLabel,
                   style: AppTypography.manrope(
                     11,
                     FontWeight.w500,

@@ -448,6 +448,16 @@ class FinanceRepository {
   }
 
   /// Rapport par service — tente l'RPC Supabase, bascule sur le calcul local si l'RPC est introuvable ou hors-ligne.
+  /// Texte de la ligne, ou [fallback] si la valeur est absente **ou vide**.
+  ///
+  /// `??` seul laissait passer la chaîne vide : une prestation sans catégorie
+  /// produisait une part de l'anneau sans libellé dans la légende — une
+  /// couleur qu'on ne pouvait rattacher à rien.
+  static String _orDefault(Object? value, String fallback) {
+    final text = (value as String?)?.trim() ?? '';
+    return text.isEmpty ? fallback : text;
+  }
+
   Future<List<ServicePerformance>> fetchServicePerformance({
     required String salonId,
     required DateTime from,
@@ -490,16 +500,28 @@ class FinanceRepository {
 
         for (final line in lines) {
           if (line is! Map<String, dynamic>) continue;
-          if ((line['is_product'] ?? line['isProduct'] as bool?) ?? false) {
-            continue; // Exclure produits
-          }
+
+          // Les produits revendus comptaient dans le chiffre d'affaires mais
+          // étaient écartés d'ici : la répartition annonçait « 100 % du CA »
+          // en n'en couvrant qu'une partie. Ils sont désormais retenus, avec
+          // le drapeau qui permet de ne pas les compter en prestations.
+          final isProduct =
+              ((line['is_product'] ?? line['isProduct']) as bool?) ?? false;
 
           final serviceId =
               (line['ref_id'] ?? line['refId'] as String?) ??
               (line['label'] as String?) ??
               'service';
-          final name = (line['label'] as String?) ?? 'Prestation';
-          final category = (line['category'] as String?) ?? 'Autre';
+          final name = _orDefault(
+            line['label'],
+            isProduct ? 'Produit' : 'Prestation',
+          );
+          // La catégorie d'un produit est sa marque : la remplacer par
+          // « Produits » garde l'anneau lisible — une part par activité, et
+          // non une part par marque noyée parmi les prestations.
+          final category = isProduct
+              ? 'Produits'
+              : _orDefault(line['category'], 'Autre');
           final qty = (line['quantity'] as num?)?.toInt() ?? 1;
           final price =
               ((line['unit_price_fcfa'] ?? line['unitPriceFcfa']) as num?)
@@ -515,6 +537,7 @@ class FinanceRepository {
               'category': category,
               'count': 0,
               'revenue_fcfa': 0,
+              'is_product': isProduct,
             },
           );
 

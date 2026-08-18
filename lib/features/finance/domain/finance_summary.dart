@@ -113,6 +113,7 @@ class ServicePerformance {
     required this.category,
     required this.count,
     required this.revenueFcfa,
+    this.isProduct = false,
   });
 
   final String serviceId;
@@ -121,13 +122,38 @@ class ServicePerformance {
   final int count;
   final int revenueFcfa;
 
+  /// Vente de produit plutôt que prestation.
+  ///
+  /// Les deux pèsent sur le chiffre d'affaires et doivent donc figurer dans
+  /// la répartition, mais ne se comptent pas pareil : « 3 prestations » sur
+  /// un shampooing vendu se lirait comme trois passages en fauteuil.
+  final bool isProduct;
+
+  /// Libellé du volume, adapté à la nature de la ligne.
+  String get countLabel => isProduct
+      ? '$count ${count > 1 ? 'unités vendues' : 'unité vendue'}'
+      : '$count ${count > 1 ? 'prestations' : 'prestation'}';
+
+  /// Dernier filet contre les libellés vides : une catégorie blanche donnait
+  /// une part colorée sans légende, impossible à rattacher à quoi que ce soit.
+  /// Le repli existe déjà à la lecture des lignes, mais la RPC est un second
+  /// chemin d'entrée qu'il faut couvrir aussi.
+  static String _orDefault(Object? value, String fallback) {
+    final text = (value as String?)?.trim() ?? '';
+    return text.isEmpty ? fallback : text;
+  }
+
   factory ServicePerformance.fromMap(Map<String, dynamic> map) =>
       ServicePerformance(
         serviceId: (map['service_id'] as String?) ?? '',
-        name: (map['name'] as String?) ?? '',
-        category: (map['category'] as String?) ?? 'Autre',
+        name: _orDefault(
+          map['name'],
+          ((map['is_product'] as bool?) ?? false) ? 'Produit' : 'Prestation',
+        ),
+        category: _orDefault(map['category'], 'Autre'),
         count: (map['count'] as num?)?.toInt() ?? 0,
         revenueFcfa: (map['revenue_fcfa'] as num?)?.toInt() ?? 0,
+        isProduct: (map['is_product'] as bool?) ?? false,
       );
 }
 
