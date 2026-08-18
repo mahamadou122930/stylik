@@ -8,10 +8,10 @@ import 'package:stylik/core/widgets/app_charts.dart';
 /// tactile doit couvrir toute la colonne, sinon le jour est invisible au doigt.
 void main() {
   Widget host(Widget child) => MaterialApp(
-        home: Scaffold(
-          body: Center(child: SizedBox(width: 320, child: child)),
-        ),
-      );
+    home: Scaffold(
+      body: Center(child: SizedBox(width: 320, child: child)),
+    ),
+  );
 
   testWidgets('sans callback, les barres ne réagissent pas', (tester) async {
     await tester.pumpWidget(
@@ -125,8 +125,9 @@ void main() {
       expect(colors, contains(AppColors.accent));
     });
 
-    testWidgets('une couleur de tranche prime sur la mise en avant',
-        (tester) async {
+    testWidgets('une couleur de tranche prime sur la mise en avant', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         host(
           const AppBarChart(
@@ -144,12 +145,12 @@ void main() {
 
     testWidgets('le tap ne change pas les couleurs rendues', (tester) async {
       Widget chart(bool tappable) => AppBarChart(
-            onSliceTap: tappable ? (_) {} : null,
-            slices: const [
-              ChartSlice(label: 'A', value: 100),
-              ChartSlice(label: 'B', value: 900),
-            ],
-          );
+        onSliceTap: tappable ? (_) {} : null,
+        slices: const [
+          ChartSlice(label: 'A', value: 100),
+          ChartSlice(label: 'B', value: 900),
+        ],
+      );
 
       await tester.pumpWidget(host(chart(false)));
       final sansTap = barColors(tester);

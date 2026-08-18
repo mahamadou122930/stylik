@@ -13,19 +13,18 @@ void main() {
     required int cost,
     int salePrice = 0,
     ProductUsage usage = ProductUsage.resale,
-  }) =>
-      Product(
-        id: id,
-        salonId: 'salon',
-        name: 'Produit $id',
-        brand: 'Marque',
-        category: 'Revente',
-        stockQuantity: quantity,
-        alertThreshold: 2,
-        unitSalePriceFcfa: salePrice,
-        unitCostFcfa: cost,
-        usage: usage,
-      );
+  }) => Product(
+    id: id,
+    salonId: 'salon',
+    name: 'Produit $id',
+    brand: 'Marque',
+    category: 'Revente',
+    stockQuantity: quantity,
+    alertThreshold: 2,
+    unitSalePriceFcfa: salePrice,
+    unitCostFcfa: cost,
+    usage: usage,
+  );
 
   ProviderContainer containerWith(List<Product> products) {
     final container = ProviderContainer(
@@ -63,10 +62,9 @@ void main() {
     // C'est le symptôme rapporté : la fiche de revente était bien comptée,
     // mais son coût valait zéro faute d'avoir été saisi.
     expect(container.read(stockValueProvider), 6000);
-    expect(
-      container.read(productsWithoutCostProvider).map((p) => p.id),
-      ['sans-cout'],
-    );
+    expect(container.read(productsWithoutCostProvider).map((p) => p.id), [
+      'sans-cout',
+    ]);
   });
 
   test('un produit épuisé sans coût n\'est pas signalé', () async {
@@ -81,8 +79,12 @@ void main() {
   });
 
   test('la valeur suit la quantité, ouverture d\'unité comprise', () {
-    final avant = product(id: 'conso', quantity: 5, cost: 1200,
-        usage: ProductUsage.consumable);
+    final avant = product(
+      id: 'conso',
+      quantity: 5,
+      cost: 1200,
+      usage: ProductUsage.consumable,
+    );
 
     // Méthode A : une unité entière quitte le stock à l'ouverture.
     final apres = avant.copyWith(stockQuantity: avant.stockQuantity - 1);
@@ -126,10 +128,9 @@ void main() {
       final container = filtered(ProductUsage.consumable);
       await container.read(productsProvider.future);
 
-      expect(
-        container.read(filteredProductsProvider).map((p) => p.id),
-        ['conso'],
-      );
+      expect(container.read(filteredProductsProvider).map((p) => p.id), [
+        'conso',
+      ]);
     });
 
     test('recherche et usage se combinent', () async {
@@ -157,7 +158,10 @@ void main() {
               Product(
                 id: 'kera',
                 salonId: 'salon',
-                name: 'Shampooing Kerastase'.replaceAll('Kerastase', 'Kérastase'),
+                name: 'Shampooing Kerastase'.replaceAll(
+                  'Kerastase',
+                  'Kérastase',
+                ),
                 brand: 'Kérastase',
                 category: 'Coloration',
                 stockQuantity: 4,

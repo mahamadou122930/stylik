@@ -5,7 +5,7 @@ void main() {
   group('Ticket & Transaction ID generation', () {
     test('Ticket calculations and line formatting', () {
       const ticket = Ticket(
-        clientName: 'Awa Diop',
+        clientName: 'Aminata Traoré',
         lines: [
           TicketLine(
             refId: 'serv_1',

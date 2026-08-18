@@ -11,12 +11,12 @@ import 'package:stylik/features/staff/presentation/staff_providers.dart';
 /// le croit absent de l'équipe.
 void main() {
   Profile member(String id, String name, {double rate = 30}) => Profile(
-        id: id,
-        salonId: 'salon',
-        fullName: name,
-        role: UserRole.coiffeur,
-        commissionRate: rate,
-      );
+    id: id,
+    salonId: 'salon',
+    fullName: name,
+    role: UserRole.coiffeur,
+    commissionRate: rate,
+  );
 
   StylistCommission earned(String id, String name, int revenue) =>
       StylistCommission(
@@ -71,10 +71,11 @@ void main() {
     await c.read(stylistsProvider.future);
     await c.read(commissionsProvider.future);
 
-    expect(
-      c.read(stylistReportProvider).map((r) => r.stylistId),
-      ['c', 'a', 'b'],
-    );
+    expect(c.read(stylistReportProvider).map((r) => r.stylistId), [
+      'c',
+      'a',
+      'b',
+    ]);
   });
 
   test('aucune ligne n\'est dupliquée', () async {
@@ -100,9 +101,9 @@ void main() {
     await c.read(stylistsProvider.future);
     await c.read(commissionsProvider.future);
 
-    expect(
-      c.read(stylistReportProvider).map((r) => r.stylistId),
-      ['parti', 'a'],
-    );
+    expect(c.read(stylistReportProvider).map((r) => r.stylistId), [
+      'parti',
+      'a',
+    ]);
   });
 }

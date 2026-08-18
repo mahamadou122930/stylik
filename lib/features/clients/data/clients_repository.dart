@@ -21,8 +21,10 @@ class ClientsRepository {
     int limit = 50,
   }) async {
     try {
-      var query =
-          _client.from(SupabaseTables.clients).select().eq('salon_id', salonId);
+      var query = _client
+          .from(SupabaseTables.clients)
+          .select()
+          .eq('salon_id', salonId);
 
       if (search != null && search.trim().isNotEmpty) {
         final term = '%${search.trim()}%';
@@ -198,7 +200,10 @@ class ClientsRepository {
   }
 
   /// Historique des passages et ventes du client (rendez-vous et transactions caisse).
-  Future<List<ClientVisit>> fetchHistory(String clientId, {String? salonId}) async {
+  Future<List<ClientVisit>> fetchHistory(
+    String clientId, {
+    String? salonId,
+  }) async {
     final visits = <ClientVisit>[];
 
     try {
@@ -263,18 +268,19 @@ class ClientVisit {
   final bool isTransaction;
 
   factory ClientVisit.fromMap(Map<String, dynamic> map) => ClientVisit(
-        id: (map['id'] as String?) ?? '',
-        date: map['start_time'] != null
-            ? DateTime.parse(map['start_time'] as String).toLocal()
-            : DateTime.now(),
-        label: (map['summary'] as String?) ??
-            (map['notes'] as String?) ??
-            'Prestation RDV',
-        amountFcfa: (map['total_price_fcfa'] as num?)?.toInt() ?? 0,
-        stylistName: map['profiles'] is Map<String, dynamic>
-            ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
-            : null,
-      );
+    id: (map['id'] as String?) ?? '',
+    date: map['start_time'] != null
+        ? DateTime.parse(map['start_time'] as String).toLocal()
+        : DateTime.now(),
+    label:
+        (map['summary'] as String?) ??
+        (map['notes'] as String?) ??
+        'Prestation RDV',
+    amountFcfa: (map['total_price_fcfa'] as num?)?.toInt() ?? 0,
+    stylistName: map['profiles'] is Map<String, dynamic>
+        ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
+        : null,
+  );
 
   factory ClientVisit.fromTransaction(Map<String, dynamic> map) {
     final linesRaw = map['lines'];
@@ -293,7 +299,8 @@ class ClientVisit {
           ? DateTime.parse(map['created_at'] as String).toLocal()
           : DateTime.now(),
       label: summary,
-      amountFcfa: (map['total_amount_fcfa'] as num?)?.toInt() ??
+      amountFcfa:
+          (map['total_amount_fcfa'] as num?)?.toInt() ??
           (map['total_amount'] as num?)?.toInt() ??
           0,
       stylistName: map['profiles'] is Map<String, dynamic>

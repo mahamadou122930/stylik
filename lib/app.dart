@@ -56,6 +56,7 @@ import 'features/loyalty/presentation/promotions_page.dart';
 import 'features/loyalty/presentation/reminders_page.dart';
 import 'features/pos/domain/ticket.dart';
 import 'features/pos/presentation/payment_page.dart';
+import 'features/pos/presentation/pending_tickets_page.dart';
 import 'features/pos/presentation/pos_add_to_ticket_page.dart';
 import 'features/pos/presentation/pos_page.dart';
 import 'features/pos/presentation/receipt_page.dart';
@@ -113,48 +114,54 @@ class AtelierApp extends ConsumerWidget {
 
   /// Générateur de route global et imbriqué.
   static Route<dynamic>? buildRoute(RouteSettings settings) {
-    Route<dynamic> page(Widget child) => MaterialPageRoute(
-          builder: (_) => child,
-          settings: settings,
-        );
+    Route<dynamic> page(Widget child) =>
+        MaterialPageRoute(builder: (_) => child, settings: settings);
 
     final simpleWidget = _routesMap[settings.name];
     if (simpleWidget != null) return page(simpleWidget);
 
     return switch (settings.name) {
       RoleSelectionPage.routeName => page(
-          RoleSelectionPage(
-            draft: settings.arguments! as RegistrationDraft,
-          ),
-        ),
-      ClientDetailPage.routeName =>
-        page(ClientDetailPage(clientId: settings.arguments! as String)),
+        RoleSelectionPage(draft: settings.arguments! as RegistrationDraft),
+      ),
+      ClientDetailPage.routeName => page(
+        ClientDetailPage(clientId: settings.arguments! as String),
+      ),
       AppointmentDetailPage.routeName => page(
-          AppointmentDetailPage(appointmentId: settings.arguments! as String),
-        ),
-      StylistAgendaPage.routeName =>
-        page(StylistAgendaPage(stylist: settings.arguments! as Profile)),
-      StaffDetailPage.routeName =>
-        page(StaffDetailPage(profileId: settings.arguments! as String)),
-      StaffFormPage.routeName =>
-        page(StaffFormPage(member: settings.arguments as Profile?)),
-      StaffSchedulePage.routeName =>
-        page(StaffSchedulePage(member: settings.arguments! as Profile)),
-      ProductDetailPage.routeName =>
-        page(ProductDetailPage(productId: settings.arguments! as String)),
-      ProductFormPage.routeName =>
-        page(ProductFormPage(product: settings.arguments as Product?)),
-      ServiceEditPage.routeName =>
-        page(ServiceEditPage(service: settings.arguments as SalonService?)),
-      RefundPage.routeName =>
-        page(RefundPage(transaction: settings.arguments! as SalonTransaction)),
-      PlanCheckoutPage.routeName =>
-        page(PlanCheckoutPage(plan: settings.arguments! as SubscriptionPlan)),
+        AppointmentDetailPage(appointmentId: settings.arguments! as String),
+      ),
+      StylistAgendaPage.routeName => page(
+        StylistAgendaPage(stylist: settings.arguments! as Profile),
+      ),
+      StaffDetailPage.routeName => page(
+        StaffDetailPage(profileId: settings.arguments! as String),
+      ),
+      StaffFormPage.routeName => page(
+        StaffFormPage(member: settings.arguments as Profile?),
+      ),
+      StaffSchedulePage.routeName => page(
+        StaffSchedulePage(member: settings.arguments! as Profile),
+      ),
+      ProductDetailPage.routeName => page(
+        ProductDetailPage(productId: settings.arguments! as String),
+      ),
+      ProductFormPage.routeName => page(
+        ProductFormPage(product: settings.arguments as Product?),
+      ),
+      ServiceEditPage.routeName => page(
+        ServiceEditPage(service: settings.arguments as SalonService?),
+      ),
+      RefundPage.routeName => page(
+        RefundPage(transaction: settings.arguments! as SalonTransaction),
+      ),
+      PlanCheckoutPage.routeName => page(
+        PlanCheckoutPage(plan: settings.arguments! as SubscriptionPlan),
+      ),
       StylistCommissionDetailPage.routeName => page(
-          StylistCommissionDetailPage(
-            commission: settings.arguments! as StylistCommission,
-          ),
+        StylistCommissionDetailPage(
+          commission: settings.arguments! as StylistCommission,
         ),
+      ),
       _ => null,
     };
   }
@@ -180,6 +187,7 @@ class AtelierApp extends ConsumerWidget {
     PaymentPage.routeName: const PaymentPage(),
     ReceiptPage.routeName: const ReceiptPage(),
     TransactionsPage.routeName: const TransactionsPage(),
+    PendingTicketsPage.routeName: const PendingTicketsPage(),
     InventoryPage.routeName: const InventoryPage(),
     StockReceptionPage.routeName: const StockReceptionPage(),
     ConsumptionPage.routeName: const ConsumptionPage(),
@@ -260,8 +268,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   /// Indexées plutôt que listées : le nombre d'onglets dépend du rôle.
   final Map<int, GlobalKey<NavigatorState>> _navigatorKeys = {};
 
-  static const _Tab _homeTab =
-      _Tab('Accueil', Icons.home_outlined, Icons.home_rounded, HomePage());
+  static const _Tab _homeTab = _Tab(
+    'Accueil',
+    Icons.home_outlined,
+    Icons.home_rounded,
+    HomePage(),
+  );
   static const _Tab _agendaTab = _Tab(
     'Agenda',
     Icons.calendar_today_outlined,
@@ -280,18 +292,22 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     Icons.people_rounded,
     ClientsPage(),
   );
-  static const _Tab _moreTab =
-      _Tab('Plus', Icons.grid_view_outlined, Icons.grid_view_rounded, MorePage());
+  static const _Tab _moreTab = _Tab(
+    'Plus',
+    Icons.grid_view_outlined,
+    Icons.grid_view_rounded,
+    MorePage(),
+  );
 
   /// La caisse n'apparaît que pour qui a le droit d'encaisser. Le coiffeur
   /// réalise la prestation ; c'est la réception qui encaisse.
   List<_Tab> _tabsFor(UserRole role) => [
-        _homeTab,
-        _agendaTab,
-        if (role.canOperatePos) _posTab,
-        _clientsTab,
-        _moreTab,
-      ];
+    _homeTab,
+    _agendaTab,
+    if (role.canOperatePos) _posTab,
+    _clientsTab,
+    _moreTab,
+  ];
 
   GlobalKey<NavigatorState> _navigatorKey(int index) =>
       _navigatorKeys.putIfAbsent(index, GlobalKey<NavigatorState>.new);

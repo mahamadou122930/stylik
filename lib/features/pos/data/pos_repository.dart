@@ -21,6 +21,7 @@ class PosRepository {
     required PaymentMethod paymentMethod,
     String? cashierId,
     String? customTransactionId,
+    TransactionStatus status = TransactionStatus.paid,
   }) async {
     final transactionId = customTransactionId ?? const Uuid().v4();
 
@@ -36,7 +37,7 @@ class PosRepository {
       discountFcfa: ticket.discountFcfa,
       totalAmountFcfa: ticket.totalFcfa,
       paymentMethod: paymentMethod,
-      status: TransactionStatus.paid,
+      status: status,
       lines: ticket.lines,
     );
 
@@ -64,7 +65,12 @@ class PosRepository {
         record: created.toMap(),
       );
 
-      if (created.clientId != null && created.clientId!.isNotEmpty) {
+      // Un ticket mis en attente n'est pas une visite réglée : ni points de
+      // fidélité, ni cumul dépensé tant qu'il n'est pas soldé — sinon un
+      // brouillon abandonné laisserait la fiche cliente créditée à tort.
+      if (created.status == TransactionStatus.paid &&
+          created.clientId != null &&
+          created.clientId!.isNotEmpty) {
         await _updateClientStatsOnCheckout(
           salonId,
           created.clientId!,
@@ -90,7 +96,9 @@ class PosRepository {
         payload: payload,
       );
 
-      if (transaction.clientId != null && transaction.clientId!.isNotEmpty) {
+      if (transaction.status == TransactionStatus.paid &&
+          transaction.clientId != null &&
+          transaction.clientId!.isNotEmpty) {
         await _updateClientStatsOnCheckout(
           salonId,
           transaction.clientId!,
@@ -209,6 +217,48 @@ class PosRepository {
       list.sort(
         (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
           a.createdAt ?? DateTime.now(),
+        ),
+      );
+      return list;
+    }
+  }
+
+  /// Tickets mis en attente, du plus ancien au plus récent.
+  ///
+  /// Sans borne de date, contrairement au journal de caisse : une ardoise
+  /// ouverte lundi et réglée vendredi doit rester visible entre-temps. Les
+  /// plus vieux en tête, ce sont ceux qu'on risque d'oublier.
+  Future<List<SalonTransaction>> fetchPending({required String salonId}) async {
+    try {
+      final data = await _client
+          .from(SupabaseTables.transactions)
+          .select('*, clients(full_name, phone)')
+          .eq('salon_id', salonId)
+          .eq('status', TransactionStatus.draft.value)
+          .order('created_at', ascending: true);
+
+      final records = List<Map<String, dynamic>>.from(data);
+      await _localDb.cacheRecords(
+        tableName: SupabaseTables.transactions,
+        salonId: salonId,
+        records: records,
+      );
+
+      return records.map(SalonTransaction.fromMap).toList();
+    } catch (_) {
+      final cached = await _localDb.getCachedRecords(
+        tableName: SupabaseTables.transactions,
+        salonId: salonId,
+      );
+
+      final list = cached
+          .map(SalonTransaction.fromMap)
+          .where((tx) => tx.status == TransactionStatus.draft)
+          .toList();
+
+      list.sort(
+        (a, b) => (a.createdAt ?? DateTime.now()).compareTo(
+          b.createdAt ?? DateTime.now(),
         ),
       );
       return list;

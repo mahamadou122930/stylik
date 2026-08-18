@@ -44,8 +44,12 @@ void main() {
         clientId: 'c1',
         stylistId: 'moi',
         startTime: DateTime(day.year, day.month, day.day, hour),
-        endTime: DateTime(day.year, day.month, day.day, hour)
-            .add(Duration(minutes: minutes)),
+        endTime: DateTime(
+          day.year,
+          day.month,
+          day.day,
+          hour,
+        ).add(Duration(minutes: minutes)),
         status: AppointmentStatus.confirmed,
         totalPriceFcfa: 15000,
         clientName: 'Mahamadou Santara',
@@ -60,33 +64,32 @@ void main() {
       );
 
   Profile extra(String id, String name) => Profile(
-        id: id,
-        salonId: 'salon',
-        fullName: name,
-        role: UserRole.coiffeur,
-      );
+    id: id,
+    salonId: 'salon',
+    fullName: name,
+    role: UserRole.coiffeur,
+  );
 
   Widget host(
     List<Appointment> appointments, {
     List<Profile> team = const [stylist],
-  }) =>
-      ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWith((ref) async => manager),
-          stylistsProvider.overrideWith((ref) async => team),
-          dayAppointmentsProvider.overrideWith((ref) async => appointments),
-        ],
-        child: const MaterialApp(
-          locale: Locale('fr', 'FR'),
-          supportedLocales: [Locale('fr', 'FR'), Locale('en')],
-          localizationsDelegates: [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: AgendaPage(),
-        ),
-      );
+  }) => ProviderScope(
+    overrides: [
+      currentProfileProvider.overrideWith((ref) async => manager),
+      stylistsProvider.overrideWith((ref) async => team),
+      dayAppointmentsProvider.overrideWith((ref) async => appointments),
+    ],
+    child: const MaterialApp(
+      locale: Locale('fr', 'FR'),
+      supportedLocales: [Locale('fr', 'FR'), Locale('en')],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: AgendaPage(),
+    ),
+  );
 
   testWidgets('un rendez-vous court ne deborde pas', (tester) async {
     await tester.pumpWidget(host([appointment(hour: 16, minutes: 30)]));
@@ -107,8 +110,9 @@ void main() {
     expect(find.text('Mahamadou Santara'), findsOneWidget);
   });
 
-  testWidgets('un rendez-vous long affiche aussi la prestation',
-      (tester) async {
+  testWidgets('un rendez-vous long affiche aussi la prestation', (
+    tester,
+  ) async {
     await tester.pumpWidget(host([appointment(hour: 9, minutes: 120)]));
     await tester.pumpAndSettle();
 
@@ -131,8 +135,9 @@ void main() {
   });
 
   group('largeur des colonnes', () {
-    testWidgets('une equipe nombreuse garde des colonnes lisibles',
-        (tester) async {
+    testWidgets('une equipe nombreuse garde des colonnes lisibles', (
+      tester,
+    ) async {
       // Surface d un telephone : sur les 800 px par defaut, cinq colonnes
       // tiennent sans que la largeur minimale n entre en jeu.
       tester.view.physicalSize = const Size(360, 740);
@@ -165,8 +170,9 @@ void main() {
       expect(widths, isNotEmpty);
     });
 
-    testWidgets('le nom du client n est plus tronque a l affichage',
-        (tester) async {
+    testWidgets('le nom du client n est plus tronque a l affichage', (
+      tester,
+    ) async {
       await tester.pumpWidget(host([appointment(hour: 16, minutes: 30)]));
       await tester.pumpAndSettle();
 

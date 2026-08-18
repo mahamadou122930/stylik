@@ -576,12 +576,15 @@ final periodCommissionsProvider = Provider<int>((ref) {
 /// salon : un « résultat net » qui les ignore surestime largement ce qui
 /// reste réellement au gérant.
 final netResultProvider = Provider<int>((ref) {
-  final int revenue =
-      ref.watch(financeSummaryProvider).valueOrNull?.revenueFcfa ?? 0;
+  // L'encaissé, pas le facturé : un ticket laissé en attente n'a rien mis dans
+  // le tiroir, et le compter ferait annoncer au gérant un résultat qu'il n'a
+  // pas touché. C'est aussi ce que l'écran promet déjà en toutes lettres.
+  final int collected =
+      ref.watch(financeSummaryProvider).valueOrNull?.collectedFcfa ?? 0;
   final int commissions = ref.watch(periodCommissionsProvider);
   final int expenses = ref.watch(expensesTotalProvider);
 
-  return revenue - commissions - expenses;
+  return collected - commissions - expenses;
 });
 
 /// Marge nette de la période, en pourcentage du chiffre d'affaires.
@@ -590,11 +593,13 @@ final netResultProvider = Provider<int>((ref) {
 /// afficher « 0 % » laisserait croire à une activité sans rentabilité plutôt
 /// qu'à une absence d'activité.
 final netMarginProvider = Provider<int?>((ref) {
-  final revenue =
-      ref.watch(financeSummaryProvider).valueOrNull?.revenueFcfa ?? 0;
-  if (revenue <= 0) return null;
+  // Même base que le net lui-même, sinon la marge ne serait pas le rapport de
+  // ce qui est affiché juste au-dessus.
+  final collected =
+      ref.watch(financeSummaryProvider).valueOrNull?.collectedFcfa ?? 0;
+  if (collected <= 0) return null;
 
-  return (ref.watch(netResultProvider) / revenue * 100).round();
+  return (ref.watch(netResultProvider) / collected * 100).round();
 });
 
 /// Colonnes de l'histogramme : chiffre d'affaires et résultat net par tranche.

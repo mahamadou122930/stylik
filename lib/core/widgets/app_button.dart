@@ -81,38 +81,37 @@ class AppButton extends StatelessWidget {
   final String? trailingLabel;
 
   Color get _background => switch (variant) {
-        AppButtonVariant.primary => AppColors.accent,
-        AppButtonVariant.brand => AppColors.primary,
-        AppButtonVariant.dark => AppColors.textPrimary,
-        AppButtonVariant.dangerSolid => AppColors.expense,
-        AppButtonVariant.outline ||
-        AppButtonVariant.danger ||
-        AppButtonVariant.light =>
-          AppColors.surface,
-        AppButtonVariant.outlineLight ||
-        AppButtonVariant.ghost =>
-          Colors.transparent,
-      };
+    AppButtonVariant.primary => AppColors.accent,
+    AppButtonVariant.brand => AppColors.primary,
+    AppButtonVariant.dark => AppColors.textPrimary,
+    AppButtonVariant.dangerSolid => AppColors.expense,
+    AppButtonVariant.outline ||
+    AppButtonVariant.danger ||
+    AppButtonVariant.light => AppColors.surface,
+    AppButtonVariant.outlineLight ||
+    AppButtonVariant.ghost => Colors.transparent,
+  };
 
   Color get _foreground => switch (variant) {
-        AppButtonVariant.primary ||
-        AppButtonVariant.brand ||
-        AppButtonVariant.dark ||
-        AppButtonVariant.dangerSolid ||
-        AppButtonVariant.outlineLight =>
-          Colors.white,
-        AppButtonVariant.outline => AppColors.textPrimary,
-        AppButtonVariant.danger => AppColors.danger,
-        AppButtonVariant.light || AppButtonVariant.ghost => AppColors.primary,
-      };
+    AppButtonVariant.primary ||
+    AppButtonVariant.brand ||
+    AppButtonVariant.dark ||
+    AppButtonVariant.dangerSolid ||
+    AppButtonVariant.outlineLight => Colors.white,
+    AppButtonVariant.outline => AppColors.textPrimary,
+    AppButtonVariant.danger => AppColors.danger,
+    AppButtonVariant.light || AppButtonVariant.ghost => AppColors.primary,
+  };
 
   BoxBorder? get _border => switch (variant) {
-        AppButtonVariant.outline => Border.all(color: AppColors.border),
-        AppButtonVariant.danger => Border.all(color: AppColors.border),
-        AppButtonVariant.outlineLight =>
-          Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
-        _ => null,
-      };
+    AppButtonVariant.outline => Border.all(color: AppColors.border),
+    AppButtonVariant.danger => Border.all(color: AppColors.border),
+    AppButtonVariant.outlineLight => Border.all(
+      color: Colors.white.withValues(alpha: 0.5),
+      width: 1.5,
+    ),
+    _ => null,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +122,10 @@ class AppButton extends StatelessWidget {
         ? SizedBox(
             width: 20,
             height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.2, color: _foreground),
+            child: CircularProgressIndicator(
+              strokeWidth: 2.2,
+              color: _foreground,
+            ),
           )
         : Row(
             mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
@@ -146,13 +148,23 @@ class AppButton extends StatelessWidget {
               ),
               if (trailingLabel != null) ...[
                 const SizedBox(width: 12),
-                Text(
-                  trailingLabel!,
-                  style: AppTypography.sora(
-                    19,
-                    FontWeight.w800,
-                    color: enabled ? _foreground : AppColors.textFaint,
-                    letterSpacing: -0.4,
+                // Le montant se réduit plutôt que de déborder : sur un
+                // écran étroit, « Payer » partageant sa ligne avec un autre
+                // bouton n'a plus la place d'afficher 59 400 F en pleine
+                // taille.
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      trailingLabel!,
+                      maxLines: 1,
+                      style: AppTypography.sora(
+                        19,
+                        FontWeight.w800,
+                        color: enabled ? _foreground : AppColors.textFaint,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -168,7 +180,9 @@ class AppButton extends StatelessWidget {
         child: Ink(
           height: height,
           decoration: BoxDecoration(borderRadius: radius, border: _border),
-          padding: EdgeInsets.symmetric(horizontal: trailingLabel == null ? 18 : 22),
+          padding: EdgeInsets.symmetric(
+            horizontal: trailingLabel == null ? 18 : 22,
+          ),
           child: Center(child: child),
         ),
       ),

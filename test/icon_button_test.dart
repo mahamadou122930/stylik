@@ -8,17 +8,23 @@ import 'package:stylik/core/widgets/widgets.dart';
 /// un bouton passé à `onTap: null` pour le désactiver quittait l'écran.
 void main() {
   Widget host(Widget button) => MaterialApp(
-        home: Scaffold(body: Center(child: Builder(builder: (context) {
-          return ElevatedButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => Scaffold(body: Center(child: button)),
+    home: Scaffold(
+      body: Center(
+        child: Builder(
+          builder: (context) {
+            return ElevatedButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Scaffold(body: Center(child: button)),
+                ),
               ),
-            ),
-            child: const Text('ouvrir'),
-          );
-        }))),
-      );
+              child: const Text('ouvrir'),
+            );
+          },
+        ),
+      ),
+    ),
+  );
 
   testWidgets('sans action, le bouton revient en arrière', (tester) async {
     await tester.pumpWidget(host(const AppIconButton(icon: Icons.close)));
@@ -69,10 +75,7 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: Center(
-            child: AppIconButton(
-              icon: Icons.chevron_left,
-              onTap: () => taps++,
-            ),
+            child: AppIconButton(icon: Icons.chevron_left, onTap: () => taps++),
           ),
         ),
       ),

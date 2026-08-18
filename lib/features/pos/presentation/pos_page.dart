@@ -13,6 +13,7 @@ import '../../loyalty/domain/loyalty_campaign.dart';
 import '../../staff/presentation/staff_providers.dart';
 import '../domain/ticket.dart';
 import 'payment_page.dart';
+import 'pending_tickets_page.dart';
 import 'pos_add_to_ticket_page.dart';
 import 'pos_providers.dart';
 import 'transactions_page.dart';
@@ -44,6 +45,10 @@ class PosPage extends ConsumerWidget {
               clientId: selected.id,
               clientName: selected.fullName,
               timeLabel: '${selected.loyaltyPoints} pts · Palier ${tier.label}',
+              // La remise du palier s'applique d'office : la caissière n'a pas
+              // à connaître le barème, et une cliente fidèle ne repart plus
+              // sans sa remise parce qu'on a oublié de la saisir.
+              discountPercent: tier.discountPercent,
             );
       }
     }
@@ -53,9 +58,51 @@ class PosPage extends ConsumerWidget {
     Navigator.of(context).pushNamed(PosAddToTicketPage.routeName);
   }
 
+  /// Remise à laquelle la cliente rattachée a droit, d'après son palier.
+  ///
+  /// Recalculée depuis la fiche plutôt que retenue au rattachement : c'est ce
+  /// qui permet de reproposer la remise après l'avoir retirée.
+  int _loyaltyPercentFor(WidgetRef ref, String? clientId) {
+    if (clientId == null || clientId.isEmpty) return 0;
+
+    final clients =
+        ref.watch(clientsListProvider).valueOrNull ?? const <Client>[];
+    final client = clients.where((c) => c.id == clientId).firstOrNull;
+    if (client == null) return 0;
+
+    return LoyaltyTier.forPoints(client.loyaltyPoints).discountPercent;
+  }
+
+  Future<void> _hold(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(holdTicketControllerProvider)();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Ticket mis en attente.'),
+          action: SnackBarAction(
+            label: 'Voir',
+            onPressed: () =>
+                Navigator.of(context).pushNamed(PendingTicketsPage.routeName),
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Mise en attente impossible : $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ticket = ref.watch(ticketProvider);
+    final pendingCount =
+        ref.watch(pendingTicketsProvider).valueOrNull?.length ?? 0;
+    // Taux auquel la cliente rattachée a droit, pour pouvoir le reproposer
+    // après un retrait.
+    final loyaltyPercent = _loyaltyPercentFor(ref, ticket.clientId);
     final clientName = ticket.clientName ?? 'Client de passage';
     final hasClientFiche =
         ticket.clientName != null &&
@@ -70,17 +117,74 @@ class PosPage extends ConsumerWidget {
         onTap: () =>
             Navigator.of(context).pushNamed(TransactionsPage.routeName),
       ),
-      footer: AppButton(
-        label: 'Valider le paiement',
-        trailingLabel: Formatters.fcfa(ticket.totalFcfa),
-        height: 56,
-        onPressed: ticket.isEmpty
-            ? null
-            : () => Navigator.of(context).pushNamed(PaymentPage.routeName),
+      footer: Row(
+        children: [
+          // Étroit et en retrait : mettre de côté reste l'exception, encaisser
+          // est le geste courant.
+          // `expanded: false` : par défaut le bouton s'étire à l'infini, ce
+          // qu'une Row ne sait pas contraindre.
+          AppButton(
+            label: 'Attente',
+            icon: Icons.pause_rounded,
+            variant: AppButtonVariant.outline,
+            height: 56,
+            expanded: false,
+            onPressed: ticket.isEmpty ? null : () => _hold(context, ref),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: AppButton(
+              label: 'Payer',
+              trailingLabel: Formatters.fcfa(ticket.totalFcfa),
+              height: 56,
+              onPressed: ticket.isEmpty
+                  ? null
+                  : () =>
+                        Navigator.of(context).pushNamed(PaymentPage.routeName),
+            ),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Une ardoise oubliée est de l'argent perdu : le rappel se pose en
+          // caisse, là où on peut la solder.
+          if (pendingCount > 0) ...[
+            AppCard(
+              onTap: () =>
+                  Navigator.of(context).pushNamed(PendingTicketsPage.routeName),
+              color: AppColors.tintAmber,
+              borderColor: AppColors.amberBorder,
+              shadow: false,
+              radius: 14,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.hourglass_empty_rounded,
+                    size: 20,
+                    color: AppColors.amberDeep,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      pendingCount > 1
+                          ? '$pendingCount tickets en attente de règlement'
+                          : '1 ticket en attente de règlement',
+                      style: AppTypography.manrope(
+                        13,
+                        FontWeight.w600,
+                        color: AppColors.amberDeep,
+                      ),
+                    ),
+                  ),
+                  const AppChevron(),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           // 1. Carte Client (Design Prototype)
           AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -142,35 +246,6 @@ class PosPage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
 
-          // 2. En-tête de section "Ticket" avec Badge d'articles
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Ticket', style: AppTypography.sora(18, FontWeight.w700)),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: AppColors.border),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${ticket.lines.length} ${ticket.lines.length > 1 ? 'articles' : 'article'}',
-                  style: AppTypography.manrope(
-                    12,
-                    FontWeight.w600,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // 3. Carte regroupant la liste des articles du ticket
           if (ticket.isEmpty)
             AppEmptyState(
               title: 'Ticket vide',
@@ -180,29 +255,47 @@ class PosPage extends ConsumerWidget {
               onAction: () => _showAddPickerSheet(context, ref),
             )
           else ...[
-            AppCard(
-              padding: EdgeInsets.zero,
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: ticket.lines.length,
-                separatorBuilder: (_, _) =>
-                    const Divider(height: 1, color: AppColors.border),
-                itemBuilder: (context, index) {
-                  return _TicketLineRow(line: ticket.lines[index]);
-                },
+            // Prestations et produits vendus se lisent séparément : ce ne sont
+            // ni les mêmes marges, ni les mêmes commissions.
+            if (ticket.serviceLines.isNotEmpty) ...[
+              const AppSectionTitle('Prestations'),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (final line in ticket.serviceLines) ...[
+                      if (line != ticket.serviceLines.first)
+                        const Divider(height: 1, color: AppColors.border),
+                      _TicketLineRow(line: line),
+                    ],
+                  ],
+                ),
               ),
-            ),
+            ],
+            if (ticket.productLines.isNotEmpty) ...[
+              const AppSectionTitle('Produits vendus'),
+              AppCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (final line in ticket.productLines) ...[
+                      if (line != ticket.productLines.first)
+                        const Divider(height: 1, color: AppColors.border),
+                      _TicketLineRow(line: line),
+                    ],
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 14),
-
-            // 4. Bouton d'action en pointillés
             _DashedAction(
-              label: 'Ajouter une prestation ou un produit',
+              label: ticket.productLines.isEmpty
+                  ? 'Ajouter un produit'
+                  : 'Ajouter une prestation ou un produit',
               onTap: () => _showAddPickerSheet(context, ref),
             ),
             const SizedBox(height: 16),
 
-            // 5. Total et Remise
             AppCard(
               radius: 18,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -215,9 +308,26 @@ class PosPage extends ConsumerWidget {
                   if (ticket.discountFcfa > 0) ...[
                     const Divider(height: 1, color: AppColors.border),
                     _TotalRow(
-                      label: ticket.discountLabel ?? 'Remise fidélité (5 %)',
+                      label: ticket.discountLabel!,
                       value: '− ${Formatters.fcfa(ticket.discountFcfa)}',
                       highlighted: true,
+                      // La remise s'applique d'office : il faut pouvoir la
+                      // retirer, un geste commercial ne se subit pas.
+                      trailingAction: 'Retirer',
+                      onAction: () => ref
+                          .read(ticketProvider.notifier)
+                          .setDiscountPercent(0),
+                    ),
+                  ] else if (loyaltyPercent > 0) ...[
+                    const Divider(height: 1, color: AppColors.border),
+                    _TotalRow(
+                      label:
+                          'Remise fidélité ($loyaltyPercent %) non appliquée',
+                      value: '',
+                      trailingAction: 'Appliquer',
+                      onAction: () => ref
+                          .read(ticketProvider.notifier)
+                          .setDiscountPercent(loyaltyPercent),
                     ),
                   ],
                 ],
@@ -264,6 +374,14 @@ class _TicketLineRow extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: Row(
         children: [
+          if (line.isProduct) ...[
+            const AppIconTile(
+              icon: Icons.local_drink_outlined,
+              size: 34,
+              radius: 10,
+            ),
+            const SizedBox(width: 11),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -306,12 +424,17 @@ class _TicketLineRow extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: 5),
-                          Text(
-                            displayName,
-                            style: AppTypography.manrope(
-                              12,
-                              FontWeight.w700,
-                              color: AppColors.primary,
+                          // Les noms complets sont longs : « Fatoumata
+                          // Coulibaly » faisait déborder la pastille.
+                          Flexible(
+                            child: Text(
+                              displayName,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.manrope(
+                                12,
+                                FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 3),
@@ -333,6 +456,21 @@ class _TicketLineRow extends ConsumerWidget {
                       color: AppColors.textSecondary,
                     ),
                   ),
+                // La catégorie de la prestation, sous la pastille du coiffeur.
+                // La maquette ne montre que l'une des deux, mais la pastille
+                // porte l'attribution de la commission : la retirer ferait
+                // perdre la ligne à son coiffeur.
+                if (!line.isProduct && line.category != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    line.category!,
+                    style: AppTypography.manrope(
+                      12,
+                      FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -372,11 +510,17 @@ class _TotalRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.highlighted = false,
+    this.trailingAction,
+    this.onAction,
   });
 
   final String label;
   final String value;
   final bool highlighted;
+
+  /// Action discrète en bout de ligne (« Retirer », « Appliquer »).
+  final String? trailingAction;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -385,24 +529,40 @@ class _TotalRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 11),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: AppTypography.manrope(
-              14,
-              FontWeight.w500,
-              color: color ?? AppColors.textSecondary,
+          Expanded(
+            child: Text(
+              label,
+              style: AppTypography.manrope(
+                14,
+                FontWeight.w500,
+                color: color ?? AppColors.textSecondary,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: AppTypography.sora(
-              14,
-              FontWeight.w700,
-              color: color ?? AppColors.textBody,
+          if (value.isNotEmpty)
+            Text(
+              value,
+              style: AppTypography.sora(
+                14,
+                FontWeight.w700,
+                color: color ?? AppColors.textBody,
+              ),
             ),
-          ),
+          if (trailingAction != null) ...[
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: onAction,
+              child: Text(
+                trailingAction!,
+                style: AppTypography.manrope(
+                  12.5,
+                  FontWeight.w700,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -434,12 +594,15 @@ class _DashedAction extends StatelessWidget {
             children: [
               const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
-              Text(
-                label,
-                style: AppTypography.sora(
-                  14,
-                  FontWeight.w600,
-                  color: AppColors.primary,
+              Flexible(
+                child: Text(
+                  label,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.sora(
+                    14,
+                    FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
             ],

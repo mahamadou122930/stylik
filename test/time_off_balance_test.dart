@@ -9,17 +9,16 @@ void main() {
     required TimeOffType type,
     required TimeOffStatus status,
     int days = 5,
-  }) =>
-      TimeOff(
-        id: 'r1',
-        salonId: 'salon',
-        profileId: 'moi',
-        type: type,
-        status: status,
-        startDate: DateTime(2026, 8, 18),
-        // Bornes incluses : 18 + 4 = 22 août, soit cinq jours.
-        endDate: DateTime(2026, 8, 18).add(Duration(days: days - 1)),
-      );
+  }) => TimeOff(
+    id: 'r1',
+    salonId: 'salon',
+    profileId: 'moi',
+    type: type,
+    status: status,
+    startDate: DateTime(2026, 8, 18),
+    // Bornes incluses : 18 + 4 = 22 août, soit cinq jours.
+    endDate: DateTime(2026, 8, 18).add(Duration(days: days - 1)),
+  );
 
   test('valider un congé retire ses jours', () {
     final pending = request(
@@ -100,7 +99,8 @@ void main() {
       days: days,
     );
 
-    final net = pending.balanceDeltaFor(TimeOffStatus.approved) +
+    final net =
+        pending.balanceDeltaFor(TimeOffStatus.approved) +
         approved.balanceDeltaFor(TimeOffStatus.rejected);
 
     expect(net, 0);
@@ -108,18 +108,24 @@ void main() {
 
   test('seules les demandes tranchées entrent dans l\'historique', () {
     expect(
-      request(type: TimeOffType.vacation, status: TimeOffStatus.pending)
-          .isDecided,
+      request(
+        type: TimeOffType.vacation,
+        status: TimeOffStatus.pending,
+      ).isDecided,
       isFalse,
     );
     expect(
-      request(type: TimeOffType.vacation, status: TimeOffStatus.approved)
-          .isDecided,
+      request(
+        type: TimeOffType.vacation,
+        status: TimeOffStatus.approved,
+      ).isDecided,
       isTrue,
     );
     expect(
-      request(type: TimeOffType.vacation, status: TimeOffStatus.rejected)
-          .isDecided,
+      request(
+        type: TimeOffType.vacation,
+        status: TimeOffStatus.rejected,
+      ).isDecided,
       isTrue,
     );
   });

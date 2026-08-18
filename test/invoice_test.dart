@@ -27,35 +27,31 @@ void main() {
     int quantity = 1,
     bool isProduct = false,
     String? category,
-  }) =>
-      TicketLine(
-        refId: label,
-        label: label,
-        unitPriceFcfa: price,
-        quantity: quantity,
-        isProduct: isProduct,
-        category: category,
-      );
+  }) => TicketLine(
+    refId: label,
+    label: label,
+    unitPriceFcfa: price,
+    quantity: quantity,
+    isProduct: isProduct,
+    category: category,
+  );
 
   /// Rend le véritable `ReceiptPage`, pas une reconstitution : c'est son
   /// découpage en sections qu'on veut vérifier.
   Widget host(SalonTransaction transaction) => ProviderScope(
-        overrides: [
-          lastTransactionProvider.overrideWith((ref) => transaction),
-          currentSalonProvider.overrideWith(
-            (ref) async => const Salon(
-              id: 'salon',
-              name: 'L\'Atelier Coiffure',
-              phone: '+223 76 12 34 56',
-              address: 'Hamdallaye ACI 2000, Bamako',
-            ),
-          ),
-        ],
-        child: const MaterialApp(
-          locale: Locale('fr', 'FR'),
-          home: ReceiptPage(),
+    overrides: [
+      lastTransactionProvider.overrideWith((ref) => transaction),
+      currentSalonProvider.overrideWith(
+        (ref) async => const Salon(
+          id: 'salon',
+          name: 'L\'Atelier Coiffure',
+          phone: '+223 76 12 34 56',
+          address: 'Hamdallaye ACI 2000, Bamako',
         ),
-      );
+      ),
+    ],
+    child: const MaterialApp(locale: Locale('fr', 'FR'), home: ReceiptPage()),
+  );
 
   SalonTransaction transaction(
     List<TicketLine> lines, {
@@ -63,8 +59,10 @@ void main() {
     String? clientPhone,
     int? invoiceSeq,
   }) {
-    final subtotal =
-        lines.fold<int>(0, (sum, l) => sum + l.unitPriceFcfa * l.quantity);
+    final subtotal = lines.fold<int>(
+      0,
+      (sum, l) => sum + l.unitPriceFcfa * l.quantity,
+    );
     return SalonTransaction(
       id: 'tx-0001',
       salonId: 'salon',
@@ -82,8 +80,12 @@ void main() {
   }
 
   test('le total d\'une ligne multiplie bien le prix unitaire', () {
-    final shampooing =
-        line(label: 'Shampooing', price: 6000, quantity: 3, isProduct: true);
+    final shampooing = line(
+      label: 'Shampooing',
+      price: 6000,
+      quantity: 3,
+      isProduct: true,
+    );
 
     // C'est ce que le reçu doit permettre de vérifier : 3 × 6 000 = 18 000.
     expect(shampooing.unitPriceFcfa, 6000);
@@ -113,8 +115,9 @@ void main() {
     expect(tx.totalAmountFcfa, 12000);
   });
 
-  testWidgets('la facture porte émetteur, numéro, destinataire et total',
-      (tester) async {
+  testWidgets('la facture porte émetteur, numéro, destinataire et total', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       host(
         transaction(
@@ -155,14 +158,11 @@ void main() {
     expect(find.textContaining('Payé · Espèces'), findsOneWidget);
   });
 
-  testWidgets('sans client rattaché, le bloc « Facturé à » disparaît',
-      (tester) async {
+  testWidgets('sans client rattaché, le bloc « Facturé à » disparaît', (
+    tester,
+  ) async {
     await tester.pumpWidget(
-      host(
-        transaction([
-          line(label: 'Coupe homme', price: 15000),
-        ]),
-      ),
+      host(transaction([line(label: 'Coupe homme', price: 15000)])),
     );
     await tester.pumpAndSettle();
 
@@ -174,10 +174,9 @@ void main() {
 
   group('numéro de facture', () {
     test('utilise le rang attribué par la base quand il existe', () {
-      final tx = transaction(
-        [line(label: 'Coupe', price: 5000)],
-        invoiceSeq: 261,
-      );
+      final tx = transaction([
+        line(label: 'Coupe', price: 5000),
+      ], invoiceSeq: 261);
 
       expect(tx.invoiceNumber, 'FA-${DateTime.now().year}-0261');
     });
@@ -185,10 +184,9 @@ void main() {
     test('la suite reste continue et ordonnée', () {
       final numbers = [1, 2, 3, 10, 1000]
           .map(
-            (seq) => transaction(
-              [line(label: 'Coupe', price: 5000)],
-              invoiceSeq: seq,
-            ).invoiceNumber,
+            (seq) => transaction([
+              line(label: 'Coupe', price: 5000),
+            ], invoiceSeq: seq).invoiceNumber,
           )
           .toList();
 
@@ -215,10 +213,9 @@ void main() {
     });
 
     test('le client n\'envoie jamais le numéro à la base', () {
-      final tx = transaction(
-        [line(label: 'Coupe', price: 5000)],
-        invoiceSeq: 42,
-      );
+      final tx = transaction([
+        line(label: 'Coupe', price: 5000),
+      ], invoiceSeq: 42);
 
       // Le rang est posé par le déclencheur : le laisser partir depuis l'app
       // permettrait de réémettre un numéro déjà utilisé.

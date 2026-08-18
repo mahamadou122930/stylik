@@ -31,47 +31,47 @@ void main() {
     required int hour,
     AppointmentStatus status = AppointmentStatus.confirmed,
     String? stylistName,
-  }) =>
-      Appointment(
-        id: id,
-        salonId: 'salon',
-        clientId: 'client-$id',
-        stylistId: 'moi',
-        startTime: DateTime(today.year, today.month, today.day, hour),
-        endTime: DateTime(today.year, today.month, today.day, hour + 1),
-        status: status,
-        totalPriceFcfa: 15000,
-        clientName: 'Julien Petit',
-        stylistName: stylistName,
-      );
+  }) => Appointment(
+    id: id,
+    salonId: 'salon',
+    clientId: 'client-$id',
+    stylistId: 'moi',
+    startTime: DateTime(today.year, today.month, today.day, hour),
+    endTime: DateTime(today.year, today.month, today.day, hour + 1),
+    status: status,
+    totalPriceFcfa: 15000,
+    clientName: 'Julien Petit',
+    stylistName: stylistName,
+  );
 
   SalonTransaction paidFor(String appointmentId) => SalonTransaction(
-        id: 'tx-$appointmentId',
-        salonId: 'salon',
-        appointmentId: appointmentId,
-        subtotalFcfa: 15000,
-        discountFcfa: 0,
-        totalAmountFcfa: 15000,
-        paymentMethod: PaymentMethod.cash,
-        status: TransactionStatus.paid,
-        createdAt: today,
-      );
+    id: 'tx-$appointmentId',
+    salonId: 'salon',
+    appointmentId: appointmentId,
+    subtotalFcfa: 15000,
+    discountFcfa: 0,
+    totalAmountFcfa: 15000,
+    paymentMethod: PaymentMethod.cash,
+    status: TransactionStatus.paid,
+    createdAt: today,
+  );
 
   Widget host(Widget child, List<Override> overrides) => ProviderScope(
-        overrides: overrides,
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              // Hauteur non bornée, comme dans `AppScreen`.
-              child: child,
-            ),
-          ),
+    overrides: overrides,
+    child: MaterialApp(
+      home: Scaffold(
+        body: SingleChildScrollView(
+          // Hauteur non bornée, comme dans `AppScreen`.
+          child: child,
         ),
-      );
+      ),
+    ),
+  );
 
   group('accueil coiffeur', () {
-    testWidgets('affiche la commission du mois et le planning du jour',
-        (tester) async {
+    testWidgets('affiche la commission du mois et le planning du jour', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         host(
           StylistHomePage(
@@ -116,8 +116,9 @@ void main() {
       expect(find.text('96'), findsOneWidget);
     });
 
-    testWidgets('sans vente du mois, le taux vient de la fiche employé',
-        (tester) async {
+    testWidgets('sans vente du mois, le taux vient de la fiche employé', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         host(
           const StylistHomePage(
@@ -147,34 +148,32 @@ void main() {
   });
 
   group('accueil réceptionniste', () {
-    testWidgets('compte les prestations terminées non encaissées',
-        (tester) async {
+    testWidgets('compte les prestations terminées non encaissées', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        host(
-          const ReceptionHomePage(),
-          [
-            dayAppointmentsProvider.overrideWith(
-              (ref) async => [
-                // Terminée et payée : ne compte pas.
-                appointment(
-                  id: 'paye',
-                  hour: 9,
-                  status: AppointmentStatus.completed,
-                ),
-                // Terminée sans ticket : à clôturer.
-                appointment(
-                  id: 'impaye',
-                  hour: 10,
-                  status: AppointmentStatus.completed,
-                ),
-                appointment(id: 'a-venir', hour: 23, stylistName: 'Karim'),
-              ],
-            ),
-            todayTransactionsProvider.overrideWith(
-              (ref) async => [paidFor('paye')],
-            ),
-          ],
-        ),
+        host(const ReceptionHomePage(), [
+          dayAppointmentsProvider.overrideWith(
+            (ref) async => [
+              // Terminée et payée : ne compte pas.
+              appointment(
+                id: 'paye',
+                hour: 9,
+                status: AppointmentStatus.completed,
+              ),
+              // Terminée sans ticket : à clôturer.
+              appointment(
+                id: 'impaye',
+                hour: 10,
+                status: AppointmentStatus.completed,
+              ),
+              appointment(id: 'a-venir', hour: 23, stylistName: 'Karim'),
+            ],
+          ),
+          todayTransactionsProvider.overrideWith(
+            (ref) async => [paidFor('paye')],
+          ),
+        ]),
       );
       await tester.pumpAndSettle();
 
@@ -187,23 +186,20 @@ void main() {
 
     testWidgets('aucune alerte quand tout est encaissé', (tester) async {
       await tester.pumpWidget(
-        host(
-          const ReceptionHomePage(),
-          [
-            dayAppointmentsProvider.overrideWith(
-              (ref) async => [
-                appointment(
-                  id: 'paye',
-                  hour: 9,
-                  status: AppointmentStatus.completed,
-                ),
-              ],
-            ),
-            todayTransactionsProvider.overrideWith(
-              (ref) async => [paidFor('paye')],
-            ),
-          ],
-        ),
+        host(const ReceptionHomePage(), [
+          dayAppointmentsProvider.overrideWith(
+            (ref) async => [
+              appointment(
+                id: 'paye',
+                hour: 9,
+                status: AppointmentStatus.completed,
+              ),
+            ],
+          ),
+          todayTransactionsProvider.overrideWith(
+            (ref) async => [paidFor('paye')],
+          ),
+        ]),
       );
       await tester.pumpAndSettle();
 

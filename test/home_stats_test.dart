@@ -12,17 +12,16 @@ void main() {
     DateTime at,
     int amount, {
     TransactionStatus status = TransactionStatus.paid,
-  }) =>
-      SalonTransaction(
-        id: 'tx-${at.microsecondsSinceEpoch}-$amount',
-        salonId: 'salon',
-        subtotalFcfa: amount,
-        discountFcfa: 0,
-        totalAmountFcfa: amount,
-        paymentMethod: PaymentMethod.cash,
-        status: status,
-        createdAt: at,
-      );
+  }) => SalonTransaction(
+    id: 'tx-${at.microsecondsSinceEpoch}-$amount',
+    salonId: 'salon',
+    subtotalFcfa: amount,
+    discountFcfa: 0,
+    totalAmountFcfa: amount,
+    paymentMethod: PaymentMethod.cash,
+    status: status,
+    createdAt: at,
+  );
 
   ProviderContainer containerWith(List<SalonTransaction> all) {
     final today = DateTime.now();
@@ -97,17 +96,19 @@ void main() {
     expect(container.read(revenueTrendProvider), closeTo(0.2, 0.0001));
   });
 
-  test('sans repère la semaine passée, aucune tendance n\'est affichée',
-      () async {
-    final now = DateTime.now();
-    final container = containerWith([
-      ticket(DateTime(now.year, now.month, now.day, 10), 12000),
-    ]);
-    await container.read(twoWeekTransactionsProvider.future);
-    await container.read(todayTransactionsProvider.future);
+  test(
+    'sans repère la semaine passée, aucune tendance n\'est affichée',
+    () async {
+      final now = DateTime.now();
+      final container = containerWith([
+        ticket(DateTime(now.year, now.month, now.day, 10), 12000),
+      ]);
+      await container.read(twoWeekTransactionsProvider.future);
+      await container.read(todayTransactionsProvider.future);
 
-    expect(container.read(revenueTrendProvider), isNull);
-  });
+      expect(container.read(revenueTrendProvider), isNull);
+    },
+  );
 
   test('le panier moyen ne compte que les ventes au dénominateur', () async {
     final now = DateTime.now();

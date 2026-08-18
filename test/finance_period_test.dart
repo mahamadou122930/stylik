@@ -161,6 +161,7 @@ void main() {
       required int revenue,
       required int commissions,
       required int expenses,
+      int pending = 0,
     }) {
       final c = ProviderContainer(
         overrides: [
@@ -168,7 +169,11 @@ void main() {
             (ref) async => FinanceSummary(
               from: DateTime(2026, 8),
               to: DateTime(2026, 9),
-              revenueFcfa: revenue,
+              // Facturé = encaissé + en attente : c'est l'encaissé qui alimente
+              // le résultat net, l'argent en attente n'étant pas dans le tiroir.
+              revenueFcfa: revenue + pending,
+              collectedFcfa: revenue,
+              pendingFcfa: pending,
               ticketCount: 4,
             ),
           ),
@@ -230,6 +235,20 @@ void main() {
       await warm(c);
 
       expect(c.read(netResultProvider), -40000);
+    });
+
+    test('un ticket en attente ne gonfle pas le résultat net', () async {
+      final c = withFigures(
+        revenue: 300000,
+        commissions: 90000,
+        expenses: 50000,
+        pending: 80000,
+      );
+      await warm(c);
+
+      // 80 000 F d'ardoise ouverte : le gérant ne les a pas encaissés, les
+      // compter lui annoncerait un résultat qu'il n'a pas touché.
+      expect(c.read(netResultProvider), 160000);
     });
 
     test(

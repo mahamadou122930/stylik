@@ -12,7 +12,8 @@ void main() {
     test('reconnaît l\'erreur remontée par Supabase', () {
       // Le message réellement observé sur l'émulateur, enveloppé par la
       // couche d'authentification.
-      const raw = 'AuthRetryableFetchException(message: ClientException with '
+      const raw =
+          'AuthRetryableFetchException(message: ClientException with '
           'SocketException: Failed host lookup: '
           "'dmtbqknxzilrzsvufzcx.supabase.co' (OS Error: No address associated "
           'with hostname, errno = 7), statusCode: null)';
@@ -36,16 +37,14 @@ void main() {
     });
 
     test('reconnaît une SocketException typée', () {
-      expect(
-        ErrorMessages.isOffline(const SocketException('échec')),
-        isTrue,
-      );
+      expect(ErrorMessages.isOffline(const SocketException('échec')), isTrue);
     });
 
     test('laisse passer les autres erreurs', () {
       // Un refus métier garde son texte : c'est la seule piste exploitable
       // pour diagnostiquer, et le masquer nous a déjà coûté cher.
-      const raw = 'PostgrestException(message: column does not exist, '
+      const raw =
+          'PostgrestException(message: column does not exist, '
           'code: 42703)';
 
       expect(ErrorMessages.isOffline(raw), isFalse);
@@ -59,10 +58,10 @@ void main() {
 
   group('affichage', () {
     Widget host(String message) => MaterialApp(
-          home: Scaffold(
-            body: AppErrorState(message: message, onRetry: () {}),
-          ),
-        );
+      home: Scaffold(
+        body: AppErrorState(message: message, onRetry: () {}),
+      ),
+    );
 
     testWidgets('une coupure affiche un message humain', (tester) async {
       await tester.pumpWidget(

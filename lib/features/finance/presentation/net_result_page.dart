@@ -24,7 +24,10 @@ class NetResultPage extends ConsumerWidget {
     final anchor = ref.watch(financeAnchorProvider);
     final summary = ref.watch(financeSummaryProvider);
 
-    final revenue = summary.valueOrNull?.revenueFcfa ?? 0;
+    // L'encaissé : c'est lui qui entre dans le calcul du net, et les lignes du
+    // récapitulatif doivent s'additionner à ce qui est affiché en haut.
+    final collected = summary.valueOrNull?.collectedFcfa ?? 0;
+    final pending = summary.valueOrNull?.pendingFcfa ?? 0;
     final commissions = ref.watch(periodCommissionsProvider);
     final expenses = ref.watch(expensesTotalProvider);
     final net = ref.watch(netResultProvider);
@@ -57,7 +60,10 @@ class NetResultPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _Line(label: 'Chiffre d\'affaires', value: revenue),
+                  _Line(
+                    label: 'Chiffre d\'affaires encaissé',
+                    value: collected,
+                  ),
                   _Line(
                     label: 'Dépenses / charges',
                     value: expenses,
@@ -91,6 +97,40 @@ class NetResultPage extends ConsumerWidget {
                 ],
               ),
             ),
+            if (pending > 0) ...[
+              const SizedBox(height: 10),
+              AppCard(
+                color: AppColors.tintAmber,
+                borderColor: AppColors.amberBorder,
+                shadow: false,
+                radius: 14,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.hourglass_empty_rounded,
+                      size: 18,
+                      color: AppColors.amberDeep,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '${Formatters.fcfa(pending)} en attente de règlement '
+                        'ne sont pas comptés ici.',
+                        style: AppTypography.manrope(
+                          12.5,
+                          FontWeight.w600,
+                          color: AppColors.amberDeep,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             const _NetChartCard(),
             const SizedBox(height: 14),

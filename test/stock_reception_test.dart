@@ -18,38 +18,38 @@ void main() {
   });
 
   Product product(String id, String name, {String brand = 'Marque'}) => Product(
-        id: id,
-        salonId: 'salon',
-        name: name,
-        brand: brand,
-        category: 'Revente',
-        stockQuantity: 2,
-        alertThreshold: 1,
-        unitSalePriceFcfa: 6000,
-        unitCostFcfa: 2500,
-      );
+    id: id,
+    salonId: 'salon',
+    name: name,
+    brand: brand,
+    category: 'Revente',
+    stockQuantity: 2,
+    alertThreshold: 1,
+    unitSalePriceFcfa: 6000,
+    unitCostFcfa: 2500,
+  );
 
   Widget host() => ProviderScope(
-        overrides: [
-          productsProvider.overrideWith(
-            (ref) async => [
-              product('kera', 'Shampooing Kérastase'),
-              product('masque', 'Masque réparateur'),
-              product('gant', 'Gants jetables'),
-            ],
-          ),
+    overrides: [
+      productsProvider.overrideWith(
+        (ref) async => [
+          product('kera', 'Shampooing Kérastase'),
+          product('masque', 'Masque réparateur'),
+          product('gant', 'Gants jetables'),
         ],
-        child: const MaterialApp(
-          locale: Locale('fr', 'FR'),
-          supportedLocales: [Locale('fr', 'FR'), Locale('en')],
-          localizationsDelegates: [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: StockReceptionPage(),
-        ),
-      );
+      ),
+    ],
+    child: const MaterialApp(
+      locale: Locale('fr', 'FR'),
+      supportedLocales: [Locale('fr', 'FR'), Locale('en')],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: StockReceptionPage(),
+    ),
+  );
 
   testWidgets('la quantité se saisit au clavier', (tester) async {
     await tester.pumpWidget(host());
@@ -80,8 +80,9 @@ void main() {
     expect(find.text('Gants jetables'), findsNothing);
   });
 
-  testWidgets('une ligne déjà saisie reste visible malgré le filtre',
-      (tester) async {
+  testWidgets('une ligne déjà saisie reste visible malgré le filtre', (
+    tester,
+  ) async {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 

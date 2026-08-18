@@ -10,11 +10,11 @@ import 'package:stylik/features/auth/presentation/auth_providers.dart';
 /// Ce sont ces règles-là — pas la mise en page — qui protègent les données.
 void main() {
   Profile profileWith(UserRole role) => Profile(
-        id: 'profile-${role.value}',
-        salonId: 'salon',
-        fullName: 'Membre',
-        role: role,
-      );
+    id: 'profile-${role.value}',
+    salonId: 'salon',
+    fullName: 'Membre',
+    role: role,
+  );
 
   group('matrice des permissions', () {
     test('le coiffeur ne voit pas le planning du salon', () {
@@ -100,7 +100,8 @@ void main() {
 
       // Même en forçant la sélection sur un autre coiffeur, le filtre
       // retombe sur sa propre fiche.
-      container.read(selectedStylistProvider.notifier).state = 'quelqu-un-dautre';
+      container.read(selectedStylistProvider.notifier).state =
+          'quelqu-un-dautre';
 
       expect(container.read(agendaStylistFilterProvider), profile.id);
     });
@@ -117,7 +118,8 @@ void main() {
 
       expect(container.read(agendaStylistFilterProvider), isNull);
 
-      container.read(selectedStylistProvider.notifier).state = 'coiffeur-choisi';
+      container.read(selectedStylistProvider.notifier).state =
+          'coiffeur-choisi';
       expect(container.read(agendaStylistFilterProvider), 'coiffeur-choisi');
     });
 

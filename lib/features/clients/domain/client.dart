@@ -11,7 +11,8 @@ enum ClientGender {
   final String value;
   final String label;
 
-  static ClientGender fromValue(String? value) => ClientGender.values.firstWhere(
+  static ClientGender fromValue(String? value) =>
+      ClientGender.values.firstWhere(
         (gender) => gender.value == value,
         orElse: () => ClientGender.other,
       );
@@ -70,59 +71,88 @@ class Client {
 
   bool get hasAllergies => allergiesNotes?.trim().isNotEmpty ?? false;
 
-  /// Nombre de jours depuis la dernière visite.
-  int? get daysSinceLastVisit => lastVisitAt == null
-      ? null
-      : DateTime.now().difference(lastVisitAt!).inDays;
+  /// Nombre de jours **calendaires** depuis la dernière visite.
+  ///
+  /// Compté de date à date et non en tranches de 24 h : une visite hier à
+  /// 20 h consultée ce matin à 9 h fait bien un jour, pas zéro.
+  int? get daysSinceLastVisit {
+    final last = lastVisitAt?.toLocal();
+    if (last == null) return null;
 
-  /// « Dern. visite 12 j · 8 visites ».
-  String get activityLabel {
-    final days = daysSinceLastVisit;
-    return [
-      if (days != null) 'Dern. visite $days j' else 'Jamais venu',
-      '$visitCount visite${visitCount > 1 ? 's' : ''}',
-    ].join(' · ');
+    final now = DateTime.now();
+    final days = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).difference(DateTime(last.year, last.month, last.day)).inDays;
+
+    // Une date future ne peut venir que d'une saisie erronée ou d'une horloge
+    // décalée : « il y a −2 j » ne veut rien dire.
+    return days < 0 ? 0 : days;
   }
+
+  /// Ancienneté de la dernière visite, en unité lisible.
+  ///
+  /// « 0 j » se lisait comme un compteur en panne alors qu'il signifiait
+  /// « aujourd'hui ». Au-delà du mois, le nombre de jours ne dit plus rien
+  /// non plus : ce qu'on cherche à repérer, c'est la cliente qu'on n'a pas
+  /// vue depuis longtemps et qu'il faudrait relancer.
+  String get lastVisitLabel {
+    final days = daysSinceLastVisit;
+    if (days == null) return 'Aucune visite';
+
+    return switch (days) {
+      0 => 'Aujourd\'hui',
+      1 => 'Hier',
+      < 31 => 'Il y a $days j',
+      < 365 => 'Il y a ${(days / 30).round()} mois',
+      _ => 'Il y a plus d\'un an',
+    };
+  }
+
+  /// « Il y a 12 j · 8 visites ».
+  String get activityLabel => [
+    lastVisitLabel,
+    '$visitCount visite${visitCount > 1 ? 's' : ''}',
+  ].join(' · ');
 
   /// Initiales affichées dans les avatars.
   String get initials => Formatters.initials(fullName);
 
   factory Client.fromMap(Map<String, dynamic> map) => Client(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        fullName: (map['full_name'] as String?) ?? '',
-        phone: (map['phone'] as String?) ?? '',
-        gender: ClientGender.fromValue(map['gender'] as String?),
-        allergiesNotes: map['allergies_notes'] as String?,
-        loyaltyPoints: (map['loyalty_points'] as num?)?.toInt() ?? 0,
-        tags: (map['tags'] as List?)?.map((e) => e.toString()).toList() ??
-            const [],
-        photoBeforeUrl: map['photo_before_url'] as String?,
-        photoAfterUrl: map['photo_after_url'] as String?,
-        createdAt: map['created_at'] == null
-            ? null
-            : DateTime.parse(map['created_at'] as String).toLocal(),
-        visitCount: (map['visit_count'] as num?)?.toInt() ?? 0,
-        totalSpentFcfa: (map['total_spent_fcfa'] as num?)?.toInt() ?? 0,
-        lastVisitAt: map['last_visit_at'] == null
-            ? null
-            : DateTime.parse(map['last_visit_at'] as String).toLocal(),
-        preferences:
-            (map['preferences'] as Map<String, dynamic>?) ?? const {},
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    fullName: (map['full_name'] as String?) ?? '',
+    phone: (map['phone'] as String?) ?? '',
+    gender: ClientGender.fromValue(map['gender'] as String?),
+    allergiesNotes: map['allergies_notes'] as String?,
+    loyaltyPoints: (map['loyalty_points'] as num?)?.toInt() ?? 0,
+    tags: (map['tags'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+    photoBeforeUrl: map['photo_before_url'] as String?,
+    photoAfterUrl: map['photo_after_url'] as String?,
+    createdAt: map['created_at'] == null
+        ? null
+        : DateTime.parse(map['created_at'] as String).toLocal(),
+    visitCount: (map['visit_count'] as num?)?.toInt() ?? 0,
+    totalSpentFcfa: (map['total_spent_fcfa'] as num?)?.toInt() ?? 0,
+    lastVisitAt: map['last_visit_at'] == null
+        ? null
+        : DateTime.parse(map['last_visit_at'] as String).toLocal(),
+    preferences: (map['preferences'] as Map<String, dynamic>?) ?? const {},
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'full_name': fullName,
-        'phone': phone,
-        'gender': gender.value,
-        'allergies_notes': allergiesNotes,
-        'loyalty_points': loyaltyPoints,
-        'tags': tags,
-        'photo_before_url': photoBeforeUrl,
-        'photo_after_url': photoAfterUrl,
-        'preferences': preferences,
-      };
+    'salon_id': salonId,
+    'full_name': fullName,
+    'phone': phone,
+    'gender': gender.value,
+    'allergies_notes': allergiesNotes,
+    'loyalty_points': loyaltyPoints,
+    'tags': tags,
+    'photo_before_url': photoBeforeUrl,
+    'photo_after_url': photoAfterUrl,
+    'preferences': preferences,
+  };
 
   Client copyWith({
     String? fullName,
@@ -133,22 +163,21 @@ class Client {
     List<String>? tags,
     String? photoBeforeUrl,
     String? photoAfterUrl,
-  }) =>
-      Client(
-        id: id,
-        salonId: salonId,
-        fullName: fullName ?? this.fullName,
-        phone: phone ?? this.phone,
-        gender: gender ?? this.gender,
-        allergiesNotes: allergiesNotes ?? this.allergiesNotes,
-        loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
-        tags: tags ?? this.tags,
-        photoBeforeUrl: photoBeforeUrl ?? this.photoBeforeUrl,
-        photoAfterUrl: photoAfterUrl ?? this.photoAfterUrl,
-        createdAt: createdAt,
-        visitCount: visitCount,
-        totalSpentFcfa: totalSpentFcfa,
-        lastVisitAt: lastVisitAt,
-        preferences: preferences,
-      );
+  }) => Client(
+    id: id,
+    salonId: salonId,
+    fullName: fullName ?? this.fullName,
+    phone: phone ?? this.phone,
+    gender: gender ?? this.gender,
+    allergiesNotes: allergiesNotes ?? this.allergiesNotes,
+    loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,
+    tags: tags ?? this.tags,
+    photoBeforeUrl: photoBeforeUrl ?? this.photoBeforeUrl,
+    photoAfterUrl: photoAfterUrl ?? this.photoAfterUrl,
+    createdAt: createdAt,
+    visitCount: visitCount,
+    totalSpentFcfa: totalSpentFcfa,
+    lastVisitAt: lastVisitAt,
+    preferences: preferences,
+  );
 }

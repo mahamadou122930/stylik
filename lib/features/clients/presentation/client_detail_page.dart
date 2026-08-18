@@ -29,11 +29,9 @@ class ClientDetailPage extends ConsumerWidget {
     File file, {
     required bool isBefore,
   }) async {
-    await ref.read(clientsRepositoryProvider).uploadPhoto(
-          client: client,
-          file: file,
-          isBefore: isBefore,
-        );
+    await ref
+        .read(clientsRepositoryProvider)
+        .uploadPhoto(client: client, file: file, isBefore: isBefore);
     ref.invalidate(clientDetailProvider(client.id));
   }
 
@@ -54,7 +52,12 @@ class ClientDetailPage extends ConsumerWidget {
             onTap: () {
               final c = client.valueOrNull;
               final name = c?.fullName ?? 'Client';
-              SharePlus.instance.share(ShareParams(text: 'Bonjour $name, votre salon Stylik reste à votre service !'));
+              SharePlus.instance.share(
+                ShareParams(
+                  text:
+                      'Bonjour $name, votre salon Stylik reste à votre service !',
+                ),
+              );
             },
           ),
           const SizedBox(width: 10),
@@ -62,8 +65,9 @@ class ClientDetailPage extends ConsumerWidget {
             child: AppButton(
               label: 'Prendre RDV',
               icon: Icons.add_rounded,
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AppointmentFormPage.routeName),
+              onPressed: () => Navigator.of(
+                context,
+              ).pushNamed(AppointmentFormPage.routeName),
             ),
           ),
         ],
@@ -108,7 +112,10 @@ class _ClientBody extends ConsumerWidget {
     final historyList = history.valueOrNull ?? const [];
 
     final computedVisits = historyList.length;
-    final computedSpent = historyList.fold<int>(0, (sum, v) => sum + v.amountFcfa);
+    final computedSpent = historyList.fold<int>(
+      0,
+      (sum, v) => sum + v.amountFcfa,
+    );
 
     final displayVisits = client.visitCount > 0
         ? client.visitCount
@@ -231,12 +238,20 @@ class _ClientBody extends ConsumerWidget {
                       children: [
                         Text(
                           'Compte fidélité · Palier ${tier.label}',
-                          style: AppTypography.manrope(12, FontWeight.w600, color: AppColors.textSecondary),
+                          style: AppTypography.manrope(
+                            12,
+                            FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           '$displayPoints points accumulés',
-                          style: AppTypography.sora(17, FontWeight.w800, color: AppColors.primary),
+                          style: AppTypography.sora(
+                            17,
+                            FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ],
                     ),
@@ -248,7 +263,10 @@ class _ClientBody extends ConsumerWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: ((displayPoints - tier.threshold) / (nextTier.threshold - tier.threshold)).clamp(0.0, 1.0),
+                    value:
+                        ((displayPoints - tier.threshold) /
+                                (nextTier.threshold - tier.threshold))
+                            .clamp(0.0, 1.0),
                     color: AppColors.primary,
                     backgroundColor: AppColors.tintGreenBorder,
                     minHeight: 6,
@@ -257,13 +275,21 @@ class _ClientBody extends ConsumerWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Plus que ${nextTier.threshold - displayPoints} pts pour passer au palier ${nextTier.label} (${nextTier.threshold} pts)',
-                  style: AppTypography.manrope(11.5, FontWeight.w500, color: AppColors.textSecondary),
+                  style: AppTypography.manrope(
+                    11.5,
+                    FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ] else ...[
                 const SizedBox(height: 6),
                 Text(
                   '🏆 Palier Maximal (Platine) atteint !',
-                  style: AppTypography.manrope(12, FontWeight.w700, color: AppColors.primary),
+                  style: AppTypography.manrope(
+                    12,
+                    FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
                 ),
               ],
             ],
@@ -358,7 +384,8 @@ class _ClientBody extends ConsumerWidget {
               ? const AppEmptyState(
                   compact: true,
                   title: 'Aucun achat ni rendez-vous',
-                  message: 'Les ventes en caisse et les RDV du client apparaîtront ici.',
+                  message:
+                      'Les ventes en caisse et les RDV du client apparaîtront ici.',
                   icon: Icons.history_rounded,
                 )
               : AppListCard(
@@ -386,7 +413,9 @@ class _VisitRow extends StatelessWidget {
       child: Row(
         children: [
           AppIconTile(
-            icon: isTx ? Icons.receipt_long_rounded : Icons.calendar_today_rounded,
+            icon: isTx
+                ? Icons.receipt_long_rounded
+                : Icons.calendar_today_rounded,
             color: isTx ? AppColors.primary : AppColors.blue,
             background: isTx ? AppColors.tintGreen : AppColors.tintBlue,
             size: 34,

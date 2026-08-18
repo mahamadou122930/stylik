@@ -38,6 +38,19 @@ enum LoyaltyTier {
     return tier;
   }
 
+  /// Remise accordée en caisse, en pourcentage du sous-total.
+  ///
+  /// Bronze ne donne droit à rien : c'est le palier d'entrée, tout le monde y
+  /// est dès la première visite. La remise commence à Argent, soit 200 points
+  /// — environ 200 000 F dépensés, un point étant acquis par tranche de
+  /// 1 000 F.
+  int get discountPercent => switch (this) {
+    bronze => 0,
+    silver => 5,
+    gold => 10,
+    platinum => 15,
+  };
+
   /// Palier suivant, ou `null` si le client est au sommet.
   LoyaltyTier? get next {
     final index = LoyaltyTier.values.indexOf(this);

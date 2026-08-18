@@ -105,8 +105,8 @@ class ClientRow extends StatelessWidget {
     final accent = client.isVip
         ? AppColors.violet
         : client.isLoyal
-            ? AppColors.primary
-            : AppColors.blue;
+        ? AppColors.primary
+        : AppColors.blue;
 
     final tier = LoyaltyTier.forPoints(client.loyaltyPoints);
     final tierColor = switch (tier) {

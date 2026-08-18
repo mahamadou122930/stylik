@@ -124,17 +124,24 @@ extension TicketStockLines on List<TicketLine> {
 class Ticket {
   const Ticket({
     this.lines = const [],
-    this.discountFcfa = 0,
+    this.discountPercent = 0,
     this.clientId,
     this.appointmentId,
     this.clientName,
     this.stylistName,
     this.timeLabel,
-    this.discountLabel,
   });
 
   final List<TicketLine> lines;
-  final int discountFcfa;
+
+  /// Remise fidélité, en pourcentage du sous-total.
+  ///
+  /// Un taux plutôt qu'un montant : la remise se recalcule à chaque ligne
+  /// ajoutée ou retirée. Stockée en francs, elle serait restée figée sur le
+  /// sous-total du moment où le client a été rattaché, et un produit ajouté
+  /// après coup n'aurait plus été remisé.
+  final int discountPercent;
+
   final String? clientId;
   final String? appointmentId;
 
@@ -142,9 +149,6 @@ class Ticket {
   final String? clientName;
   final String? stylistName;
   final String? timeLabel;
-
-  /// Libellé de la remise (« Remise fidélité (5 %) »).
-  final String? discountLabel;
 
   /// Prestations du ticket.
   List<TicketLine> get serviceLines =>
@@ -156,28 +160,40 @@ class Ticket {
 
   int get subtotalFcfa => lines.fold(0, (sum, line) => sum + line.totalFcfa);
 
+  /// Montant de la remise, arrondi à la centaine inférieure.
+  ///
+  /// On ne rend pas la monnaie au franc près en salon : 5 % de 62 500 F font
+  /// 3 125 F, qui s'annoncent 3 100 F. L'arrondi va vers le bas pour que la
+  /// remise ne dépasse jamais le taux annoncé.
+  int get discountFcfa {
+    if (discountPercent <= 0) return 0;
+    return (subtotalFcfa * discountPercent / 100 / 100).floor() * 100;
+  }
+
+  /// Libellé de la remise (« Remise fidélité (5 %) »).
+  String? get discountLabel =>
+      discountPercent <= 0 ? null : 'Remise fidélité ($discountPercent %)';
+
   int get totalFcfa => (subtotalFcfa - discountFcfa).clamp(0, subtotalFcfa);
 
   bool get isEmpty => lines.isEmpty;
 
   Ticket copyWith({
     List<TicketLine>? lines,
-    int? discountFcfa,
+    int? discountPercent,
     String? clientId,
     String? appointmentId,
     String? clientName,
     String? stylistName,
     String? timeLabel,
-    String? discountLabel,
   }) => Ticket(
     lines: lines ?? this.lines,
-    discountFcfa: discountFcfa ?? this.discountFcfa,
+    discountPercent: discountPercent ?? this.discountPercent,
     clientId: clientId ?? this.clientId,
     appointmentId: appointmentId ?? this.appointmentId,
     clientName: clientName ?? this.clientName,
     stylistName: stylistName ?? this.stylistName,
     timeLabel: timeLabel ?? this.timeLabel,
-    discountLabel: discountLabel ?? this.discountLabel,
   );
 }
 

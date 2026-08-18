@@ -52,15 +52,18 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(clientsRepositoryProvider).create(
+      await ref
+          .read(clientsRepositoryProvider)
+          .create(
             Client(
               id: '',
               salonId: salonId,
               fullName: _fullName.text.trim(),
               phone: _phone.text.trim(),
               gender: _gender,
-              allergiesNotes:
-                  _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+              allergiesNotes: _notes.text.trim().isEmpty
+                  ? null
+                  : _notes.text.trim(),
               tags: _tags.toList(),
             ),
           );
@@ -178,8 +181,8 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                     controller: _phone,
                     validator: (value) =>
                         (value == null || value.trim().length < 6)
-                            ? 'Numéro invalide'
-                            : null,
+                        ? 'Numéro invalide'
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 11),
@@ -218,7 +221,9 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                 for (final tag in ClientFormPage.suggestedTags)
                   GestureDetector(
                     onTap: () => setState(
-                      () => _tags.contains(tag) ? _tags.remove(tag) : _tags.add(tag),
+                      () => _tags.contains(tag)
+                          ? _tags.remove(tag)
+                          : _tags.add(tag),
                     ),
                     child: Container(
                       padding: const EdgeInsets.symmetric(

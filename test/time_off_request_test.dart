@@ -27,23 +27,23 @@ void main() {
   );
 
   Widget host() => ProviderScope(
-        overrides: [
-          currentProfileProvider.overrideWith((ref) async => profile),
-          teamProvider.overrideWith((ref) async => const <Profile>[]),
-        ],
-        child: const MaterialApp(
-          // Même configuration que `AtelierApp` : c'est elle qui rend le
-          // sélecteur natif utilisable en français.
-          locale: Locale('fr', 'FR'),
-          supportedLocales: [Locale('fr', 'FR'), Locale('en')],
-          localizationsDelegates: [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          home: TimeOffRequestPage(),
-        ),
-      );
+    overrides: [
+      currentProfileProvider.overrideWith((ref) async => profile),
+      teamProvider.overrideWith((ref) async => const <Profile>[]),
+    ],
+    child: const MaterialApp(
+      // Même configuration que `AtelierApp` : c'est elle qui rend le
+      // sélecteur natif utilisable en français.
+      locale: Locale('fr', 'FR'),
+      supportedLocales: [Locale('fr', 'FR'), Locale('en')],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      home: TimeOffRequestPage(),
+    ),
+  );
 
   testWidgets('le sélecteur de date s\'ouvre en français', (tester) async {
     await tester.pumpWidget(host());
@@ -71,8 +71,9 @@ void main() {
     expect(find.byType(DatePickerDialog), findsNothing);
   });
 
-  testWidgets('la durée part à un jour et le solde est affiché',
-      (tester) async {
+  testWidgets('la durée part à un jour et le solde est affiché', (
+    tester,
+  ) async {
     await tester.pumpWidget(host());
     await tester.pumpAndSettle();
 

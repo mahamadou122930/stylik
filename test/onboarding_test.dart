@@ -38,8 +38,9 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('1.1 Bienvenue affiche le héros et les deux portes d\'entrée',
-      (tester) async {
+  testWidgets('1.1 Bienvenue affiche le héros et les deux portes d\'entrée', (
+    tester,
+  ) async {
     await pumpScreen(tester, const WelcomePage());
 
     expect(find.text('L\'Atelier'), findsOneWidget);
@@ -55,10 +56,7 @@ void main() {
     await pumpScreen(tester, const LoginPage());
 
     expect(find.text('L\'Atelier'), findsOneWidget);
-    expect(
-      find.text('La gestion de votre salon, simplifiée'),
-      findsOneWidget,
-    );
+    expect(find.text('La gestion de votre salon, simplifiée'), findsOneWidget);
     expect(find.text('Mot de passe oublié ?'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
     // Le lien d'inscription est un fragment de `Text.rich`, pas un `Text`.
@@ -68,21 +66,20 @@ void main() {
     );
   });
 
-  testWidgets('1.2b Créer un compte aiguille vers les deux parcours',
-      (tester) async {
+  testWidgets('1.2b Créer un compte aiguille vers les deux parcours', (
+    tester,
+  ) async {
     await pumpScreen(tester, const SignupChoicePage());
 
     expect(find.text('Je crée mon salon'), findsOneWidget);
     expect(find.text('Vous êtes le gérant'), findsOneWidget);
     expect(find.text('Je rejoins un salon'), findsOneWidget);
-    expect(
-      find.text('Coiffeur ou réceptionniste · avec code'),
-      findsOneWidget,
-    );
+    expect(find.text('Coiffeur ou réceptionniste · avec code'), findsOneWidget);
   });
 
-  testWidgets('1.2c Rejoindre un salon attend un code avant de s\'ouvrir',
-      (tester) async {
+  testWidgets('1.2c Rejoindre un salon attend un code avant de s\'ouvrir', (
+    tester,
+  ) async {
     await pumpScreen(tester, const JoinSalonPage());
 
     expect(find.text('Code d\'invitation'), findsOneWidget);
@@ -100,8 +97,9 @@ void main() {
     expect(cta.onPressed, isNull);
   });
 
-  testWidgets('1.3 Inscription est l\'étape 1/2 et collecte le salon',
-      (tester) async {
+  testWidgets('1.3 Inscription est l\'étape 1/2 et collecte le salon', (
+    tester,
+  ) async {
     await pumpScreen(tester, const RegisterPage());
 
     expect(find.text('1/2'), findsOneWidget);
@@ -117,7 +115,10 @@ void main() {
 
     expect(find.text('2/2'), findsOneWidget);
     expect(find.text('Votre rôle'), findsOneWidget);
-    expect(find.text('Chaque membre voit ce dont il a besoin.'), findsOneWidget);
+    expect(
+      find.text('Chaque membre voit ce dont il a besoin.'),
+      findsOneWidget,
+    );
     expect(find.text('Gérant'), findsOneWidget);
     expect(find.text('Entrer dans l\'app'), findsOneWidget);
   });

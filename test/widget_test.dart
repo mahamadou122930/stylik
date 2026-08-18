@@ -11,10 +11,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light,
         home: Scaffold(
-          body: AppButton(
-            label: 'Encaisser',
-            onPressed: () => tapped = true,
-          ),
+          body: AppButton(label: 'Encaisser', onPressed: () => tapped = true),
         ),
       ),
     );

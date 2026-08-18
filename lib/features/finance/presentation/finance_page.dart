@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../pos/presentation/pending_tickets_page.dart';
 import '../../pos/presentation/transactions_page.dart';
 import '../domain/finance_summary.dart';
 import '../domain/payout.dart';
@@ -190,10 +191,18 @@ class FinancePage extends ConsumerWidget {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
+                  // Un montant en attente appelle une action : la tuile mène
+                  // aux tickets concernés plutôt que de rester un chiffre
+                  // qu'on ne sait pas où aller solder.
                   child: AppStatTile(
                     label: 'En attente',
                     value: Formatters.fcfa(data.pendingFcfa),
                     valueColor: AppColors.amber,
+                    onTap: data.pendingFcfa == 0
+                        ? null
+                        : () => Navigator.of(
+                            context,
+                          ).pushNamed(PendingTicketsPage.routeName),
                   ),
                 ),
               ],
