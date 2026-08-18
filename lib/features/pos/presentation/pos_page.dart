@@ -33,13 +33,14 @@ class PosPage extends ConsumerWidget {
 
     if (selected != null) {
       if (selected.id.isEmpty) {
-        ref.read(ticketProvider.notifier).attachClient(
-              clientId: '',
-              clientName: 'Client de passage',
-            );
+        ref
+            .read(ticketProvider.notifier)
+            .attachClient(clientId: '', clientName: 'Client de passage');
       } else {
         final tier = LoyaltyTier.forPoints(selected.loyaltyPoints);
-        ref.read(ticketProvider.notifier).attachClient(
+        ref
+            .read(ticketProvider.notifier)
+            .attachClient(
               clientId: selected.id,
               clientName: selected.fullName,
               timeLabel: '${selected.loyaltyPoints} pts · Palier ${tier.label}',
@@ -56,7 +57,10 @@ class PosPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ticket = ref.watch(ticketProvider);
     final clientName = ticket.clientName ?? 'Client de passage';
-    final hasClientFiche = ticket.clientName != null && ticket.clientName!.isNotEmpty && ticket.clientName != 'Client de passage';
+    final hasClientFiche =
+        ticket.clientName != null &&
+        ticket.clientName!.isNotEmpty &&
+        ticket.clientName != 'Client de passage';
 
     return AppScreen(
       title: 'Encaissement',
@@ -142,12 +146,12 @@ class PosPage extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Ticket',
-                style: AppTypography.sora(18, FontWeight.w700),
-              ),
+              Text('Ticket', style: AppTypography.sora(18, FontWeight.w700)),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   border: Border.all(color: AppColors.border),
@@ -240,7 +244,9 @@ class _TicketLineRow extends ConsumerWidget {
     );
 
     if (selected != null) {
-      ref.read(ticketProvider.notifier).updateLineStylist(
+      ref
+          .read(ticketProvider.notifier)
+          .updateLineStylist(
             line.refId,
             stylistId: selected.id,
             stylistName: selected.fullName,
@@ -251,9 +257,8 @@ class _TicketLineRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentProfile = ref.watch(currentProfileProvider).valueOrNull;
-    final displayName = line.stylistName ??
-        currentProfile?.fullName ??
-        'Choisir coiffeur';
+    final displayName =
+        line.stylistName ?? currentProfile?.fullName ?? 'Choisir coiffeur';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -532,14 +537,20 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
               ),
               onTap: () => Navigator.pop(
                 context,
-                const Client(id: '', salonId: '', fullName: 'Client de passage', phone: ''),
+                const Client(
+                  id: '',
+                  salonId: '',
+                  fullName: 'Client de passage',
+                  phone: '',
+                ),
               ),
             ),
             const Divider(height: 1, color: AppColors.border),
             Expanded(
               child: clientsAsync.when(
                 loading: () => const AppLoader(compact: true),
-                error: (err, _) => AppErrorState(message: '$err', compact: true),
+                error: (err, _) =>
+                    AppErrorState(message: '$err', compact: true),
                 data: (clients) {
                   final filtered = clients.where((c) {
                     if (_query.isEmpty) return true;
@@ -559,7 +570,8 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
 
                   return ListView.separated(
                     itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
+                    separatorBuilder: (_, _) =>
+                        const Divider(height: 1, color: AppColors.border),
                     itemBuilder: (context, index) {
                       final c = filtered[index];
                       final tier = LoyaltyTier.forPoints(c.loyaltyPoints);
@@ -583,10 +595,17 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                           background: AppColors.primary,
                           color: Colors.white,
                         ),
-                        title: Text(c.fullName, style: AppTypography.sora(14.5, FontWeight.w600)),
+                        title: Text(
+                          c.fullName,
+                          style: AppTypography.sora(14.5, FontWeight.w600),
+                        ),
                         subtitle: Text(
                           '${c.phone.isNotEmpty ? c.phone : "Sans téléphone"} · ${c.loyaltyPoints} pts · ${c.visitCount} visite${c.visitCount > 1 ? 's' : ''}',
-                          style: AppTypography.manrope(12, FontWeight.w500, color: AppColors.textSecondary),
+                          style: AppTypography.manrope(
+                            12,
+                            FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                         trailing: AppBadge(
                           label: tier.label,
@@ -612,7 +631,8 @@ class _StylistPickerSheet extends ConsumerStatefulWidget {
   const _StylistPickerSheet();
 
   @override
-  ConsumerState<_StylistPickerSheet> createState() => _StylistPickerSheetState();
+  ConsumerState<_StylistPickerSheet> createState() =>
+      _StylistPickerSheetState();
 }
 
 class _StylistPickerSheetState extends ConsumerState<_StylistPickerSheet> {
@@ -681,7 +701,8 @@ class _StylistPickerSheetState extends ConsumerState<_StylistPickerSheet> {
             Expanded(
               child: stylistsAsync.when(
                 loading: () => const AppLoader(compact: true),
-                error: (err, _) => AppErrorState(message: '$err', compact: true),
+                error: (err, _) =>
+                    AppErrorState(message: '$err', compact: true),
                 data: (stylists) {
                   final filtered = stylists.where((s) {
                     if (_query.isEmpty) return true;
@@ -701,7 +722,8 @@ class _StylistPickerSheetState extends ConsumerState<_StylistPickerSheet> {
 
                   return ListView.separated(
                     itemCount: filtered.length,
-                    separatorBuilder: (_, _) => const Divider(height: 1, color: AppColors.border),
+                    separatorBuilder: (_, _) =>
+                        const Divider(height: 1, color: AppColors.border),
                     itemBuilder: (context, index) {
                       final stylist = filtered[index];
                       return ListTile(
@@ -711,8 +733,14 @@ class _StylistPickerSheetState extends ConsumerState<_StylistPickerSheet> {
                           background: AppColors.primary,
                           color: Colors.white,
                         ),
-                        title: Text(stylist.fullName, style: AppTypography.sora(14.5, FontWeight.w600)),
-                        subtitle: Text(stylist.role.label, style: AppTypography.manrope(12, FontWeight.w500)),
+                        title: Text(
+                          stylist.fullName,
+                          style: AppTypography.sora(14.5, FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          stylist.role.label,
+                          style: AppTypography.manrope(12, FontWeight.w500),
+                        ),
                         onTap: () => Navigator.pop(context, stylist),
                       );
                     },
@@ -726,5 +754,3 @@ class _StylistPickerSheetState extends ConsumerState<_StylistPickerSheet> {
     );
   }
 }
-
-

@@ -76,11 +76,19 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
             children: [
               Text(
                 'Retour au ticket',
-                style: AppTypography.sora(15, FontWeight.w700, color: Colors.white),
+                style: AppTypography.sora(
+                  15,
+                  FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
               Text(
                 '${ticket.lines.length} article${ticket.lines.length > 1 ? 's' : ''} · ${Formatters.fcfa(ticket.totalFcfa)}',
-                style: AppTypography.sora(14, FontWeight.w700, color: Colors.white),
+                style: AppTypography.sora(
+                  14,
+                  FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ],
           ),
@@ -123,7 +131,9 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
             error: (err, _) => AppErrorState(message: '$err'),
             data: (services) {
               final products = productsAsync.valueOrNull ?? const [];
-              final activeProducts = products.where((p) => !p.isOutOfStock).toList();
+              final activeProducts = products
+                  .where((p) => !p.isOutOfStock)
+                  .toList();
 
               final filteredServices = services.where((s) {
                 if (_searchQuery.isEmpty) return true;
@@ -154,14 +164,18 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
                   children: [
                     // Prestations
                     for (int i = 0; i < filteredServices.length; i++) ...[
-                      if (i > 0) const Divider(height: 1, color: AppColors.border),
+                      if (i > 0)
+                        const Divider(height: 1, color: AppColors.border),
                       _ServiceRow(
                         serviceName: filteredServices[i].name,
-                        subtitle: '${filteredServices[i].category} · ${Formatters.duration(filteredServices[i].durationMinutes)}',
+                        subtitle:
+                            '${filteredServices[i].category} · ${Formatters.duration(filteredServices[i].durationMinutes)}',
                         priceFcfa: filteredServices[i].priceFcfa,
                         onAdd: () {
                           HapticFeedback.lightImpact();
-                          ref.read(ticketProvider.notifier).addService(
+                          ref
+                              .read(ticketProvider.notifier)
+                              .addService(
                                 filteredServices[i],
                                 stylistId: defaultStylist?.id,
                                 stylistName: defaultStylist?.fullName,
@@ -171,18 +185,22 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
                     ],
 
                     // Produits en vente
-                    if (filteredServices.isNotEmpty && filteredProducts.isNotEmpty)
+                    if (filteredServices.isNotEmpty &&
+                        filteredProducts.isNotEmpty)
                       const Divider(height: 1, color: AppColors.border),
 
                     for (int i = 0; i < filteredProducts.length; i++) ...[
-                      if (i > 0) const Divider(height: 1, color: AppColors.border),
+                      if (i > 0)
+                        const Divider(height: 1, color: AppColors.border),
                       _ServiceRow(
                         serviceName: filteredProducts[i].name,
                         subtitle: 'Vente · ${filteredProducts[i].brand}',
                         priceFcfa: filteredProducts[i].unitSalePriceFcfa,
                         onAdd: () {
                           HapticFeedback.lightImpact();
-                          ref.read(ticketProvider.notifier).addProduct(filteredProducts[i]);
+                          ref
+                              .read(ticketProvider.notifier)
+                              .addProduct(filteredProducts[i]);
                         },
                       ),
                     ],

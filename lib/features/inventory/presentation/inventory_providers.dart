@@ -44,12 +44,14 @@ final filteredProductsProvider = Provider<List<Product>>((ref) {
     if (usage != null && product.usage != usage) return false;
     if (query.isEmpty) return true;
 
-    final haystack = Formatters.searchable([
-      product.name,
-      product.brand,
-      product.category,
-      product.supplier ?? '',
-    ].join(' '));
+    final haystack = Formatters.searchable(
+      [
+        product.name,
+        product.brand,
+        product.category,
+        product.supplier ?? '',
+      ].join(' '),
+    );
     return haystack.contains(query);
   }).toList();
 });
@@ -76,7 +78,9 @@ final stockValueProvider = Provider<int>((ref) {
 final productsWithoutCostProvider = Provider<List<Product>>((ref) {
   final products = ref.watch(productsProvider).valueOrNull ?? const [];
   return products
-      .where((product) => product.unitCostFcfa <= 0 && product.stockQuantity > 0)
+      .where(
+        (product) => product.unitCostFcfa <= 0 && product.stockQuantity > 0,
+      )
       .toList();
 });
 
@@ -108,7 +112,9 @@ Future<String> openConsumableUnit(WidgetRef ref, Product product) async {
   }
 
   try {
-    await ref.read(inventoryRepositoryProvider).adjustStock(
+    await ref
+        .read(inventoryRepositoryProvider)
+        .adjustStock(
           productId: product.id,
           delta: -1,
           reason: 'consumption',
@@ -132,20 +138,25 @@ Future<String> openConsumableUnit(WidgetRef ref, Product product) async {
 }
 
 /// Fiche produit.
-final productDetailProvider =
-    FutureProvider.family<Product?, String>((ref, productId) {
+final productDetailProvider = FutureProvider.family<Product?, String>((
+  ref,
+  productId,
+) {
   return ref.watch(inventoryRepositoryProvider).fetchById(productId);
 });
 
 /// Consommations en cabine du jour.
-final todayConsumptionProvider =
-    FutureProvider<List<StockMovement>>((ref) async {
+final todayConsumptionProvider = FutureProvider<List<StockMovement>>((
+  ref,
+) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
   final now = DateTime.now();
   final start = DateTime(now.year, now.month, now.day);
-  return ref.watch(inventoryRepositoryProvider).fetchMovements(
+  return ref
+      .watch(inventoryRepositoryProvider)
+      .fetchMovements(
         salonId: salonId,
         from: start,
         to: start.add(const Duration(days: 1)),
@@ -154,14 +165,17 @@ final todayConsumptionProvider =
 });
 
 /// Consommations du mois, pour le coût et le classement des produits.
-final monthConsumptionProvider =
-    FutureProvider<List<StockMovement>>((ref) async {
+final monthConsumptionProvider = FutureProvider<List<StockMovement>>((
+  ref,
+) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
   final now = DateTime.now();
   final start = DateTime(now.year, now.month);
-  return ref.watch(inventoryRepositoryProvider).fetchMovements(
+  return ref
+      .watch(inventoryRepositoryProvider)
+      .fetchMovements(
         salonId: salonId,
         from: start,
         to: DateTime(now.year, now.month + 1),
@@ -178,19 +192,20 @@ final monthConsumptionCostProvider = Provider<int>((ref) {
 /// Coût consommé par produit ce mois, du plus élevé au plus faible.
 final topConsumedProductsProvider =
     Provider<List<({String name, int costFcfa})>>((ref) {
-  final movements = ref.watch(monthConsumptionProvider).valueOrNull ?? const [];
+      final movements =
+          ref.watch(monthConsumptionProvider).valueOrNull ?? const [];
 
-  final totals = <String, int>{};
-  for (final movement in movements) {
-    final name = movement.productName ?? 'Produit';
-    totals[name] = (totals[name] ?? 0) + movement.costFcfa;
-  }
+      final totals = <String, int>{};
+      for (final movement in movements) {
+        final name = movement.productName ?? 'Produit';
+        totals[name] = (totals[name] ?? 0) + movement.costFcfa;
+      }
 
-  final entries = totals.entries.toList()
-    ..sort((a, b) => b.value.compareTo(a.value));
+      final entries = totals.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
 
-  return [
-    for (final entry in entries.take(5))
-      (name: entry.key, costFcfa: entry.value),
-  ];
-});
+      return [
+        for (final entry in entries.take(5))
+          (name: entry.key, costFcfa: entry.value),
+      ];
+    });

@@ -91,10 +91,7 @@ class FinanceRepository {
   }) async {
     final data = await _client
         .from(SupabaseTables.payoutRequests)
-        .update({
-          'status': PayoutStatus.rejected.value,
-          'note': reason,
-        })
+        .update({'status': PayoutStatus.rejected.value, 'note': reason})
         .eq('id', requestId)
         .select('*, profiles(full_name)')
         .single();
@@ -127,12 +124,99 @@ class FinanceRepository {
     return PayoutRequest.fromMap(data);
   }
 
+  /// Chiffre d'affaires et commissions dues, agrégés par tranche.
+  ///
+  /// Les tranches sont calendaires — jours d'une semaine, mois d'une année —
+  /// donc de largeurs inégales : on ne peut pas les déduire d'un découpage
+  /// régulier de la période.
+  ///
+  /// Tout est calculé à partir d'une seule lecture des transactions et d'une
+  /// seule lecture des profils. Interroger la base tranche par tranche
+  /// coûterait vingt-quatre allers-retours pour une année.
+  Future<List<({int revenueFcfa, int commissionFcfa})>> fetchBucketTotals({
+    required String salonId,
+    required List<({DateTime from, DateTime to})> buckets,
+  }) async {
+    if (buckets.isEmpty) return const [];
+
+    final rows = await _fetchTransactions(
+      salonId: salonId,
+      from: buckets.first.from,
+      to: buckets.last.to,
+    );
+
+    // Taux de commission par membre, pour n'appliquer que le sien à chaque
+    // ligne : un taux moyen fausserait le total dès que deux taux diffèrent.
+    final rates = <String, double>{};
+    try {
+      final staff = await _client
+          .from(SupabaseTables.profiles)
+          .select('id, commission_rate')
+          .eq('salon_id', salonId);
+      for (final row in staff) {
+        rates[row['id'].toString()] =
+            (row['commission_rate'] as num?)?.toDouble() ?? 0;
+      }
+    } catch (_) {
+      // Sans les taux, le chiffre d'affaires reste juste ; seules les
+      // commissions tombent à zéro.
+    }
+
+    final revenue = List<int>.filled(buckets.length, 0);
+    final commission = List<double>.filled(buckets.length, 0);
+
+    for (final row in rows) {
+      if (row['status'] != 'paid') continue;
+
+      final createdAtStr = row['created_at'] as String?;
+      if (createdAtStr == null) continue;
+      final createdAt = DateTime.parse(createdAtStr).toLocal();
+
+      final index = buckets.indexWhere(
+        (b) => !createdAt.isBefore(b.from) && createdAt.isBefore(b.to),
+      );
+      if (index < 0) continue;
+
+      revenue[index] += (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+
+      final rawLines = row['lines'];
+      final lines = rawLines is String
+          ? ((jsonDecode(rawLines) as List?) ?? const [])
+          : (rawLines is List ? rawLines : const []);
+
+      for (final line in lines) {
+        if (line is! Map<String, dynamic>) continue;
+        if (((line['is_product'] ?? line['isProduct']) as bool?) ?? false) {
+          continue;
+        }
+
+        final stylistId =
+            (line['stylist_id'] as String?) ??
+            (line['stylistId'] as String?) ??
+            (row['cashier_id'] as String?);
+        final rate = rates[stylistId] ?? 0;
+        if (rate == 0) continue;
+
+        final unit = (line['unit_price_fcfa'] ?? line['unitPriceFcfa']) as num?;
+        final qty = (line['quantity'] as num?)?.toInt() ?? 1;
+        commission[index] += (unit?.toInt() ?? 0) * qty * rate / 100;
+      }
+    }
+
+    return [
+      for (var i = 0; i < buckets.length; i++)
+        (revenueFcfa: revenue[i], commissionFcfa: commission[i].round()),
+    ];
+  }
+
   /// Synthèse du CA sur une période.
   Future<FinanceSummary> fetchSummary({
     required String salonId,
     required DateTime from,
     required DateTime to,
     int bucketCount = 4,
+    DateTime? previousFrom,
+    DateTime? previousTo,
   }) async {
     try {
       final data = await _client.rpc<Map<String, dynamic>>(
@@ -155,13 +239,21 @@ class FinanceRepository {
       );
     } catch (_) {
       // Fallback calcul local à partir des transactions de la période
-      final rows = await _fetchTransactions(salonId: salonId, from: from, to: to);
+      final rows = await _fetchTransactions(
+        salonId: salonId,
+        from: from,
+        to: to,
+      );
 
+      // Période de comparaison. Fournie explicitement, elle est calendaire :
+      // reculer d'une durée égale ferait démarrer le « mois précédent » de
+      // février le 4 janvier, et le badge « vs janvier » mentirait de trois
+      // jours.
       final span = to.difference(from);
       final previousRows = await _fetchTransactions(
         salonId: salonId,
-        from: from.subtract(span),
-        to: from,
+        from: previousFrom ?? from.subtract(span),
+        to: previousTo ?? from,
       );
 
       var revenue = 0;
@@ -178,8 +270,9 @@ class FinanceRepository {
         revenue += amount;
         if (status == 'paid') {
           collected += amount;
-          final method =
-              PaymentMethod.fromValue(row['payment_method'] as String?);
+          final method = PaymentMethod.fromValue(
+            row['payment_method'] as String?,
+          );
           byMethod[method] = (byMethod[method] ?? 0) + amount;
         } else {
           pending += amount;
@@ -198,7 +291,8 @@ class FinanceRepository {
 
       final previousRevenue = previousRows.fold<int>(
         0,
-        (sum, row) => (row['status'] == 'cancelled' || row['status'] == 'refunded')
+        (sum, row) =>
+            (row['status'] == 'cancelled' || row['status'] == 'refunded')
             ? sum
             : sum + ((row['total_amount_fcfa'] as num?)?.toInt() ?? 0),
       );
@@ -241,7 +335,11 @@ class FinanceRepository {
           .toList();
     } catch (_) {
       // Fallback calcul en Dart à partir des transactions de la période
-      final rows = await _fetchTransactions(salonId: salonId, from: from, to: to);
+      final rows = await _fetchTransactions(
+        salonId: salonId,
+        from: from,
+        to: to,
+      );
 
       // Charger les profils pour récupérer leurs noms et taux de commission
       final profilesMap = <String, Map<String, dynamic>>{};
@@ -295,11 +393,13 @@ class FinanceRepository {
             continue;
           }
 
-          final stylistId = (line['stylist_id'] as String?) ??
+          final stylistId =
+              (line['stylist_id'] as String?) ??
               (line['stylistId'] as String?) ??
               (row['cashier_id'] as String?) ??
               'unknown';
-          final fallbackName = (line['stylist_name'] as String?) ??
+          final fallbackName =
+              (line['stylist_name'] as String?) ??
               (line['stylistName'] as String?) ??
               'Coiffeur';
 
@@ -309,23 +409,26 @@ class FinanceRepository {
           final spec = (profile?['speciality'] as String?) ?? 'Coiffure';
 
           final qty = (line['quantity'] as num?)?.toInt() ?? 1;
-          final price = ((line['unit_price_fcfa'] ?? line['unitPriceFcfa'])
-                  as num?)
-              ?.toInt() ??
+          final price =
+              ((line['unit_price_fcfa'] ?? line['unitPriceFcfa']) as num?)
+                  ?.toInt() ??
               0;
           final amount = price * qty;
 
-          final entry = map.putIfAbsent(stylistId, () => {
-            'stylist_id': stylistId,
-            'stylist_name': name,
-            'revenue_fcfa': 0,
-            'commission_fcfa': 0,
-            'service_count': 0,
-            'commission_rate': rate,
-            'speciality': spec,
-            'client_count': 0,
-            'clients': <String>{},
-          });
+          final entry = map.putIfAbsent(
+            stylistId,
+            () => {
+              'stylist_id': stylistId,
+              'stylist_name': name,
+              'revenue_fcfa': 0,
+              'commission_fcfa': 0,
+              'service_count': 0,
+              'commission_rate': rate,
+              'speciality': spec,
+              'client_count': 0,
+              'clients': <String>{},
+            },
+          );
 
           entry['revenue_fcfa'] = (entry['revenue_fcfa'] as int) + amount;
           entry['service_count'] = (entry['service_count'] as int) + qty;
@@ -365,7 +468,11 @@ class FinanceRepository {
           .toList();
     } catch (_) {
       // Fallback calcul local à partir des transactions de la période
-      final rows = await _fetchTransactions(salonId: salonId, from: from, to: to);
+      final rows = await _fetchTransactions(
+        salonId: salonId,
+        from: from,
+        to: to,
+      );
       final map = <String, Map<String, dynamic>>{};
 
       for (final row in rows) {
@@ -387,25 +494,29 @@ class FinanceRepository {
             continue; // Exclure produits
           }
 
-          final serviceId = (line['ref_id'] ?? line['refId'] as String?) ??
+          final serviceId =
+              (line['ref_id'] ?? line['refId'] as String?) ??
               (line['label'] as String?) ??
               'service';
           final name = (line['label'] as String?) ?? 'Prestation';
           final category = (line['category'] as String?) ?? 'Autre';
           final qty = (line['quantity'] as num?)?.toInt() ?? 1;
-          final price = ((line['unit_price_fcfa'] ?? line['unitPriceFcfa'])
-                  as num?)
-              ?.toInt() ??
+          final price =
+              ((line['unit_price_fcfa'] ?? line['unitPriceFcfa']) as num?)
+                  ?.toInt() ??
               0;
           final amount = price * qty;
 
-          final entry = map.putIfAbsent(serviceId, () => {
-            'service_id': serviceId,
-            'name': name,
-            'category': category,
-            'count': 0,
-            'revenue_fcfa': 0,
-          });
+          final entry = map.putIfAbsent(
+            serviceId,
+            () => {
+              'service_id': serviceId,
+              'name': name,
+              'category': category,
+              'count': 0,
+              'revenue_fcfa': 0,
+            },
+          );
 
           entry['count'] = (entry['count'] as int) + qty;
           entry['revenue_fcfa'] = (entry['revenue_fcfa'] as int) + amount;
@@ -561,7 +672,8 @@ class FinanceRepository {
         final caStr = row['created_at'] as String?;
         if (caStr == null) return false;
         final ca = DateTime.parse(caStr);
-        return (ca.isAfter(from) || ca.isAtSameMomentAs(from)) && ca.isBefore(to);
+        return (ca.isAfter(from) || ca.isAtSameMomentAs(from)) &&
+            ca.isBefore(to);
       }).toList();
     }
   }

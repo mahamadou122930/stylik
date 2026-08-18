@@ -220,7 +220,9 @@ abstract final class InvoicePdf {
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(vertical: 7),
             decoration: const pw.BoxDecoration(
-              border: pw.Border(bottom: pw.BorderSide(color: _line, width: 0.5)),
+              border: pw.Border(
+                bottom: pw.BorderSide(color: _line, width: 0.5),
+              ),
             ),
             child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -274,7 +276,10 @@ abstract final class InvoicePdf {
             // Sous-total et remise n'apparaissent qu'en présence d'une remise :
             // sinon ils répéteraient le total.
             if (hasDiscount) ...[
-              _totalRow('Sous-total', Formatters.fcfa(transaction.subtotalFcfa)),
+              _totalRow(
+                'Sous-total',
+                Formatters.fcfa(transaction.subtotalFcfa),
+              ),
               _totalRow(
                 'Remise',
                 '- ${Formatters.fcfa(transaction.discountFcfa)}',
@@ -353,34 +358,34 @@ abstract final class InvoicePdf {
   }
 
   static pw.Widget _th(String label, {bool right = false}) => pw.Text(
-        label,
-        textAlign: right ? pw.TextAlign.right : pw.TextAlign.left,
-        style: pw.TextStyle(
-          fontSize: 8,
-          fontWeight: pw.FontWeight.bold,
-          color: _muted,
-          letterSpacing: 0.5,
-        ),
-      );
+    label,
+    textAlign: right ? pw.TextAlign.right : pw.TextAlign.left,
+    style: pw.TextStyle(
+      fontSize: 8,
+      fontWeight: pw.FontWeight.bold,
+      color: _muted,
+      letterSpacing: 0.5,
+    ),
+  );
 
   static pw.Widget _td(String value, {bool bold = false}) => pw.Text(
-        value,
-        textAlign: pw.TextAlign.right,
-        style: pw.TextStyle(
-          fontSize: 10,
-          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: _ink,
-        ),
-      );
+    value,
+    textAlign: pw.TextAlign.right,
+    style: pw.TextStyle(
+      fontSize: 10,
+      fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+      color: _ink,
+    ),
+  );
 
   static pw.Widget _totalRow(String label, String value) => pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 2),
-        child: pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: _muted)),
-            pw.Text(value, style: const pw.TextStyle(fontSize: 9, color: _ink)),
-          ],
-        ),
-      );
+    padding: const pw.EdgeInsets.symmetric(vertical: 2),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: _muted)),
+        pw.Text(value, style: const pw.TextStyle(fontSize: 9, color: _ink)),
+      ],
+    ),
+  );
 }

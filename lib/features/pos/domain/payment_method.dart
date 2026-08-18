@@ -14,9 +14,8 @@ enum PaymentFamily {
   final IconData icon;
 
   /// Sous-choix proposés sous la famille (opérateurs mobile money).
-  List<PaymentMethod> get methods => PaymentMethod.values
-      .where((method) => method.family == this)
-      .toList();
+  List<PaymentMethod> get methods =>
+      PaymentMethod.values.where((method) => method.family == this).toList();
 }
 
 /// Moyens de paiement acceptés (`transactions.payment_method`).
@@ -43,11 +42,8 @@ enum PaymentMethod {
 
   IconData get icon => family.icon;
 
-  static PaymentMethod fromValue(String? value) =>
-      PaymentMethod.values.firstWhere(
-        (method) => method.value == value,
-        orElse: () => cash,
-      );
+  static PaymentMethod fromValue(String? value) => PaymentMethod.values
+      .firstWhere((method) => method.value == value, orElse: () => cash);
 
   /// Les paiements mobiles demandent une référence de transaction.
   bool get requiresReference => family == PaymentFamily.mobileMoney;

@@ -19,11 +19,9 @@ class ExportPage extends ConsumerWidget {
     if (salonId == null) return;
 
     final range = ref.read(exportPeriodProvider).range;
-    final csv = await ref.read(financeRepositoryProvider).exportCsv(
-          salonId: salonId,
-          from: range.from,
-          to: range.to,
-        );
+    final csv = await ref
+        .read(financeRepositoryProvider)
+        .exportCsv(salonId: salonId, from: range.from, to: range.to);
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -38,7 +36,9 @@ class ExportPage extends ConsumerWidget {
     if (salonId == null) return;
 
     final range = ref.read(exportPeriodProvider).range;
-    await ref.read(financeRepositoryProvider).sendExportToAccountant(
+    await ref
+        .read(financeRepositoryProvider)
+        .sendExportToAccountant(
           salonId: salonId,
           from: range.from,
           to: range.to,
@@ -46,9 +46,9 @@ class ExportPage extends ConsumerWidget {
         );
 
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export envoyé au comptable')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Export envoyé au comptable')));
   }
 
   @override
@@ -96,8 +96,9 @@ class ExportPage extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 18),
             items: [for (final value in ExportPeriod.values) value.label],
             selectedIndex: ExportPeriod.values.indexOf(period),
-            onChanged: (index) => ref.read(exportPeriodProvider.notifier).state =
-                ExportPeriod.values[index],
+            onChanged: (index) =>
+                ref.read(exportPeriodProvider.notifier).state =
+                    ExportPeriod.values[index],
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
@@ -195,9 +196,7 @@ class _FormatOption extends StatelessWidget {
               borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
-              isPdf
-                  ? Icons.picture_as_pdf_rounded
-                  : Icons.table_chart_outlined,
+              isPdf ? Icons.picture_as_pdf_rounded : Icons.table_chart_outlined,
               size: 19,
               color: isPdf ? AppColors.dangerDeep : AppColors.primary,
             ),

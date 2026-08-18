@@ -109,7 +109,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   },
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
-                    color: _statusFilter == null ? Colors.white : AppColors.textPrimary,
+                    color: _statusFilter == null
+                        ? Colors.white
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -117,11 +119,15 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   label: const Text('Payé'),
                   selected: _statusFilter == TransactionStatus.paid,
                   onSelected: (sel) {
-                    setState(() => _statusFilter = sel ? TransactionStatus.paid : null);
+                    setState(
+                      () => _statusFilter = sel ? TransactionStatus.paid : null,
+                    );
                   },
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
-                    color: _statusFilter == TransactionStatus.paid ? Colors.white : AppColors.textPrimary,
+                    color: _statusFilter == TransactionStatus.paid
+                        ? Colors.white
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -129,11 +135,17 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   label: const Text('Remboursé'),
                   selected: _statusFilter == TransactionStatus.refunded,
                   onSelected: (sel) {
-                    setState(() => _statusFilter = sel ? TransactionStatus.refunded : null);
+                    setState(
+                      () => _statusFilter = sel
+                          ? TransactionStatus.refunded
+                          : null,
+                    );
                   },
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
-                    color: _statusFilter == TransactionStatus.refunded ? Colors.white : AppColors.textPrimary,
+                    color: _statusFilter == TransactionStatus.refunded
+                        ? Colors.white
+                        : AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -141,11 +153,17 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   label: const Text('Annulé'),
                   selected: _statusFilter == TransactionStatus.cancelled,
                   onSelected: (sel) {
-                    setState(() => _statusFilter = sel ? TransactionStatus.cancelled : null);
+                    setState(
+                      () => _statusFilter = sel
+                          ? TransactionStatus.cancelled
+                          : null,
+                    );
                   },
                   selectedColor: AppColors.primary,
                   labelStyle: TextStyle(
-                    color: _statusFilter == TransactionStatus.cancelled ? Colors.white : AppColors.textPrimary,
+                    color: _statusFilter == TransactionStatus.cancelled
+                        ? Colors.white
+                        : AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -171,10 +189,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   for (final transaction in items)
                     _TransactionRow(
                       transaction: transaction,
-                      onTap: () => Navigator.of(context).pushNamed(
-                        RefundPage.routeName,
-                        arguments: transaction,
-                      ),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(RefundPage.routeName, arguments: transaction),
                     ),
                 ],
               ),
@@ -197,8 +214,8 @@ class _TransactionRow extends StatelessWidget {
     final (color, background) = isRefund
         ? (AppColors.dangerDeep, AppColors.tintExpense)
         : method.family == PaymentFamily.card
-            ? (AppColors.blue, AppColors.tintBlue)
-            : (AppColors.primary, AppColors.tintGreen);
+        ? (AppColors.blue, AppColors.tintBlue)
+        : (AppColors.primary, AppColors.tintGreen);
 
     final subtitle = [
       if (transaction.createdAt != null)

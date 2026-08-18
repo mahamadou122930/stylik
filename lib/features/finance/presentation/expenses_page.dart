@@ -27,8 +27,7 @@ class ExpensesPage extends ConsumerWidget {
       action: AppIconButton(
         icon: Icons.add_rounded,
         filled: true,
-        onTap: () =>
-            Navigator.of(context).pushNamed(ExpenseFormPage.routeName),
+        onTap: () => Navigator.of(context).pushNamed(ExpenseFormPage.routeName),
       ),
       header: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
@@ -47,8 +46,7 @@ class ExpensesPage extends ConsumerWidget {
                 label: 'Résultat net',
                 value: Formatters.fcfa(net),
                 tinted: true,
-                valueColor:
-                    net < 0 ? AppColors.expense : AppColors.primary,
+                valueColor: net < 0 ? AppColors.expense : AppColors.primary,
                 // Le détail — CA, commissions, charges — et les quatre
                 // échelles de temps sont sur l'écran dédié.
                 onTap: () =>
@@ -74,13 +72,15 @@ class ExpensesPage extends ConsumerWidget {
             data: (items) => items.isEmpty
                 ? const AppEmptyState(
                     title: 'Aucune charge',
-                    message: 'Enregistrez loyer, réappro. et salaires pour '
+                    message:
+                        'Enregistrez loyer, réappro. et salaires pour '
                         'suivre le résultat net.',
                     icon: Icons.receipt_long_outlined,
                   )
                 : AppListCard(
                     children: [
-                      for (final expense in items) _ExpenseRow(expense: expense),
+                      for (final expense in items)
+                        _ExpenseRow(expense: expense),
                     ],
                   ),
           ),
@@ -99,35 +99,35 @@ class _ExpenseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color, background) = switch (expense.category) {
       ExpenseCategory.rent => (
-          Icons.home_work_rounded,
-          AppColors.blue,
-          AppColors.tintBlue,
-        ),
+        Icons.home_work_rounded,
+        AppColors.blue,
+        AppColors.tintBlue,
+      ),
       ExpenseCategory.supplies => (
-          Icons.inventory_2_rounded,
-          AppColors.amber,
-          AppColors.tintAmber,
-        ),
+        Icons.inventory_2_rounded,
+        AppColors.amber,
+        AppColors.tintAmber,
+      ),
       ExpenseCategory.utilities => (
-          Icons.bolt_rounded,
-          AppColors.violet,
-          AppColors.tintViolet,
-        ),
+        Icons.bolt_rounded,
+        AppColors.violet,
+        AppColors.tintViolet,
+      ),
       ExpenseCategory.payroll => (
-          Icons.person_rounded,
-          AppColors.primary,
-          AppColors.tintGreen,
-        ),
+        Icons.person_rounded,
+        AppColors.primary,
+        AppColors.tintGreen,
+      ),
       ExpenseCategory.marketing => (
-          Icons.campaign_rounded,
-          AppColors.violet,
-          AppColors.tintViolet,
-        ),
+        Icons.campaign_rounded,
+        AppColors.violet,
+        AppColors.tintViolet,
+      ),
       ExpenseCategory.other => (
-          Icons.more_horiz_rounded,
-          AppColors.textBody,
-          AppColors.surfaceMuted,
-        ),
+        Icons.more_horiz_rounded,
+        AppColors.textBody,
+        AppColors.surfaceMuted,
+      ),
     };
 
     final subtitle = [

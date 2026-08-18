@@ -40,12 +40,14 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
     return products.where((product) {
       if ((_quantities[product.id] ?? 0) > 0) return true;
 
-      final haystack = Formatters.searchable([
-        product.name,
-        product.brand,
-        product.category,
-        product.supplier ?? '',
-      ].join(' '));
+      final haystack = Formatters.searchable(
+        [
+          product.name,
+          product.brand,
+          product.category,
+          product.supplier ?? '',
+        ].join(' '),
+      );
       return haystack.contains(query);
     }).toList();
   }
@@ -66,7 +68,9 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(inventoryRepositoryProvider).receiveDelivery(
+      await ref
+          .read(inventoryRepositoryProvider)
+          .receiveDelivery(
             quantitiesByProductId: lines,
             supplierLabel: products
                 .firstWhere((product) => product.id == lines.keys.first)
@@ -81,9 +85,9 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Réception impossible : $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Réception impossible : $error')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -121,7 +125,8 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
         data: (data) => data.isEmpty
             ? const AppEmptyState(
                 title: 'Aucun produit',
-                message: 'Créez vos produits avant d\'enregistrer une '
+                message:
+                    'Créez vos produits avant d\'enregistrer une '
                     'livraison.',
                 icon: Icons.local_shipping_outlined,
               )
@@ -146,9 +151,8 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
                       key: ValueKey(product.id),
                       product: product,
                       quantity: _quantities[product.id] ?? 0,
-                      onChanged: (value) => setState(
-                        () => _quantities[product.id] = value,
-                      ),
+                      onChanged: (value) =>
+                          setState(() => _quantities[product.id] = value),
                     ),
                     const SizedBox(height: 10),
                   ],
@@ -167,8 +171,11 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
                       children: [
                         Text(
                           'Total livraison',
-                          style: AppTypography.manrope(13, FontWeight.w600,
-                              color: AppColors.textBody),
+                          style: AppTypography.manrope(
+                            13,
+                            FontWeight.w600,
+                            color: AppColors.textBody,
+                          ),
                         ),
                         Text(
                           Formatters.fcfa(_totalFcfa(data)),
@@ -205,8 +212,9 @@ class _ReceptionRow extends StatefulWidget {
 }
 
 class _ReceptionRowState extends State<_ReceptionRow> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.quantity == 0 ? '' : '${widget.quantity}');
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.quantity == 0 ? '' : '${widget.quantity}',
+  );
 
   @override
   void dispose() {
@@ -222,8 +230,9 @@ class _ReceptionRowState extends State<_ReceptionRow> {
     final shown = int.tryParse(_controller.text.trim()) ?? 0;
     if (shown != widget.quantity) {
       _controller.text = widget.quantity == 0 ? '' : '${widget.quantity}';
-      _controller.selection =
-          TextSelection.collapsed(offset: _controller.text.length);
+      _controller.selection = TextSelection.collapsed(
+        offset: _controller.text.length,
+      );
     }
   }
 
@@ -253,8 +262,7 @@ class _ReceptionRowState extends State<_ReceptionRow> {
                     Formatters.fcfa(widget.product.unitCostFcfa),
                     // Total de la ligne dès qu'une quantité est saisie : c'est
                     // ce qu'on rapproche du bon de livraison.
-                    if (widget.quantity > 0)
-                      '= ${Formatters.fcfa(lineTotal)}',
+                    if (widget.quantity > 0) '= ${Formatters.fcfa(lineTotal)}',
                   ].join(' · '),
                   style: AppTypography.rowSubtitle,
                 ),

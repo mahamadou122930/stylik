@@ -8,11 +8,8 @@ enum ProductUsage {
   final String value;
   final String label;
 
-  static ProductUsage fromValue(String? value) =>
-      ProductUsage.values.firstWhere(
-        (usage) => usage.value == value,
-        orElse: () => resale,
-      );
+  static ProductUsage fromValue(String? value) => ProductUsage.values
+      .firstWhere((usage) => usage.value == value, orElse: () => resale);
 }
 
 /// Niveau de stock d'un produit, pour l'affichage des puces.
@@ -75,41 +72,41 @@ class Product {
 
   /// Libellé de la puce de stock (« 12 en stock », « 2 restants », « Rupture »).
   String get stockLabel => switch (level) {
-        StockLevel.out => 'Rupture',
-        StockLevel.low => '$stockQuantity restants',
-        StockLevel.ok => '$stockQuantity en stock',
-      };
+    StockLevel.out => 'Rupture',
+    StockLevel.low => '$stockQuantity restants',
+    StockLevel.ok => '$stockQuantity en stock',
+  };
 
   factory Product.fromMap(Map<String, dynamic> map) => Product(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        name: (map['name'] as String?) ?? '',
-        brand: (map['brand'] as String?) ?? '',
-        category: (map['category'] as String?) ?? 'Autre',
-        stockQuantity: (map['stock_quantity'] as num?)?.toInt() ?? 0,
-        alertThreshold: (map['alert_threshold'] as num?)?.toInt() ?? 0,
-        unitSalePriceFcfa: (map['unit_sale_price_fcfa'] as num?)?.toInt() ?? 0,
-        unitCostFcfa: (map['unit_cost_fcfa'] as num?)?.toInt() ?? 0,
-        supplier: map['supplier'] as String?,
-        packaging: map['packaging'] as String?,
-        usage: ProductUsage.fromValue(map['usage'] as String?),
-        isActive: (map['is_active'] as bool?) ?? true,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    name: (map['name'] as String?) ?? '',
+    brand: (map['brand'] as String?) ?? '',
+    category: (map['category'] as String?) ?? 'Autre',
+    stockQuantity: (map['stock_quantity'] as num?)?.toInt() ?? 0,
+    alertThreshold: (map['alert_threshold'] as num?)?.toInt() ?? 0,
+    unitSalePriceFcfa: (map['unit_sale_price_fcfa'] as num?)?.toInt() ?? 0,
+    unitCostFcfa: (map['unit_cost_fcfa'] as num?)?.toInt() ?? 0,
+    supplier: map['supplier'] as String?,
+    packaging: map['packaging'] as String?,
+    usage: ProductUsage.fromValue(map['usage'] as String?),
+    isActive: (map['is_active'] as bool?) ?? true,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'name': name,
-        'brand': brand,
-        'category': category,
-        'stock_quantity': stockQuantity,
-        'alert_threshold': alertThreshold,
-        'unit_sale_price_fcfa': unitSalePriceFcfa,
-        'unit_cost_fcfa': unitCostFcfa,
-        'supplier': supplier,
-        'packaging': packaging,
-        'usage': usage.value,
-        'is_active': isActive,
-      };
+    'salon_id': salonId,
+    'name': name,
+    'brand': brand,
+    'category': category,
+    'stock_quantity': stockQuantity,
+    'alert_threshold': alertThreshold,
+    'unit_sale_price_fcfa': unitSalePriceFcfa,
+    'unit_cost_fcfa': unitCostFcfa,
+    'supplier': supplier,
+    'packaging': packaging,
+    'usage': usage.value,
+    'is_active': isActive,
+  };
 
   Product copyWith({
     String? name,
@@ -123,22 +120,21 @@ class Product {
     String? packaging,
     ProductUsage? usage,
     bool? isActive,
-  }) =>
-      Product(
-        id: id,
-        salonId: salonId,
-        name: name ?? this.name,
-        brand: brand ?? this.brand,
-        category: category ?? this.category,
-        stockQuantity: stockQuantity ?? this.stockQuantity,
-        alertThreshold: alertThreshold ?? this.alertThreshold,
-        unitSalePriceFcfa: unitSalePriceFcfa ?? this.unitSalePriceFcfa,
-        unitCostFcfa: unitCostFcfa ?? this.unitCostFcfa,
-        supplier: supplier ?? this.supplier,
-        packaging: packaging ?? this.packaging,
-        usage: usage ?? this.usage,
-        isActive: isActive ?? this.isActive,
-      );
+  }) => Product(
+    id: id,
+    salonId: salonId,
+    name: name ?? this.name,
+    brand: brand ?? this.brand,
+    category: category ?? this.category,
+    stockQuantity: stockQuantity ?? this.stockQuantity,
+    alertThreshold: alertThreshold ?? this.alertThreshold,
+    unitSalePriceFcfa: unitSalePriceFcfa ?? this.unitSalePriceFcfa,
+    unitCostFcfa: unitCostFcfa ?? this.unitCostFcfa,
+    supplier: supplier ?? this.supplier,
+    packaging: packaging ?? this.packaging,
+    usage: usage ?? this.usage,
+    isActive: isActive ?? this.isActive,
+  );
 }
 
 /// Mouvement de stock — table `stock_movements`.
@@ -182,28 +178,28 @@ class StockMovement {
   bool get isConsumption => reason == 'consumption';
 
   factory StockMovement.fromMap(Map<String, dynamic> map) => StockMovement(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        productId: map['product_id'] as String,
-        quantity: (map['quantity'] as num?)?.toInt() ?? 0,
-        reason: (map['reason'] as String?) ?? 'adjustment',
-        occurredAt: DateTime.parse(map['occurred_at'] as String).toLocal(),
-        productName: map['products'] is Map<String, dynamic>
-            ? (map['products'] as Map<String, dynamic>)['name'] as String?
-            : map['product_name'] as String?,
-        unitLabel: map['unit_label'] as String?,
-        contextLabel: map['context_label'] as String?,
-        costFcfa: (map['cost_fcfa'] as num?)?.toInt() ?? 0,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    productId: map['product_id'] as String,
+    quantity: (map['quantity'] as num?)?.toInt() ?? 0,
+    reason: (map['reason'] as String?) ?? 'adjustment',
+    occurredAt: DateTime.parse(map['occurred_at'] as String).toLocal(),
+    productName: map['products'] is Map<String, dynamic>
+        ? (map['products'] as Map<String, dynamic>)['name'] as String?
+        : map['product_name'] as String?,
+    unitLabel: map['unit_label'] as String?,
+    contextLabel: map['context_label'] as String?,
+    costFcfa: (map['cost_fcfa'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'product_id': productId,
-        'quantity': quantity,
-        'reason': reason,
-        'occurred_at': occurredAt.toUtc().toIso8601String(),
-        'unit_label': unitLabel,
-        'context_label': contextLabel,
-        'cost_fcfa': costFcfa,
-      };
+    'salon_id': salonId,
+    'product_id': productId,
+    'quantity': quantity,
+    'reason': reason,
+    'occurred_at': occurredAt.toUtc().toIso8601String(),
+    'unit_label': unitLabel,
+    'context_label': contextLabel,
+    'cost_fcfa': costFcfa,
+  };
 }

@@ -29,13 +29,22 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
       if (!mounted) return;
 
       if (transaction == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ticket vide.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Ticket vide.')));
         return;
       }
 
       Navigator.of(context).pushReplacementNamed(ReceiptPage.routeName);
+
+      // Le ticket est encaissé, mais le stock n'a pas suivi : le dire ici,
+      // sinon l'inventaire dérive sans que personne ne le sache.
+      final warning = ref.read(stockWarningProvider);
+      if (warning != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(warning)));
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,8 +150,8 @@ class _PaymentFamilyCard extends StatelessWidget {
                     color: isSelected
                         ? Colors.white
                         : (family == PaymentFamily.card
-                            ? AppColors.tintBlue
-                            : AppColors.tintGreen),
+                              ? AppColors.tintBlue
+                              : AppColors.tintGreen),
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Icon(

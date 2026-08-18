@@ -14,6 +14,7 @@ abstract final class Formatters {
   static final DateFormat _weekdayShort = DateFormat('E', locale);
   static final DateFormat _month = DateFormat('MMMM', locale);
   static final DateFormat _monthShort = DateFormat('MMM', locale);
+  static final DateFormat _monthInitial = DateFormat('MMMM', locale);
   static final DateFormat _dayMonthYear = DateFormat('d MMMM y', locale);
 
   /// Forme comparable d'un texte : minuscules, sans accents ni cédille.
@@ -81,6 +82,11 @@ abstract final class Formatters {
   /// Format dédié plutôt qu'une troncature de [monthName] : « mai » ne fait
   /// que trois lettres, et un `substring` fixe y levait une `RangeError`.
   static String monthShort(DateTime date) => _monthShort.format(date.toLocal());
+
+  /// `2026-08-13` → `"A"` — colonnes d'un histogramme à douze mois, où seule
+  /// une lettre tient sous la barre.
+  static String monthInitial(DateTime date) =>
+      _monthInitial.format(date.toLocal()).substring(0, 1).toUpperCase();
 
   /// `2026-08-04` → `"4 août 2026"` — date d'émission d'une facture, où
   /// l'année doit figurer.

@@ -16,10 +16,8 @@ enum PayoutMethod {
   final String label;
   final IconData icon;
 
-  static PayoutMethod fromValue(String? value) => PayoutMethod.values.firstWhere(
-        (method) => method.value == value,
-        orElse: () => cash,
-      );
+  static PayoutMethod fromValue(String? value) => PayoutMethod.values
+      .firstWhere((method) => method.value == value, orElse: () => cash);
 }
 
 /// Cycle de vie d'une demande de versement.
@@ -33,22 +31,20 @@ enum PayoutStatus {
   final String value;
   final String label;
 
-  static PayoutStatus fromValue(String? value) => PayoutStatus.values.firstWhere(
-        (status) => status.value == value,
-        orElse: () => pending,
-      );
+  static PayoutStatus fromValue(String? value) => PayoutStatus.values
+      .firstWhere((status) => status.value == value, orElse: () => pending);
 
   Color get color => switch (this) {
-        pending => AppColors.amber,
-        paid => AppColors.primary,
-        rejected => AppColors.expense,
-      };
+    pending => AppColors.amber,
+    paid => AppColors.primary,
+    rejected => AppColors.expense,
+  };
 
   IconData get icon => switch (this) {
-        pending => Icons.schedule_rounded,
-        paid => Icons.check_rounded,
-        rejected => Icons.close_rounded,
-      };
+    pending => Icons.schedule_rounded,
+    paid => Icons.check_rounded,
+    rejected => Icons.close_rounded,
+  };
 }
 
 /// Demande de versement d'une commission — table `payout_requests`.
@@ -96,32 +92,31 @@ class PayoutRequest {
   bool get isSettled => status == PayoutStatus.paid;
 
   factory PayoutRequest.fromMap(Map<String, dynamic> map) => PayoutRequest(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        profileId: map['profile_id'] as String,
-        amountFcfa: (map['amount_fcfa'] as num?)?.toInt() ?? 0,
-        status: PayoutStatus.fromValue(map['status'] as String?),
-        requestedAt:
-            DateTime.parse(map['requested_at'] as String).toLocal(),
-        method: map['method'] == null
-            ? null
-            : PayoutMethod.fromValue(map['method'] as String?),
-        paidAt: map['paid_at'] == null
-            ? null
-            : DateTime.parse(map['paid_at'] as String).toLocal(),
-        reference: map['reference'] as String?,
-        note: map['note'] as String?,
-        profileName: map['profiles'] is Map<String, dynamic>
-            ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
-            : null,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    profileId: map['profile_id'] as String,
+    amountFcfa: (map['amount_fcfa'] as num?)?.toInt() ?? 0,
+    status: PayoutStatus.fromValue(map['status'] as String?),
+    requestedAt: DateTime.parse(map['requested_at'] as String).toLocal(),
+    method: map['method'] == null
+        ? null
+        : PayoutMethod.fromValue(map['method'] as String?),
+    paidAt: map['paid_at'] == null
+        ? null
+        : DateTime.parse(map['paid_at'] as String).toLocal(),
+    reference: map['reference'] as String?,
+    note: map['note'] as String?,
+    profileName: map['profiles'] is Map<String, dynamic>
+        ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
+        : null,
+  );
 
   /// Insertion : le statut, la date et le salon sont posés par la base — le
   /// client ne décide ni de se payer lui-même, ni de la date de règlement.
   Map<String, dynamic> toInsertMap() => {
-        'salon_id': salonId,
-        'profile_id': profileId,
-        'amount_fcfa': amountFcfa,
-        'note': note,
-      };
+    'salon_id': salonId,
+    'profile_id': profileId,
+    'amount_fcfa': amountFcfa,
+    'note': note,
+  };
 }

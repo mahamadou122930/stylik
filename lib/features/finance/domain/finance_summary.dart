@@ -51,8 +51,10 @@ class FinanceSummary {
   }
 
   /// Synthèse vide pour une période donnée (aucun encaissement).
-  factory FinanceSummary.empty({required DateTime from, required DateTime to}) =>
-      FinanceSummary(from: from, to: to, revenueFcfa: 0, ticketCount: 0);
+  factory FinanceSummary.empty({
+    required DateTime from,
+    required DateTime to,
+  }) => FinanceSummary(from: from, to: to, revenueFcfa: 0, ticketCount: 0);
 }
 
 /// Point de la série temporelle affichée en histogramme.
@@ -143,11 +145,8 @@ enum ExpenseCategory {
   final String value;
   final String label;
 
-  static ExpenseCategory fromValue(String? value) =>
-      ExpenseCategory.values.firstWhere(
-        (category) => category.value == value,
-        orElse: () => other,
-      );
+  static ExpenseCategory fromValue(String? value) => ExpenseCategory.values
+      .firstWhere((category) => category.value == value, orElse: () => other);
 }
 
 /// Dépense / charge du salon — table `expenses`.
@@ -173,23 +172,23 @@ class Expense {
   final bool isRecurring;
 
   factory Expense.fromMap(Map<String, dynamic> map) => Expense(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        label: (map['label'] as String?) ?? '',
-        amountFcfa: (map['amount_fcfa'] as num?)?.toInt() ?? 0,
-        category: ExpenseCategory.fromValue(map['category'] as String?),
-        spentAt: DateTime.parse(map['spent_at'] as String).toLocal(),
-        supplier: map['supplier'] as String?,
-        isRecurring: (map['is_recurring'] as bool?) ?? false,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    label: (map['label'] as String?) ?? '',
+    amountFcfa: (map['amount_fcfa'] as num?)?.toInt() ?? 0,
+    category: ExpenseCategory.fromValue(map['category'] as String?),
+    spentAt: DateTime.parse(map['spent_at'] as String).toLocal(),
+    supplier: map['supplier'] as String?,
+    isRecurring: (map['is_recurring'] as bool?) ?? false,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'label': label,
-        'amount_fcfa': amountFcfa,
-        'category': category.value,
-        'spent_at': spentAt.toUtc().toIso8601String(),
-        'supplier': supplier,
-        'is_recurring': isRecurring,
-      };
+    'salon_id': salonId,
+    'label': label,
+    'amount_fcfa': amountFcfa,
+    'category': category.value,
+    'spent_at': spentAt.toUtc().toIso8601String(),
+    'supplier': supplier,
+    'is_recurring': isRecurring,
+  };
 }

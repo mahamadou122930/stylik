@@ -64,45 +64,60 @@ class TicketLine {
     int? quantity,
     String? stylistId,
     String? stylistName,
-  }) =>
-      TicketLine(
-        refId: refId,
-        label: label,
-        unitPriceFcfa: unitPriceFcfa,
-        quantity: quantity ?? this.quantity,
-        isProduct: isProduct,
-        stylistId: stylistId ?? this.stylistId,
-        stylistName: stylistName ?? this.stylistName,
-        category: category,
-      );
+  }) => TicketLine(
+    refId: refId,
+    label: label,
+    unitPriceFcfa: unitPriceFcfa,
+    quantity: quantity ?? this.quantity,
+    isProduct: isProduct,
+    stylistId: stylistId ?? this.stylistId,
+    stylistName: stylistName ?? this.stylistName,
+    category: category,
+  );
 
   Map<String, dynamic> toMap() => {
-        'ref_id': refId,
-        'refId': refId,
-        'label': label,
-        'unit_price_fcfa': unitPriceFcfa,
-        'unitPriceFcfa': unitPriceFcfa,
-        'quantity': quantity,
-        'is_product': isProduct,
-        'isProduct': isProduct,
-        'stylist_id': stylistId,
-        'stylistId': stylistId,
-        'stylist_name': stylistName,
-        'stylistName': stylistName,
-        'category': category,
-      };
+    'ref_id': refId,
+    'refId': refId,
+    'label': label,
+    'unit_price_fcfa': unitPriceFcfa,
+    'unitPriceFcfa': unitPriceFcfa,
+    'quantity': quantity,
+    'is_product': isProduct,
+    'isProduct': isProduct,
+    'stylist_id': stylistId,
+    'stylistId': stylistId,
+    'stylist_name': stylistName,
+    'stylistName': stylistName,
+    'category': category,
+  };
 
   factory TicketLine.fromMap(Map<String, dynamic> map) => TicketLine(
-        refId: (map['ref_id'] ?? map['refId'] ?? '') as String,
-        label: (map['label'] as String?) ?? '',
-        unitPriceFcfa:
-            (map['unit_price_fcfa'] ?? map['unitPriceFcfa'] as num?)?.toInt() ?? 0,
-        quantity: (map['quantity'] as num?)?.toInt() ?? 1,
-        isProduct: (map['is_product'] ?? map['isProduct'] as bool?) ?? false,
-        stylistId: (map['stylist_id'] ?? map['stylistId']) as String?,
-        stylistName: (map['stylist_name'] ?? map['stylistName']) as String?,
-        category: map['category'] as String?,
-      );
+    refId: (map['ref_id'] ?? map['refId'] ?? '') as String,
+    label: (map['label'] as String?) ?? '',
+    unitPriceFcfa:
+        (map['unit_price_fcfa'] ?? map['unitPriceFcfa'] as num?)?.toInt() ?? 0,
+    quantity: (map['quantity'] as num?)?.toInt() ?? 1,
+    isProduct: (map['is_product'] ?? map['isProduct'] as bool?) ?? false,
+    stylistId: (map['stylist_id'] ?? map['stylistId']) as String?,
+    stylistName: (map['stylist_name'] ?? map['stylistName']) as String?,
+    category: map['category'] as String?,
+  );
+}
+
+/// Quantités vendues par produit, pour le mouvement de stock.
+///
+/// Les prestations sont écartées : leur `refId` désigne un service, pas un
+/// article en stock. Les quantités sont cumulées par identifiant, un même
+/// produit pouvant figurer sur deux lignes après une reprise de ticket.
+extension TicketStockLines on List<TicketLine> {
+  Map<String, int> get productQuantities {
+    final quantities = <String, int>{};
+    for (final line in this) {
+      if (!line.isProduct || line.refId.isEmpty) continue;
+      quantities[line.refId] = (quantities[line.refId] ?? 0) + line.quantity;
+    }
+    return quantities;
+  }
 }
 
 /// Ticket en cours de composition en caisse (état local, non persisté).
@@ -139,8 +154,7 @@ class Ticket {
   List<TicketLine> get productLines =>
       lines.where((line) => line.isProduct).toList();
 
-  int get subtotalFcfa =>
-      lines.fold(0, (sum, line) => sum + line.totalFcfa);
+  int get subtotalFcfa => lines.fold(0, (sum, line) => sum + line.totalFcfa);
 
   int get totalFcfa => (subtotalFcfa - discountFcfa).clamp(0, subtotalFcfa);
 
@@ -155,17 +169,16 @@ class Ticket {
     String? stylistName,
     String? timeLabel,
     String? discountLabel,
-  }) =>
-      Ticket(
-        lines: lines ?? this.lines,
-        discountFcfa: discountFcfa ?? this.discountFcfa,
-        clientId: clientId ?? this.clientId,
-        appointmentId: appointmentId ?? this.appointmentId,
-        clientName: clientName ?? this.clientName,
-        stylistName: stylistName ?? this.stylistName,
-        timeLabel: timeLabel ?? this.timeLabel,
-        discountLabel: discountLabel ?? this.discountLabel,
-      );
+  }) => Ticket(
+    lines: lines ?? this.lines,
+    discountFcfa: discountFcfa ?? this.discountFcfa,
+    clientId: clientId ?? this.clientId,
+    appointmentId: appointmentId ?? this.appointmentId,
+    clientName: clientName ?? this.clientName,
+    stylistName: stylistName ?? this.stylistName,
+    timeLabel: timeLabel ?? this.timeLabel,
+    discountLabel: discountLabel ?? this.discountLabel,
+  );
 }
 
 /// Transaction encaissée — table `transactions`.
@@ -225,8 +238,10 @@ class SalonTransaction {
     final seq = invoiceSeq;
     if (seq != null) return 'FA-$year-${seq.toString().padLeft(4, '0')}';
 
-    final digits =
-        id.codeUnits.fold<int>(0, (sum, unit) => (sum * 31 + unit) % 10000);
+    final digits = id.codeUnits.fold<int>(
+      0,
+      (sum, unit) => (sum * 31 + unit) % 10000,
+    );
     return 'FA-$year-${digits.toString().padLeft(4, '0')}';
   }
 
@@ -245,9 +260,12 @@ class SalonTransaction {
         subtotalFcfa: (map['subtotal_fcfa'] as num?)?.toInt() ?? 0,
         discountFcfa: (map['discount_fcfa'] as num?)?.toInt() ?? 0,
         totalAmountFcfa: (map['total_amount_fcfa'] as num?)?.toInt() ?? 0,
-        paymentMethod: PaymentMethod.fromValue(map['payment_method'] as String?),
+        paymentMethod: PaymentMethod.fromValue(
+          map['payment_method'] as String?,
+        ),
         status: TransactionStatus.fromValue(map['status'] as String?),
-        lines: (map['lines'] as List?)
+        lines:
+            (map['lines'] as List?)
                 ?.map((e) => TicketLine.fromMap(e as Map<String, dynamic>))
                 .toList() ??
             const [],
@@ -264,17 +282,20 @@ class SalonTransaction {
       );
 
   Map<String, dynamic> toMap() => {
-        if (id.isNotEmpty && !id.startsWith('tx_')) 'id': id,
-        'salon_id': salonId,
-        'appointment_id':
-            (appointmentId != null && appointmentId!.isNotEmpty) ? appointmentId : null,
-        'client_id': (clientId != null && clientId!.isNotEmpty) ? clientId : null,
-        'cashier_id': (cashierId != null && cashierId!.isNotEmpty) ? cashierId : null,
-        'subtotal_fcfa': subtotalFcfa,
-        'discount_fcfa': discountFcfa,
-        'total_amount_fcfa': totalAmountFcfa,
-        'payment_method': paymentMethod.value,
-        'status': status.value,
-        'lines': lines.map((line) => line.toMap()).toList(),
-      };
+    if (id.isNotEmpty && !id.startsWith('tx_')) 'id': id,
+    'salon_id': salonId,
+    'appointment_id': (appointmentId != null && appointmentId!.isNotEmpty)
+        ? appointmentId
+        : null,
+    'client_id': (clientId != null && clientId!.isNotEmpty) ? clientId : null,
+    'cashier_id': (cashierId != null && cashierId!.isNotEmpty)
+        ? cashierId
+        : null,
+    'subtotal_fcfa': subtotalFcfa,
+    'discount_fcfa': discountFcfa,
+    'total_amount_fcfa': totalAmountFcfa,
+    'payment_method': paymentMethod.value,
+    'status': status.value,
+    'lines': lines.map((line) => line.toMap()).toList(),
+  };
 }

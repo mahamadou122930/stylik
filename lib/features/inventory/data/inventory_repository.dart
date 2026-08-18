@@ -213,9 +213,7 @@ class InventoryRepository {
           action: 'UPDATE',
           tableName: SupabaseTables.products,
           recordId: productId,
-          payload: {
-            'stock_quantity': cached['stock_quantity'],
-          },
+          payload: {'stock_quantity': cached['stock_quantity']},
         );
       }
       rethrow;
@@ -237,17 +235,72 @@ class InventoryRepository {
     }
   }
 
+  /// Sortie de stock des produits d'un ticket encaissé.
+  ///
+  /// Le motif `sale` reste distinct de `consumption` : un produit revendu part
+  /// contre du chiffre d'affaires, un consommable ouvert contre une charge.
+  /// Les confondre gonflerait le coût des consommables du mois du montant des
+  /// ventes.
+  Future<void> releaseSold({
+    required Map<String, int> quantitiesByProductId,
+    String? contextLabel,
+  }) => _applyMovements(
+    quantitiesByProductId,
+    sign: -1,
+    reason: 'sale',
+    contextLabel: contextLabel,
+  );
+
+  /// Retour en stock des produits d'un ticket remboursé ou annulé.
+  Future<void> restockRefunded({
+    required Map<String, int> quantitiesByProductId,
+    String? contextLabel,
+  }) => _applyMovements(
+    quantitiesByProductId,
+    sign: 1,
+    reason: 'refund',
+    contextLabel: contextLabel,
+  );
+
+  /// Applique un mouvement par produit, sans qu'une ligne en échec n'empêche
+  /// les suivantes : un produit supprimé de la fiche ne doit pas bloquer la
+  /// sortie de stock des autres articles du même ticket. La première erreur
+  /// est relancée à la fin, pour que l'appelant puisse la signaler.
+  Future<void> _applyMovements(
+    Map<String, int> quantitiesByProductId, {
+    required int sign,
+    required String reason,
+    String? contextLabel,
+  }) async {
+    Object? firstError;
+
+    for (final entry in quantitiesByProductId.entries) {
+      if (entry.value <= 0) continue;
+      try {
+        await adjustStock(
+          productId: entry.key,
+          delta: sign * entry.value,
+          reason: reason,
+          contextLabel: contextLabel,
+        );
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+
+    if (firstError != null) throw firstError;
+  }
+
   Future<void> consumeStock({
     required String productId,
     required int quantity,
     String? contextLabel,
-  }) =>
-      adjustStock(
-        productId: productId,
-        delta: -quantity,
-        reason: 'consumption',
-        contextLabel: contextLabel,
-      );
+  }) => adjustStock(
+    productId: productId,
+    delta: -quantity,
+    reason: 'consumption',
+    contextLabel: contextLabel,
+  );
 
   Future<List<StockMovement>> fetchMovements({
     required String salonId,

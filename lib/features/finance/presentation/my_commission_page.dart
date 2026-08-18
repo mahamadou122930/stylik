@@ -30,8 +30,9 @@ class MyCommissionPage extends ConsumerWidget {
     final requests = payouts.valueOrNull ?? const <PayoutRequest>[];
     final settled = requests.where((request) => request.isSettled).toList()
       ..sort((a, b) => b.paidAt!.compareTo(a.paidAt!));
-    final pendingCount =
-        requests.where((r) => r.status == PayoutStatus.pending).length;
+    final pendingCount = requests
+        .where((r) => r.status == PayoutStatus.pending)
+        .length;
 
     return AppScreen(
       title: 'Mes commissions',
@@ -142,10 +143,7 @@ class MyCommissionPage extends ConsumerWidget {
 
     final ok = await ref
         .read(payoutRequestControllerProvider.notifier)
-        .submit(
-          amountFcfa: result.amount,
-          note: result.note,
-        );
+        .submit(amountFcfa: result.amount, note: result.note);
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -154,7 +152,7 @@ class MyCommissionPage extends ConsumerWidget {
           ok
               ? 'Demande envoyée à votre gérant.'
               : 'Envoi impossible : '
-                  '${ref.read(payoutRequestControllerProvider).error}',
+                    '${ref.read(payoutRequestControllerProvider).error}',
         ),
       ),
     );
@@ -234,13 +232,13 @@ class _RequestPayoutSheetState extends State<_RequestPayoutSheet> {
               label: 'Envoyer la demande',
               icon: Icons.send_rounded,
               onPressed: () {
-                final inputAmount = int.tryParse(_amountController.text.trim()) ?? 0;
+                final inputAmount =
+                    int.tryParse(_amountController.text.trim()) ?? 0;
                 final validAmount = inputAmount.clamp(1, widget.amount);
                 final note = _noteController.text.trim();
-                Navigator.of(context).pop((
-                  amount: validAmount,
-                  note: note.isEmpty ? null : note,
-                ));
+                Navigator.of(
+                  context,
+                ).pop((amount: validAmount, note: note.isEmpty ? null : note));
               },
             ),
           ],
@@ -381,12 +379,14 @@ class _RequestRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final subtitle = switch (request.status) {
-      PayoutStatus.paid => request.paidAt == null
-          ? 'Versée'
-          : 'Versée le ${Formatters.dayMonth(request.paidAt!)}',
-      PayoutStatus.pending => request.method == null
-          ? 'En attente gérant'
-          : '${request.method!.label} · en attente gérant',
+      PayoutStatus.paid =>
+        request.paidAt == null
+            ? 'Versée'
+            : 'Versée le ${Formatters.dayMonth(request.paidAt!)}',
+      PayoutStatus.pending =>
+        request.method == null
+            ? 'En attente gérant'
+            : '${request.method!.label} · en attente gérant',
       PayoutStatus.rejected => 'Refusée',
     };
 
@@ -419,7 +419,8 @@ class _PayoutRow extends StatelessWidget {
     final method = payout.method;
 
     return AppListRow(
-      label: '${Formatters.dayMonth(payout.paidAt!)}'
+      label:
+          '${Formatters.dayMonth(payout.paidAt!)}'
           '${method == null ? '' : ' · ${method.label}'}',
       subtitle: payout.reference == null
           ? 'Aucune référence'

@@ -6,6 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import 'finance_providers.dart';
+import 'period_header.dart';
 
 /// Résultat net : ce qui reste au salon une fois l'équipe et les charges
 /// payées.
@@ -20,7 +21,7 @@ class NetResultPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(financePeriodProvider);
-    final offset = ref.watch(financePeriodOffsetProvider);
+    final anchor = ref.watch(financeAnchorProvider);
     final summary = ref.watch(financeSummaryProvider);
 
     final revenue = summary.valueOrNull?.revenueFcfa ?? 0;
@@ -31,18 +32,9 @@ class NetResultPage extends ConsumerWidget {
 
     return AppScreen(
       title: 'Résultat net',
-      header: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-        child: AppSegmented(
-          boxed: true,
-          items: [for (final value in FinancePeriod.values) value.label],
-          selectedIndex: FinancePeriod.values.indexOf(period),
-          onChanged: (index) {
-            ref.read(financePeriodProvider.notifier).state =
-                FinancePeriod.values[index];
-            ref.read(financePeriodOffsetProvider.notifier).state = 0;
-          },
-        ),
+      header: const Padding(
+        padding: EdgeInsets.fromLTRB(18, 0, 18, 12),
+        child: FinancePeriodHeader(),
       ),
       child: summary.when(
         loading: () => const AppLoader(),
@@ -56,7 +48,7 @@ class NetResultPage extends ConsumerWidget {
             _HeroCard(
               net: net,
               margin: margin,
-              periodLabel: period.labelAt(offset).toLowerCase(),
+              periodLabel: period.titleFor(anchor),
             ),
             const SizedBox(height: 12),
             AppCard(
@@ -89,8 +81,9 @@ class NetResultPage extends ConsumerWidget {
                         style: AppTypography.sora(
                           16,
                           FontWeight.w800,
-                          color:
-                              net < 0 ? AppColors.expense : AppColors.primary,
+                          color: net < 0
+                              ? AppColors.expense
+                              : AppColors.primary,
                         ),
                       ),
                     ],
@@ -219,7 +212,7 @@ class _NetChartCardState extends ConsumerState<_NetChartCard> {
   @override
   Widget build(BuildContext context) {
     final period = ref.watch(financePeriodProvider);
-    final buckets = ref.watch(netBucketsProvider);
+    final buckets = ref.watch(financeBucketsProvider);
 
     final title = switch (period) {
       FinancePeriod.day => 'Net par tranche horaire',
@@ -231,8 +224,9 @@ class _NetChartCardState extends ConsumerState<_NetChartCard> {
     final rows = buckets.valueOrNull ?? const [];
     // Changer d'échelle recompose les colonnes : garder l'ancienne sélection
     // ferait pointer un montant qui n'est plus le sien.
-    final selected =
-        (_selected != null && _selected! < rows.length) ? _selected : null;
+    final selected = (_selected != null && _selected! < rows.length)
+        ? _selected
+        : null;
 
     return AppCard(
       radius: 18,
@@ -269,7 +263,7 @@ class _NetChartCardState extends ConsumerState<_NetChartCard> {
             error: (error, _) => AppErrorState(
               message: '$error',
               compact: true,
-              onRetry: () => ref.invalidate(netBucketsProvider),
+              onRetry: () => ref.invalidate(financeBucketsProvider),
             ),
             data: (_) => rows.isEmpty
                 ? const AppEmptyState(
@@ -280,8 +274,12 @@ class _NetChartCardState extends ConsumerState<_NetChartCard> {
                   )
                 : AppBarChart(
                     height: 96,
-                    highlightMax: selected == null,
-                    highlightIndex: selected,
+                    // Hors sélection, c'est la période regardée qui ressort,
+                    // pas la plus haute : on cherche à se situer, pas à
+                    // repérer un record.
+                    highlightMax: false,
+                    highlightIndex:
+                        selected ?? rows.indexWhere((row) => row.isCurrent),
                     onSliceTap: (index) => setState(
                       () => _selected = _selected == index ? null : index,
                     ),
@@ -304,7 +302,7 @@ class _NetChartCardState extends ConsumerState<_NetChartCard> {
               rows[selected].netFcfa == 0
                   ? 'Aucune activité sur cette tranche.'
                   : 'Touchez à nouveau la colonne pour revenir à la vue '
-                      'd\'ensemble.',
+                        'd\'ensemble.',
               style: AppTypography.manrope(
                 11.5,
                 FontWeight.w500,

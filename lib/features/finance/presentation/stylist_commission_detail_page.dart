@@ -12,10 +12,7 @@ import 'finance_providers.dart';
 
 /// 8.2b — Commissions d'un coiffeur (vue gérant) : versement, historique et validation.
 class StylistCommissionDetailPage extends ConsumerWidget {
-  const StylistCommissionDetailPage({
-    super.key,
-    required this.commission,
-  });
+  const StylistCommissionDetailPage({super.key, required this.commission});
 
   static const routeName = '/finance/stylist-commission-detail';
 
@@ -30,7 +27,10 @@ class StylistCommissionDetailPage extends ConsumerWidget {
         .where((r) => r.status == PayoutStatus.pending)
         .toList();
     final settled = requests.where((r) => r.isSettled).toList()
-      ..sort((a, b) => (b.paidAt ?? b.requestedAt).compareTo(a.paidAt ?? a.requestedAt));
+      ..sort(
+        (a, b) =>
+            (b.paidAt ?? b.requestedAt).compareTo(a.paidAt ?? a.requestedAt),
+      );
 
     final balance = ref.watch(
       stylistPayoutBalanceProvider((
@@ -94,8 +94,7 @@ class StylistCommissionDetailPage extends ConsumerWidget {
                   )
                 : AppListCard(
                     children: [
-                      for (final payout in settled)
-                        _PayoutRow(payout: payout),
+                      for (final payout in settled) _PayoutRow(payout: payout),
                     ],
                   ),
           ),
@@ -109,15 +108,16 @@ class StylistCommissionDetailPage extends ConsumerWidget {
     WidgetRef ref,
     PayoutRequest request,
   ) async {
-    final result = await showModalBottomSheet<({PayoutMethod method, String? ref})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) => _SettlePayoutSheet(request: request),
-    );
+    final result =
+        await showModalBottomSheet<({PayoutMethod method, String? ref})>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          builder: (context) => _SettlePayoutSheet(request: request),
+        );
 
     if (result == null) return;
 
@@ -133,7 +133,9 @@ class StylistCommissionDetailPage extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok ? 'Versement validé avec succès.' : 'Erreur lors de la validation.',
+          ok
+              ? 'Versement validé avec succès.'
+              : 'Erreur lors de la validation.',
         ),
       ),
     );
@@ -174,9 +176,7 @@ class StylistCommissionDetailPage extends ConsumerWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          ok ? 'Demande refusée.' : 'Erreur lors du refus.',
-        ),
+        content: Text(ok ? 'Demande refusée.' : 'Erreur lors du refus.'),
       ),
     );
   }
@@ -186,19 +186,21 @@ class StylistCommissionDetailPage extends ConsumerWidget {
     WidgetRef ref,
     int availableAmount,
   ) async {
-    final result = await showModalBottomSheet<
-        ({int amount, PayoutMethod method, String? ref, String? note})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) => _RegisterPayoutSheet(
-        stylistName: commission.stylistName,
-        maxAmount: availableAmount,
-      ),
-    );
+    final result =
+        await showModalBottomSheet<
+          ({int amount, PayoutMethod method, String? ref, String? note})
+        >(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          builder: (context) => _RegisterPayoutSheet(
+            stylistName: commission.stylistName,
+            maxAmount: availableAmount,
+          ),
+        );
 
     if (result == null) return;
 
@@ -355,7 +357,8 @@ class _PendingRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final methodLabel = request.method?.label;
-    final subtitle = 'Déposée le ${Formatters.dayMonth(request.requestedAt)}'
+    final subtitle =
+        'Déposée le ${Formatters.dayMonth(request.requestedAt)}'
         '${methodLabel != null ? ' · $methodLabel' : ''}';
 
     return AppCard(
@@ -410,10 +413,7 @@ class _PendingRequestCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: AppButton(
-                  label: 'Verser',
-                  onPressed: onSettle,
-                ),
+                child: AppButton(label: 'Verser', onPressed: onSettle),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -453,13 +453,15 @@ class _PayoutRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final method = payout.method;
-    final title = '${Formatters.dayMonth(payout.paidAt ?? payout.requestedAt)}'
+    final title =
+        '${Formatters.dayMonth(payout.paidAt ?? payout.requestedAt)}'
         '${method == null ? '' : ' · ${method.label}'}';
     final subtitle = payout.reference == null || payout.reference!.isEmpty
         ? 'Aucune référence'
-        : payout.reference!.startsWith('Réf') || payout.reference!.startsWith('Reçu')
-            ? payout.reference!
-            : 'Réf. ${payout.reference}';
+        : payout.reference!.startsWith('Réf') ||
+              payout.reference!.startsWith('Reçu')
+        ? payout.reference!
+        : 'Réf. ${payout.reference}';
 
     return AppListRow(
       label: title,
@@ -565,10 +567,10 @@ class _SettlePayoutSheetState extends State<_SettlePayoutSheet> {
             AppButton(
               label: 'Valider & régler',
               icon: Icons.check_rounded,
-              onPressed: () => Navigator.pop(
-                context,
-                (method: _selectedMethod, ref: _refController.text.trim()),
-              ),
+              onPressed: () => Navigator.pop(context, (
+                method: _selectedMethod,
+                ref: _refController.text.trim(),
+              )),
             ),
           ],
         ),

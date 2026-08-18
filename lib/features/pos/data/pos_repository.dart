@@ -27,8 +27,9 @@ class PosRepository {
     final transaction = SalonTransaction(
       id: transactionId,
       salonId: salonId,
-      appointmentId:
-          (ticket.appointmentId?.isNotEmpty ?? false) ? ticket.appointmentId : null,
+      appointmentId: (ticket.appointmentId?.isNotEmpty ?? false)
+          ? ticket.appointmentId
+          : null,
       clientId: (ticket.clientId?.isNotEmpty ?? false) ? ticket.clientId : null,
       cashierId: (cashierId?.isNotEmpty ?? false) ? cashierId : null,
       subtotalFcfa: ticket.subtotalFcfa,
@@ -136,12 +137,15 @@ class PosRepository {
         );
       }
 
-      await _client.from(SupabaseTables.clients).update({
-        'visit_count': updatedVisits,
-        'total_spent_fcfa': updatedSpent,
-        'loyalty_points': updatedPoints,
-        'last_visit_at': nowStr,
-      }).eq('id', clientId);
+      await _client
+          .from(SupabaseTables.clients)
+          .update({
+            'visit_count': updatedVisits,
+            'total_spent_fcfa': updatedSpent,
+            'loyalty_points': updatedPoints,
+            'last_visit_at': nowStr,
+          })
+          .eq('id', clientId);
     } catch (e) {
       debugPrint('Erreur lors de la mise à jour des stats client: $e');
     }
@@ -195,12 +199,18 @@ class PosRepository {
         salonId: salonId,
       );
 
-      final list = cached.map((row) => SalonTransaction.fromMap(row)).where((tx) {
+      final list = cached.map((row) => SalonTransaction.fromMap(row)).where((
+        tx,
+      ) {
         final ct = tx.createdAt?.toLocal() ?? DateTime.now();
         return !ct.isBefore(start) && ct.isBefore(end);
       }).toList();
 
-      list.sort((a, b) => (b.createdAt ?? DateTime.now()).compareTo(a.createdAt ?? DateTime.now()));
+      list.sort(
+        (a, b) => (b.createdAt ?? DateTime.now()).compareTo(
+          a.createdAt ?? DateTime.now(),
+        ),
+      );
       return list;
     }
   }
@@ -285,14 +295,13 @@ class PosRepository {
     try {
       await _client.rpc<void>(
         'refund_transaction',
-        params: {
-          'p_transaction_id': transactionId,
-          'p_reason': reason.value,
-        },
+        params: {'p_transaction_id': transactionId, 'p_reason': reason.value},
       );
       return;
     } catch (e) {
-      debugPrint('RPC refund_transaction indisponible, mise à jour directe : $e');
+      debugPrint(
+        'RPC refund_transaction indisponible, mise à jour directe : $e',
+      );
     }
 
     // Repli pour les bases où la fonction n'est pas encore créée. Le statut
@@ -323,9 +332,7 @@ class PosRepository {
         action: 'UPDATE',
         tableName: SupabaseTables.transactions,
         recordId: transactionId,
-        payload: {
-          'status': TransactionStatus.refunded.value,
-        },
+        payload: {'status': TransactionStatus.refunded.value},
       );
     }
   }

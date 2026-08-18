@@ -47,13 +47,18 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     _nameController = TextEditingController(text: p?.name ?? '');
     _brandController = TextEditingController(text: p?.brand ?? '');
     _categoryController = TextEditingController(text: p?.category ?? 'Revente');
-    _unitSalePriceController =
-        TextEditingController(text: '${p?.unitSalePriceFcfa ?? 0}');
-    _unitCostController = TextEditingController(text: '${p?.unitCostFcfa ?? 0}');
-    _stockQuantityController =
-        TextEditingController(text: '${p?.stockQuantity ?? 10}');
-    _alertThresholdController =
-        TextEditingController(text: '${p?.alertThreshold ?? 3}');
+    _unitSalePriceController = TextEditingController(
+      text: '${p?.unitSalePriceFcfa ?? 0}',
+    );
+    _unitCostController = TextEditingController(
+      text: '${p?.unitCostFcfa ?? 0}',
+    );
+    _stockQuantityController = TextEditingController(
+      text: '${p?.stockQuantity ?? 10}',
+    );
+    _alertThresholdController = TextEditingController(
+      text: '${p?.alertThreshold ?? 3}',
+    );
     _supplierController = TextEditingController(text: p?.supplier ?? '');
     _packagingController = TextEditingController(text: p?.packaging ?? '');
     _usage = p?.usage ?? ProductUsage.resale;
@@ -110,16 +115,16 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
         // quoi qu'il arrive.
         unitSalePriceFcfa: _usage == ProductUsage.consumable
             ? 0
-            : int.tryParse(
-                  _unitSalePriceController.text.replaceAll(' ', ''),
-                ) ??
-                0,
+            : int.tryParse(_unitSalePriceController.text.replaceAll(' ', '')) ??
+                  0,
         unitCostFcfa:
             int.tryParse(_unitCostController.text.replaceAll(' ', '')) ?? 0,
         stockQuantity:
-            int.tryParse(_stockQuantityController.text.replaceAll(' ', '')) ?? 0,
+            int.tryParse(_stockQuantityController.text.replaceAll(' ', '')) ??
+            0,
         alertThreshold:
-            int.tryParse(_alertThresholdController.text.replaceAll(' ', '')) ?? 0,
+            int.tryParse(_alertThresholdController.text.replaceAll(' ', '')) ??
+            0,
         supplier: _supplierController.text.trim().isEmpty
             ? null
             : _supplierController.text.trim(),
@@ -171,7 +176,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
     return AppScreen(
       title: _isEditing ? 'Modifier le produit' : 'Nouveau produit',
       footer: AppButton(
-        label: _isEditing ? 'Enregistrer les modifications' : 'Enregistrer le produit',
+        label: _isEditing
+            ? 'Enregistrer les modifications'
+            : 'Enregistrer le produit',
         height: 56,
         isLoading: _isSubmitting,
         onPressed: _submit,
@@ -186,8 +193,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppSectionTitle('Informations générales',
-                        padding: EdgeInsets.only(bottom: 12)),
+                    const AppSectionTitle(
+                      'Informations générales',
+                      padding: EdgeInsets.only(bottom: 12),
+                    ),
                     TextFormField(
                       controller: _nameController,
                       textCapitalization: TextCapitalization.sentences,
@@ -195,7 +204,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                         labelText: 'Nom du produit *',
                         hintText: 'ex: Shampooing Nutritif Kérastase',
                       ),
-                      validator: (value) => (value == null || value.trim().isEmpty)
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
                           ? 'Veuillez saisir un nom'
                           : null,
                     ),
@@ -207,7 +217,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                         labelText: 'Marque *',
                         hintText: 'ex: Kérastase, L\'Oréal',
                       ),
-                      validator: (value) => (value == null || value.trim().isEmpty)
+                      validator: (value) =>
+                          (value == null || value.trim().isEmpty)
                           ? 'Veuillez saisir une marque'
                           : null,
                     ),
@@ -226,7 +237,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                       children: _suggestedCategories.map((cat) {
                         final selected = _categoryController.text == cat;
                         return ChoiceChip(
-                          label: Text(cat, style: const TextStyle(fontSize: 12)),
+                          label: Text(
+                            cat,
+                            style: const TextStyle(fontSize: 12),
+                          ),
                           selected: selected,
                           selectedColor: AppColors.tintGreen,
                           onSelected: (_) {
@@ -243,8 +257,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppSectionTitle('Prix & Usage',
-                        padding: EdgeInsets.only(bottom: 12)),
+                    const AppSectionTitle(
+                      'Prix & Usage',
+                      padding: EdgeInsets.only(bottom: 12),
+                    ),
                     Row(
                       children: [
                         // Le prix de vente n'a de sens que pour un produit
@@ -263,9 +279,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Obligatoire';
                                 }
-                                if (int.tryParse(
-                                      value.replaceAll(' ', ''),
-                                    ) ==
+                                if (int.tryParse(value.replaceAll(' ', '')) ==
                                     null) {
                                   return 'Nombre invalide';
                                 }
@@ -287,10 +301,13 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                               suffixText: 'F',
                             ),
                             validator: (value) {
-                              final cost =
-                                  int.tryParse((value ?? '').replaceAll(' ', ''));
+                              final cost = int.tryParse(
+                                (value ?? '').replaceAll(' ', ''),
+                              );
                               if (cost == null) return 'Nombre invalide';
-                              if (cost <= 0) return 'Requis pour la valeur du stock';
+                              if (cost <= 0) {
+                                return 'Requis pour la valeur du stock';
+                              }
                               return null;
                             },
                           ),
@@ -311,7 +328,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                                 setState(() => _usage = ProductUsage.resale),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 10),
+                                vertical: 12,
+                                horizontal: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: _usage == ProductUsage.resale
                                     ? AppColors.tintGreenSoft
@@ -321,7 +340,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                                   color: _usage == ProductUsage.resale
                                       ? AppColors.accent
                                       : AppColors.border,
-                                  width: _usage == ProductUsage.resale ? 1.5 : 1,
+                                  width: _usage == ProductUsage.resale
+                                      ? 1.5
+                                      : 1,
                                 ),
                               ),
                               child: Row(
@@ -355,10 +376,13 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                         Expanded(
                           child: GestureDetector(
                             onTap: () => setState(
-                                () => _usage = ProductUsage.consumable),
+                              () => _usage = ProductUsage.consumable,
+                            ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 10),
+                                vertical: 12,
+                                horizontal: 10,
+                              ),
                               decoration: BoxDecoration(
                                 color: _usage == ProductUsage.consumable
                                     ? AppColors.tintGreenSoft
@@ -368,8 +392,9 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                                   color: _usage == ProductUsage.consumable
                                       ? AppColors.accent
                                       : AppColors.border,
-                                  width:
-                                      _usage == ProductUsage.consumable ? 1.5 : 1,
+                                  width: _usage == ProductUsage.consumable
+                                      ? 1.5
+                                      : 1,
                                 ),
                               ),
                               child: Row(
@@ -409,8 +434,10 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const AppSectionTitle('Stock & Alertes',
-                        padding: EdgeInsets.only(bottom: 12)),
+                    const AppSectionTitle(
+                      'Stock & Alertes',
+                      padding: EdgeInsets.only(bottom: 12),
+                    ),
                     Row(
                       children: [
                         Expanded(
@@ -424,7 +451,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Obligatoire';
                               }
-                              if (int.tryParse(value.replaceAll(' ', '')) == null) {
+                              if (int.tryParse(value.replaceAll(' ', '')) ==
+                                  null) {
                                 return 'Nombre invalide';
                               }
                               return null;
@@ -443,7 +471,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                               if (value == null || value.trim().isEmpty) {
                                 return 'Obligatoire';
                               }
-                              if (int.tryParse(value.replaceAll(' ', '')) == null) {
+                              if (int.tryParse(value.replaceAll(' ', '')) ==
+                                  null) {
                                 return 'Nombre invalide';
                               }
                               return null;

@@ -78,7 +78,8 @@ class ConsumptionPage extends ConsumerWidget {
             const AppEmptyState(
               compact: true,
               title: 'Aucun consommable',
-              message: 'Aucune fiche produit n\'est marquée « Consommé en '
+              message:
+                  'Aucune fiche produit n\'est marquée « Consommé en '
                   'soin ». Ouvrez un produit depuis Stock et changez sa '
                   'destination : le bouton « Ouvrir » apparaîtra ici.',
               icon: Icons.science_outlined,
@@ -139,7 +140,8 @@ class ConsumptionPage extends ConsumerWidget {
                 ? const AppEmptyState(
                     compact: true,
                     title: 'Aucune consommation',
-                    message: 'Les produits utilisés en cabine apparaîtront ici.',
+                    message:
+                        'Les produits utilisés en cabine apparaîtront ici.',
                     icon: Icons.science_outlined,
                   )
                 : AppListCard(

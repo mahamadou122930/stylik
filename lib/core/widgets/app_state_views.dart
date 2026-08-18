@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/error_messages.dart';
+
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 import '../constants/app_typography.dart';
@@ -83,14 +85,22 @@ class AppErrorState extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) => AppEmptyState(
-        title: 'Une erreur est survenue',
-        message: message,
-        icon: Icons.error_outline_rounded,
+  Widget build(BuildContext context) {
+    // Les appelants passent `'$error'` : une coupure réseau y arrive sous sa
+    // forme technique. On la réécrit ici, une fois pour tous les écrans.
+    final offline = ErrorMessages.isOffline(message);
+
+    return AppEmptyState(
+        title: offline ? 'Pas de connexion' : 'Une erreur est survenue',
+        message: offline ? ErrorMessages.offlineMessage : message,
+        icon: offline
+            ? Icons.wifi_off_rounded
+            : Icons.error_outline_rounded,
         actionLabel: onRetry == null ? null : 'Réessayer',
         onAction: onRetry,
         compact: compact,
       );
+  }
 }
 
 /// Indicateur de chargement.

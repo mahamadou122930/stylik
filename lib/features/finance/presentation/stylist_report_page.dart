@@ -6,6 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
+import '../../auth/presentation/auth_providers.dart';
 import 'finance_providers.dart';
 import 'stylist_commission_detail_page.dart';
 
@@ -18,6 +19,11 @@ class StylistReportPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final period = ref.watch(financePeriodProvider);
+    final anchor = ref.watch(financeAnchorProvider);
+    // Tant que le profil n'est pas résolu — session en cours de restauration,
+    // appareil hors ligne — le salon est inconnu et les providers rendent des
+    // listes vides. Annoncer « Aucun coiffeur » serait alors un mensonge.
+    final salonId = ref.watch(currentSalonIdProvider);
     final commissions = ref.watch(commissionsProvider);
     // Toute l'équipe, y compris qui n'a rien encaissé sur la période.
     final items = ref.watch(stylistReportProvider);
@@ -30,7 +36,9 @@ class StylistReportPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(2, 2, 2, 12),
             child: Text(
-              '${period.label} · CA généré et commission due',
+              // La période nommée — « Août » — plutôt que l'échelle
+              // — « Mois » — qui n'indique pas laquelle on regarde.
+              '${period.titleFor(anchor)} · CA généré et commission due',
               style: AppTypography.manrope(
                 12.5,
                 FontWeight.w600,
@@ -38,32 +46,36 @@ class StylistReportPage extends ConsumerWidget {
               ),
             ),
           ),
-          commissions.when(
-            loading: () => const AppLoader(),
-            error: (error, _) => AppErrorState(
-              message: '$error',
-              onRetry: () => ref.invalidate(commissionsProvider),
-            ),
-            data: (_) => items.isEmpty
-                ? const AppEmptyState(
-                    title: 'Aucun coiffeur',
-                    message: 'Ajoutez votre équipe pour suivre les '
-                        'commissions.',
-                    icon: Icons.insights_outlined,
-                  )
-                : Column(
-                    children: [
-                      for (var i = 0; i < items.length; i++) ...[
-                        _StylistCard(
-                          commission: items[i],
-                          accent: AppColors
-                              .chartSeries[i % AppColors.chartSeries.length],
-                        ),
-                        const SizedBox(height: 12),
+          if (salonId == null)
+            const AppLoader()
+          else
+            commissions.when(
+              loading: () => const AppLoader(),
+              error: (error, _) => AppErrorState(
+                message: '$error',
+                onRetry: () => ref.invalidate(commissionsProvider),
+              ),
+              data: (_) => items.isEmpty
+                  ? const AppEmptyState(
+                      title: 'Aucun coiffeur',
+                      message:
+                          'Ajoutez votre équipe pour suivre les '
+                          'commissions.',
+                      icon: Icons.insights_outlined,
+                    )
+                  : Column(
+                      children: [
+                        for (var i = 0; i < items.length; i++) ...[
+                          _StylistCard(
+                            commission: items[i],
+                            accent: AppColors
+                                .chartSeries[i % AppColors.chartSeries.length],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                       ],
-                    ],
-                  ),
-          ),
+                    ),
+            ),
         ],
       ),
     );
@@ -81,10 +93,9 @@ class _StylistCard extends StatelessWidget {
     return AppCard(
       radius: 18,
       padding: const EdgeInsets.all(16),
-      onTap: () => Navigator.of(context).pushNamed(
-        StylistCommissionDetailPage.routeName,
-        arguments: commission,
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).pushNamed(StylistCommissionDetailPage.routeName, arguments: commission),
       child: Column(
         children: [
           Row(
@@ -117,10 +128,12 @@ class _StylistCard extends StatelessWidget {
                         if (commission.speciality?.isNotEmpty ?? false)
                           commission.speciality!,
                         '${commission.clientCount} client(s)',
-                        // Le nombre de prestations, lui, n'est jamais nul dès
-                        // qu'il y a eu une vente : il lève l'ambiguïté quand
-                        // aucune fiche client n'a été attachée au ticket.
-                        '${commission.serviceCount} prestation(s)',
+                        // Le nombre de prestations n'est rappelé que si le
+                        // compte clients est à zéro malgré des ventes : il
+                        // lève alors l'ambiguïté sans alourdir la ligne.
+                        if (commission.clientCount == 0 &&
+                            commission.serviceCount > 0)
+                          '${commission.serviceCount} prestation(s)',
                       ].join(' · '),
                       style: AppTypography.rowSubtitle,
                     ),

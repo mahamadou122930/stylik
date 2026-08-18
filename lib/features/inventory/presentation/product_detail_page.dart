@@ -17,18 +17,20 @@ class ProductDetailPage extends ConsumerWidget {
 
   final String productId;
 
-  Future<void> _adjustStock(BuildContext context, WidgetRef ref, Product product) async {
+  Future<void> _adjustStock(
+    BuildContext context,
+    WidgetRef ref,
+    Product product,
+  ) async {
     final delta = await showModalBottomSheet<int>(
       context: context,
       builder: (context) => _AdjustStockSheet(product: product),
     );
     if (delta == null || delta == 0) return;
 
-    await ref.read(inventoryRepositoryProvider).adjustStock(
-          productId: product.id,
-          delta: delta,
-          reason: 'adjustment',
-        );
+    await ref
+        .read(inventoryRepositoryProvider)
+        .adjustStock(productId: product.id, delta: delta, reason: 'adjustment');
     ref.invalidate(productDetailProvider(product.id));
     ref.invalidate(productsProvider);
   }
@@ -71,8 +73,7 @@ class ProductDetailPage extends ConsumerWidget {
                 Expanded(
                   child: AppButton.outline(
                     label: 'Ajuster le stock',
-                    onPressed: () =>
-                        _adjustStock(context, ref, product.value!),
+                    onPressed: () => _adjustStock(context, ref, product.value!),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -183,11 +184,7 @@ class _ProductBody extends StatelessWidget {
               label: 'En stock',
               color: product.isLowStock ? AppColors.amber : null,
             ),
-            (
-              value: '${product.alertThreshold}',
-              label: 'Seuil',
-              color: null,
-            ),
+            (value: '${product.alertThreshold}', label: 'Seuil', color: null),
             (
               value: Formatters.fcfa(product.unitCostFcfa),
               label: 'P.U. achat',
@@ -251,8 +248,7 @@ class _AdjustStockSheetState extends State<_AdjustStockSheet> {
     final next = (base + step).clamp(0, 1 << 31);
     setState(() {
       _target.text = '$next';
-      _target.selection =
-          TextSelection.collapsed(offset: _target.text.length);
+      _target.selection = TextSelection.collapsed(offset: _target.text.length);
     });
   }
 
@@ -315,9 +311,10 @@ class _AdjustStockSheetState extends State<_AdjustStockSheet> {
             const SizedBox(height: 10),
             Text(
               switch (delta) {
-                0 => target == null
-                    ? 'Saisissez un nombre entier positif.'
-                    : 'Aucun changement.',
+                0 =>
+                  target == null
+                      ? 'Saisissez un nombre entier positif.'
+                      : 'Aucun changement.',
                 > 0 => 'Entrée de $delta unité(s).',
                 _ => 'Sortie de ${delta.abs()} unité(s).',
               },
@@ -331,8 +328,9 @@ class _AdjustStockSheetState extends State<_AdjustStockSheet> {
             const SizedBox(height: 20),
             AppButton(
               label: 'Valider',
-              onPressed:
-                  delta == 0 ? null : () => Navigator.pop(context, delta),
+              onPressed: delta == 0
+                  ? null
+                  : () => Navigator.pop(context, delta),
             ),
           ],
         ),

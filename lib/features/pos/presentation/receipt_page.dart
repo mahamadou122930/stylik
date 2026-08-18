@@ -476,8 +476,7 @@ class _PaymentBadge extends StatelessWidget {
                 ? 'Remboursé'
                 : 'Payé · ${transaction.paymentMethod.label}',
             color: refunded ? AppColors.expense : AppColors.primary,
-            background:
-                refunded ? AppColors.tintExpense : AppColors.tintGreen,
+            background: refunded ? AppColors.tintExpense : AppColors.tintGreen,
             dense: true,
           ),
           const SizedBox(width: 8),

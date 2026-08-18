@@ -47,8 +47,9 @@ class InventoryPage extends ConsumerWidget {
         icon: Icons.add_rounded,
         filled: true,
         onTap: () async {
-          final res = await Navigator.of(context)
-              .pushNamed(ProductFormPage.routeName);
+          final res = await Navigator.of(
+            context,
+          ).pushNamed(ProductFormPage.routeName);
           if (res == true) {
             ref.invalidate(productsProvider);
           }
@@ -75,56 +76,59 @@ class InventoryPage extends ConsumerWidget {
                 ProductUsage.consumable => 2,
               },
               onChanged: (index) =>
-                  ref.read(productUsageFilterProvider.notifier).state = switch (
-                      index) {
-                1 => ProductUsage.resale,
-                2 => ProductUsage.consumable,
-                _ => null,
-              },
+                  ref
+                      .read(productUsageFilterProvider.notifier)
+                      .state = switch (index) {
+                    1 => ProductUsage.resale,
+                    2 => ProductUsage.consumable,
+                    _ => null,
+                  },
             ),
             const SizedBox(height: 12),
             Row(
-          children: [
-            Expanded(
-              child: AppStatTile(
-                label: 'Valeur stock',
-                value: Formatters.fcfa(stockValue),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: AppCard(
-                radius: 16,
-                shadow: false,
-                color: AppColors.tintExpense,
-                borderColor: AppColors.dangerBorder,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'À réappro.',
-                      style: AppTypography.manrope(
-                        11.5,
-                        FontWeight.w600,
-                        color: AppColors.dangerDeep,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${lowStock.length}',
-                      style: AppTypography.sora(
-                        20,
-                        FontWeight.w800,
-                        color: AppColors.expense,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                  ],
+              children: [
+                Expanded(
+                  child: AppStatTile(
+                    label: 'Valeur stock',
+                    value: Formatters.fcfa(stockValue),
+                  ),
                 ),
-              ),
-            ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: AppCard(
+                    radius: 16,
+                    shadow: false,
+                    color: AppColors.tintExpense,
+                    borderColor: AppColors.dangerBorder,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 13,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'À réappro.',
+                          style: AppTypography.manrope(
+                            11.5,
+                            FontWeight.w600,
+                            color: AppColors.dangerDeep,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          '${lowStock.length}',
+                          style: AppTypography.sora(
+                            20,
+                            FontWeight.w800,
+                            color: AppColors.expense,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ],
@@ -135,8 +139,8 @@ class InventoryPage extends ConsumerWidget {
           : AppButton(
               label: 'Commander les ${lowStock.length} en alerte',
               icon: Icons.receipt_long_rounded,
-              onPressed: () => Navigator.of(context)
-                  .pushNamed(StockReceptionPage.routeName),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(StockReceptionPage.routeName),
             ),
       child: products.when(
         loading: () => const AppLoader(),
@@ -157,17 +161,17 @@ class InventoryPage extends ConsumerWidget {
                 title: search.isNotEmpty
                     ? 'Aucun produit trouvé'
                     : usageFilter == ProductUsage.consumable
-                        ? 'Aucun consommable'
-                        : 'Aucun produit de revente',
+                    ? 'Aucun consommable'
+                    : 'Aucun produit de revente',
                 message: search.isNotEmpty
                     ? 'Aucun produit ne correspond à « $search ».'
                     : usageFilter == ProductUsage.consumable
-                        // Le cas le plus fréquent : les fiches ont été créées
-                        // en « Revente », l'usage par défaut du formulaire.
-                        ? 'Aucune fiche n\'est marquée « Consommé en soin ». '
-                            'Ouvrez un produit et changez sa destination pour '
-                            'pouvoir en déduire les unités ouvertes.'
-                        : 'Aucune fiche n\'est marquée « Revendu au client ».',
+                    // Le cas le plus fréquent : les fiches ont été créées
+                    // en « Revente », l'usage par défaut du formulaire.
+                    ? 'Aucune fiche n\'est marquée « Consommé en soin ». '
+                          'Ouvrez un produit et changez sa destination pour '
+                          'pouvoir en déduire les unités ouvertes.'
+                    : 'Aucune fiche n\'est marquée « Revendu au client ».',
                 icon: Icons.search_off_rounded,
                 actionLabel: search.isNotEmpty
                     ? 'Effacer la recherche'
@@ -229,8 +233,9 @@ class InventoryPage extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         leading: const AppIconTile(icon: Icons.science_rounded),
                         trailing: const AppChevron(),
-                        onTap: () => Navigator.of(context)
-                            .pushNamed(ConsumptionPage.routeName),
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed(ConsumptionPage.routeName),
                       ),
                       AppListRow(
                         label: 'Réception de stock',
@@ -243,8 +248,9 @@ class InventoryPage extends ConsumerWidget {
                           background: AppColors.tintAmber,
                         ),
                         trailing: const AppChevron(),
-                        onTap: () => Navigator.of(context)
-                            .pushNamed(StockReceptionPage.routeName),
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed(StockReceptionPage.routeName),
                       ),
                     ],
                   ),
@@ -343,10 +349,7 @@ class ProductRow extends StatelessWidget {
               style: AppTypography.sora(12, FontWeight.w700, color: color),
             ),
           ),
-          if (trailing != null) ...[
-            const SizedBox(width: 6),
-            trailing!,
-          ],
+          if (trailing != null) ...[const SizedBox(width: 6), trailing!],
         ],
       ),
     );

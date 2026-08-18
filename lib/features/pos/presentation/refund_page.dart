@@ -29,21 +29,29 @@ class _RefundPageState extends ConsumerState<RefundPage> {
   Future<void> _confirm() async {
     setState(() => _isProcessing = true);
     try {
-      await ref.read(posRepositoryProvider).refund(
-            transactionId: widget.transaction.id,
-            amountFcfa: _amountFcfa,
-            reason: _reason,
-          );
-      ref.invalidate(todayTransactionsProvider);
+      await ref.read(refundControllerProvider)(
+        widget.transaction,
+        _amountFcfa,
+        _reason,
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Remboursement de ${Formatters.fcfa(_amountFcfa)} '
-              'enregistré'),
+          content: Text(
+            'Remboursement de ${Formatters.fcfa(_amountFcfa)} '
+            'enregistré',
+          ),
         ),
       );
       Navigator.of(context).pop();
+
+      final warning = ref.read(stockWarningProvider);
+      if (warning != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(warning)));
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -75,8 +83,9 @@ class _RefundPageState extends ConsumerState<RefundPage> {
             child: Row(
               children: [
                 AppAvatar(
-                  initials:
-                      Formatters.initials(transaction.clientName ?? 'Client'),
+                  initials: Formatters.initials(
+                    transaction.clientName ?? 'Client',
+                  ),
                   size: 40,
                   background: AppColors.primary,
                   color: Colors.white,
@@ -121,8 +130,10 @@ class _RefundPageState extends ConsumerState<RefundPage> {
               label: 'Montant à rembourser',
               initialValue: '$_amountFcfa',
               onChanged: (value) => setState(
-                () => _amountFcfa = (int.tryParse(value) ?? 0)
-                    .clamp(0, transaction.totalAmountFcfa),
+                () => _amountFcfa = (int.tryParse(value) ?? 0).clamp(
+                  0,
+                  transaction.totalAmountFcfa,
+                ),
               ),
             ),
             const SizedBox(height: 18),
@@ -145,7 +156,8 @@ class _RefundPageState extends ConsumerState<RefundPage> {
             color: AppColors.dangerDeep,
             background: AppColors.tintExpense,
             borderColor: AppColors.dangerBorder,
-            message: 'Le remboursement sera renvoyé vers le moyen de paiement '
+            message:
+                'Le remboursement sera renvoyé vers le moyen de paiement '
                 'd\'origine (${transaction.paymentMethod.label}).',
           ),
         ],

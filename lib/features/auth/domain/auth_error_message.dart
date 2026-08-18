@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/utils/error_messages.dart';
+
 /// Traduit une erreur d'authentification Supabase en message affichable.
 ///
 /// Les exceptions brutes (`AuthApiException(message: ..., statusCode: ...)`)
@@ -8,6 +10,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// base : Supabase le remonte en `unexpected_failure` (« Database error saving
 /// new user »), sans jamais faire remonter le texte de l'exception SQL.
 String authErrorMessage(Object? error, {String? fallback}) {
+  // Avant tout le reste : une coupure réseau remonte enveloppée dans une
+  // `AuthRetryableFetchException`, dont le `message` est la trace technique.
+  if (ErrorMessages.isOffline(error)) return ErrorMessages.offlineMessage;
+
   if (error is AuthApiException) {
     if (error.code == 'unexpected_failure' && fallback != null) {
       return fallback;

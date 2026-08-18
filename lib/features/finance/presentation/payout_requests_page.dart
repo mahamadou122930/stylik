@@ -26,27 +26,33 @@ class PayoutRequestsPage extends ConsumerWidget {
     final pendingList = requests
         .where((r) => r.status == PayoutStatus.pending)
         .toList();
-    final processedList = requests
-        .where((r) => r.status != PayoutStatus.pending)
-        .toList()
-      ..sort((a, b) => (b.paidAt ?? b.requestedAt)
-          .compareTo(a.paidAt ?? a.requestedAt));
+    final processedList =
+        requests.where((r) => r.status != PayoutStatus.pending).toList()..sort(
+          (a, b) =>
+              (b.paidAt ?? b.requestedAt).compareTo(a.paidAt ?? a.requestedAt),
+        );
 
     // Calculs de synthèse des top cartes
-    final totalPendingAmount =
-        pendingList.fold(0, (sum, r) => sum + r.amountFcfa);
+    final totalPendingAmount = pendingList.fold(
+      0,
+      (sum, r) => sum + r.amountFcfa,
+    );
 
     final now = DateTime.now();
     final settledThisMonth = requests
-        .where((r) =>
-            r.isSettled &&
-            r.paidAt != null &&
-            r.paidAt!.year == now.year &&
-            r.paidAt!.month == now.month)
+        .where(
+          (r) =>
+              r.isSettled &&
+              r.paidAt != null &&
+              r.paidAt!.year == now.year &&
+              r.paidAt!.month == now.month,
+        )
         .toList();
 
-    final totalPaidThisMonth =
-        settledThisMonth.fold(0, (sum, r) => sum + r.amountFcfa);
+    final totalPaidThisMonth = settledThisMonth.fold(
+      0,
+      (sum, r) => sum + r.amountFcfa,
+    );
 
     final dueByStylist = <String, int>{};
     if (commissionsAsync.valueOrNull != null) {
@@ -91,7 +97,8 @@ class PayoutRequestsPage extends ConsumerWidget {
             for (final request in pendingList) ...[
               _PendingActionCard(
                 request: request,
-                dueAmount: dueByStylist[request.profileId] ?? request.amountFcfa,
+                dueAmount:
+                    dueByStylist[request.profileId] ?? request.amountFcfa,
                 onApprove: () => _openSettleSheet(context, ref, request),
                 onReject: () => _rejectRequest(context, ref, request),
               ),
@@ -110,7 +117,8 @@ class PayoutRequestsPage extends ConsumerWidget {
                 ? const AppEmptyState(
                     compact: true,
                     title: 'Aucune demande traitée',
-                    message: 'Les demandes validées ou refusées s\'afficheront ici.',
+                    message:
+                        'Les demandes validées ou refusées s\'afficheront ici.',
                     icon: Icons.history_rounded,
                   )
                 : AppListCard(
@@ -127,28 +135,29 @@ class PayoutRequestsPage extends ConsumerWidget {
 
   String _formatCompactFcfa(int amount) {
     if (amount >= 1000000) {
-      final millions = (amount / 1000000).toStringAsFixed(1).replaceAll('.', ',');
+      final millions = (amount / 1000000)
+          .toStringAsFixed(1)
+          .replaceAll('.', ',');
       return '$millions M F';
     }
     return Formatters.fcfa(amount);
   }
 
-  Future<void> _openNewRequestSheet(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Future<void> _openNewRequestSheet(BuildContext context, WidgetRef ref) async {
     final team = ref.read(teamProvider).valueOrNull ?? const <Profile>[];
 
-    final result = await showModalBottomSheet<
-        ({Profile stylist, int amount, String? note})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) => _CreateProxyRequestSheet(team: team),
-    );
+    final result =
+        await showModalBottomSheet<
+          ({Profile stylist, int amount, String? note})
+        >(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          builder: (context) => _CreateProxyRequestSheet(team: team),
+        );
 
     if (result == null) return;
 
@@ -177,15 +186,16 @@ class PayoutRequestsPage extends ConsumerWidget {
     WidgetRef ref,
     PayoutRequest request,
   ) async {
-    final result = await showModalBottomSheet<({PayoutMethod method, String? ref})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (context) => _SettleSheet(request: request),
-    );
+    final result =
+        await showModalBottomSheet<({PayoutMethod method, String? ref})>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          builder: (context) => _SettleSheet(request: request),
+        );
 
     if (result == null) return;
 
@@ -261,9 +271,7 @@ class PayoutRequestsPage extends ConsumerWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          ok ? 'Demande refusée.' : 'Erreur lors du refus.',
-        ),
+        content: Text(ok ? 'Demande refusée.' : 'Erreur lors du refus.'),
       ),
     );
   }
@@ -274,13 +282,13 @@ class _MetricCard extends StatelessWidget {
     required this.label,
     required this.amount,
     required this.subtitle,
-  })  : isAmber = true;
+  }) : isAmber = true;
 
   const _MetricCard.white({
     required this.label,
     required this.amount,
     required this.subtitle,
-  })  : isAmber = false;
+  }) : isAmber = false;
 
   final String label;
   final String amount;
@@ -391,10 +399,7 @@ class _PendingActionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      name,
-                      style: AppTypography.sora(15, FontWeight.w800),
-                    ),
+                    Text(name, style: AppTypography.sora(15, FontWeight.w800)),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
@@ -457,7 +462,9 @@ class _PendingActionCard extends StatelessWidget {
                   height: 46,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(color: AppColors.expense.withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: AppColors.expense.withValues(alpha: 0.4),
+                    ),
                   ),
                   alignment: Alignment.center,
                   child: const Icon(
@@ -484,7 +491,9 @@ class _ProcessedRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPaid = request.isSettled;
     final name = request.profileName ?? 'Coiffeur';
-    final date = isPaid ? (request.paidAt ?? request.requestedAt) : request.requestedAt;
+    final date = isPaid
+        ? (request.paidAt ?? request.requestedAt)
+        : request.requestedAt;
 
     final subtitle = isPaid
         ? 'Versé le ${Formatters.dayMonth(date)}${request.method != null ? ' · ${request.method!.label}' : ''}'
@@ -597,10 +606,10 @@ class _SettleSheetState extends State<_SettleSheet> {
             AppButton(
               label: 'Valider & régler',
               icon: Icons.check_rounded,
-              onPressed: () => Navigator.pop(
-                context,
-                (method: _method, ref: _refController.text.trim()),
-              ),
+              onPressed: () => Navigator.pop(context, (
+                method: _method,
+                ref: _refController.text.trim(),
+              )),
             ),
           ],
         ),
@@ -678,14 +687,14 @@ class _CreateProxyRequestSheetState extends State<_CreateProxyRequestSheet> {
             DropdownButtonFormField<Profile>(
               initialValue: _selectedStylist,
               decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
               items: [
                 for (final p in widget.team)
-                  DropdownMenuItem(
-                    value: p,
-                    child: Text(p.fullName),
-                  ),
+                  DropdownMenuItem(value: p, child: Text(p.fullName)),
               ],
               onChanged: (val) {
                 if (val != null) setState(() => _selectedStylist = val);
