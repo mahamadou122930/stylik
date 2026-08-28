@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -44,8 +45,8 @@ class SettingsPage extends ConsumerWidget {
             ),
             data: (data) => AppCard(
               onTap: isManager
-                  ? () => Navigator.of(context)
-                      .pushNamed(SalonInfoPage.routeName)
+                  ? () =>
+                        Navigator.of(context).pushNamed(SalonInfoPage.routeName)
                   : null,
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -66,7 +67,7 @@ class SettingsPage extends ConsumerWidget {
                     child: (data?.logoUrl?.isNotEmpty ?? false)
                         ? null
                         : const Icon(
-                            Icons.storefront_rounded,
+                            LucideIcons.store,
                             color: Colors.white,
                             size: 26,
                           ),
@@ -111,17 +112,18 @@ class SettingsPage extends ConsumerWidget {
                   AppListRow(
                     label: 'Infos & horaires',
                     subtitle: 'Contact, ouverture du salon',
-                    leading: const AppIconTile(icon: Icons.schedule_rounded),
+                    leading: const AppIconTile(icon: LucideIcons.clock),
                     trailing: const AppChevron(),
                     strong: true,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(SalonInfoPage.routeName),
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(SalonInfoPage.routeName),
                   ),
                 if (canManageStaff)
                   AppListRow(
                     label: 'Équipe',
                     subtitle: 'Coiffeurs, réceptionnistes, horaires',
-                    leading: const AppIconTile(icon: Icons.groups_rounded),
+                    leading: const AppIconTile(icon: LucideIcons.users),
                     trailing: const AppChevron(),
                     strong: true,
                     onTap: () =>
@@ -131,9 +133,7 @@ class SettingsPage extends ConsumerWidget {
                   AppListRow(
                     label: 'Rôles & permissions',
                     subtitle: 'Ce que chaque rôle peut faire',
-                    leading: const AppIconTile(
-                      icon: Icons.admin_panel_settings_rounded,
-                    ),
+                    leading: const AppIconTile(icon: LucideIcons.shieldCheck),
                     trailing: const AppChevron(),
                     strong: true,
                     onTap: () =>
@@ -149,41 +149,43 @@ class SettingsPage extends ConsumerWidget {
                 label: 'Mon profil',
                 subtitle: 'Compte, préférences, déconnexion',
                 leading: const AppIconTile(
-                  icon: Icons.person_rounded,
+                  icon: LucideIcons.user,
                   color: AppColors.primary,
                   background: AppColors.tintGreen,
                 ),
                 trailing: const AppChevron(),
                 strong: true,
-                onTap: () => Navigator.of(context)
-                    .pushNamed(ProfilePage.routeName),
+                onTap: () =>
+                    Navigator.of(context).pushNamed(ProfilePage.routeName),
               ),
               AppListRow(
                 label: 'Notifications',
                 subtitle: 'Ce que l\'app vous signale',
                 leading: const AppIconTile(
-                  icon: Icons.notifications_rounded,
+                  icon: LucideIcons.bell,
                   color: AppColors.amber,
                   background: AppColors.tintAmber,
                 ),
                 trailing: const AppChevron(),
                 strong: true,
-                onTap: () => Navigator.of(context)
-                    .pushNamed(NotificationsPage.routeName),
+                onTap: () => Navigator.of(
+                  context,
+                ).pushNamed(NotificationsPage.routeName),
               ),
               if (isManager)
                 AppListRow(
                   label: 'Abonnement',
                   subtitle: 'Formule et facturation',
                   leading: const AppIconTile(
-                    icon: Icons.workspace_premium_rounded,
+                    icon: LucideIcons.award,
                     color: AppColors.violet,
                     background: AppColors.tintViolet,
                   ),
                   trailing: const AppChevron(),
                   strong: true,
-                  onTap: () => Navigator.of(context)
-                      .pushNamed(SubscriptionPage.routeName),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pushNamed(SubscriptionPage.routeName),
                 ),
             ],
           ),
@@ -200,7 +202,7 @@ class SettingsPage extends ConsumerWidget {
           AppButton(
             label: 'Se déconnecter',
             variant: AppButtonVariant.danger,
-            icon: Icons.logout_rounded,
+            icon: LucideIcons.logOut,
             onPressed: () async {
               Navigator.of(context).popUntil((route) => route.isFirst);
               await ref.read(authControllerProvider.notifier).signOut();

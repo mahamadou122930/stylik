@@ -42,7 +42,9 @@ final dayAppointmentsProvider = FutureProvider<List<Appointment>>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
-  return ref.watch(agendaRepositoryProvider).fetchDay(
+  return ref
+      .watch(agendaRepositoryProvider)
+      .fetchDay(
         salonId: salonId,
         day: ref.watch(selectedDayProvider),
         stylistId: ref.watch(agendaStylistFilterProvider),
@@ -50,9 +52,11 @@ final dayAppointmentsProvider = FutureProvider<List<Appointment>>((ref) async {
 });
 
 /// Rendez-vous du jour groupés par coiffeur (colonnes du planning global).
-final appointmentsByStylistProvider =
-    Provider<Map<String, List<Appointment>>>((ref) {
-  final appointments = ref.watch(dayAppointmentsProvider).valueOrNull ?? const [];
+final appointmentsByStylistProvider = Provider<Map<String, List<Appointment>>>((
+  ref,
+) {
+  final appointments =
+      ref.watch(dayAppointmentsProvider).valueOrNull ?? const [];
 
   final grouped = <String, List<Appointment>>{};
   for (final appointment in appointments) {
@@ -62,20 +66,26 @@ final appointmentsByStylistProvider =
 });
 
 /// Fiche d'un rendez-vous.
-final appointmentDetailProvider =
-    FutureProvider.family<Appointment?, String>((ref, appointmentId) {
+final appointmentDetailProvider = FutureProvider.family<Appointment?, String>((
+  ref,
+  appointmentId,
+) {
   return ref.watch(agendaRepositoryProvider).fetchById(appointmentId);
 });
 
 /// Paramètres de recherche de créneaux libres (écran Nouveau RDV).
 typedef SlotQuery = ({String stylistId, DateTime day, int durationMinutes});
 
-final freeSlotsProvider =
-    FutureProvider.family<List<DateTime>, SlotQuery>((ref, query) async {
+final freeSlotsProvider = FutureProvider.family<List<DateTime>, SlotQuery>((
+  ref,
+  query,
+) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
-  return ref.watch(agendaRepositoryProvider).fetchFreeSlots(
+  return ref
+      .watch(agendaRepositoryProvider)
+      .fetchFreeSlots(
         salonId: salonId,
         stylistId: query.stylistId,
         day: query.day,
@@ -93,8 +103,9 @@ final walkInQueueProvider = StreamProvider<List<WalkInEntry>>((ref) {
 /// Temps d'attente moyen de la file, en minutes.
 final averageWaitProvider = Provider<int>((ref) {
   final queue = ref.watch(walkInQueueProvider).valueOrNull ?? const [];
-  final waiting =
-      queue.where((entry) => entry.status == WalkInStatus.waiting).toList();
+  final waiting = queue
+      .where((entry) => entry.status == WalkInStatus.waiting)
+      .toList();
   if (waiting.isEmpty) return 0;
 
   final total = waiting.fold<int>(

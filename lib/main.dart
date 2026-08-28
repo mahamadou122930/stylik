@@ -34,6 +34,5 @@ Future<void> main() async {
     debugPrint('Erreur d\'initialisation Supabase: $e');
   }
 
-
-  runApp(const ProviderScope(child: AtelierApp()));
+  runApp(const ProviderScope(child: StylikApp()));
 }

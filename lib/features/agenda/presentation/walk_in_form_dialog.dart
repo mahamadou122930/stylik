@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -121,7 +122,7 @@ class _WalkInFormDialogState extends ConsumerState<WalkInFormDialog> {
                     'Client sans RDV',
                     style: AppTypography.sora(18, FontWeight.w700),
                   ),
-                  const AppIconButton(icon: Icons.close_rounded),
+                  const AppIconButton(icon: LucideIcons.x),
                 ],
               ),
               const SizedBox(height: 16),
@@ -129,8 +130,9 @@ class _WalkInFormDialogState extends ConsumerState<WalkInFormDialog> {
                 controller: _nameController,
                 label: 'Nom du client',
                 hint: 'Ex: Awa Traoré',
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Champ obligatoire' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Champ obligatoire'
+                    : null,
               ),
               const SizedBox(height: 14),
               AppInput(
@@ -142,7 +144,10 @@ class _WalkInFormDialogState extends ConsumerState<WalkInFormDialog> {
               const SizedBox(height: 14),
               const AppSectionTitle('Prestation souhaitée'),
               AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<SalonService>(
                     value: _selectedService,
@@ -168,7 +173,10 @@ class _WalkInFormDialogState extends ConsumerState<WalkInFormDialog> {
               const SizedBox(height: 14),
               const AppSectionTitle('Coiffeur souhaité'),
               AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 4,
+                ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<Profile>(
                     value: _selectedStylist,

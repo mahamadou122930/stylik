@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -112,7 +113,7 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
       ),
       footer: AppButton(
         label: 'Valider la réception',
-        icon: Icons.check_rounded,
+        icon: LucideIcons.check,
         isLoading: _isSaving,
         onPressed: hasLines ? () => _validate(items) : null,
       ),
@@ -128,7 +129,7 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
                 message:
                     'Créez vos produits avant d\'enregistrer une '
                     'livraison.',
-                icon: Icons.local_shipping_outlined,
+                icon: LucideIcons.truck,
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,7 +143,7 @@ class _StockReceptionPageState extends ConsumerState<StockReceptionPage> {
                       compact: true,
                       title: 'Aucun produit trouvé',
                       message: 'Aucun produit ne correspond à « $_search ».',
-                      icon: Icons.search_off_rounded,
+                      icon: LucideIcons.searchX,
                     ),
                   for (final product in visible) ...[
                     _ReceptionRow(
@@ -271,7 +272,7 @@ class _ReceptionRowState extends State<_ReceptionRow> {
           ),
           const SizedBox(width: 8),
           AppIconButton(
-            icon: Icons.remove_rounded,
+            icon: LucideIcons.minus,
             enabled: widget.quantity > 0,
             onTap: () => _bump(-1),
           ),
@@ -296,7 +297,7 @@ class _ReceptionRowState extends State<_ReceptionRow> {
           ),
           const SizedBox(width: 6),
           AppIconButton(
-            icon: Icons.add_rounded,
+            icon: LucideIcons.plus,
             filled: true,
             onTap: () => _bump(1),
           ),

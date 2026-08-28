@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -73,7 +74,9 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
 
     SalonInvite? found;
     try {
-      found = await ref.read(authRepositoryProvider).findSalonByInviteCode(code);
+      found = await ref
+          .read(authRepositoryProvider)
+          .findSalonByInviteCode(code);
     } catch (_) {
       found = null;
     }
@@ -97,7 +100,9 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
-    final success = await ref.read(authControllerProvider.notifier).joinSalon(
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .joinSalon(
           code: invite.code,
           email: _email.text.trim(),
           password: _password.text,
@@ -112,7 +117,8 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
           content: Text(
             authErrorMessage(
               ref.read(authControllerProvider).error,
-              fallback: 'Aucune fiche employé n\'attend cet email chez '
+              fallback:
+                  'Aucune fiche employé n\'attend cet email chez '
                   '${invite.salonName}. Demandez à votre gérant de vous '
                   'ajouter à l\'équipe.',
             ),
@@ -175,9 +181,8 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
               hint: 'Bakary Keïta',
               controller: _fullName,
               textInputAction: TextInputAction.next,
-              validator: (value) => (value == null || value.trim().isEmpty)
-                  ? 'Requis'
-                  : null,
+              validator: (value) =>
+                  (value == null || value.trim().isEmpty) ? 'Requis' : null,
             ),
             const SizedBox(height: 14),
             const _FieldLabel('Email'),
@@ -185,7 +190,7 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
               hint: 'bakary@latelier.ml',
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.email_outlined,
+              prefixIcon: LucideIcons.mail,
               textInputAction: TextInputAction.next,
               validator: (value) => (value == null || !value.contains('@'))
                   ? 'Email invalide'
@@ -205,7 +210,7 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
             AppInput(
               controller: _password,
               obscureText: true,
-              prefixIcon: Icons.lock_outline_rounded,
+              prefixIcon: LucideIcons.lock,
               validator: (value) => (value == null || value.length < 6)
                   ? '6 caractères minimum'
                   : null,
@@ -246,9 +251,10 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
 
     if (invite == null) {
       return const AppCallout(
-        message: 'Code inconnu. Vérifiez les six caractères auprès de votre '
+        message:
+            'Code inconnu. Vérifiez les six caractères auprès de votre '
             'gérant.',
-        icon: Icons.error_outline_rounded,
+        icon: LucideIcons.circleAlert,
         color: AppColors.danger,
         background: AppColors.tintDanger,
         borderColor: AppColors.dangerBorder,
@@ -269,9 +275,7 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Center(
-              child: AppGlyph(size: 24, color: Colors.white),
-            ),
+            child: const Center(child: AppGlyph(size: 24, color: Colors.white)),
           ),
           const SizedBox(width: 13),
           Expanded(
@@ -296,7 +300,7 @@ class _JoinSalonPageState extends ConsumerState<JoinSalonPage> {
           ),
           const SizedBox(width: 10),
           const Icon(
-            Icons.check_circle_rounded,
+            LucideIcons.circleCheck,
             size: 22,
             color: AppColors.accent,
           ),
@@ -455,6 +459,5 @@ class _UpperCaseFormatter extends TextInputFormatter {
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
-  ) =>
-      newValue.copyWith(text: newValue.text.toUpperCase());
+  ) => newValue.copyWith(text: newValue.text.toUpperCase());
 }

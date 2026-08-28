@@ -32,7 +32,7 @@ void main() {
       teamProvider.overrideWith((ref) async => const <Profile>[]),
     ],
     child: const MaterialApp(
-      // Même configuration que `AtelierApp` : c'est elle qui rend le
+      // Même configuration que `StylikApp` : c'est elle qui rend le
       // sélecteur natif utilisable en français.
       locale: Locale('fr', 'FR'),
       supportedLocales: [Locale('fr', 'FR'), Locale('en')],

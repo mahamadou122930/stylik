@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -8,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'finance_providers.dart';
+import 'period_header.dart';
 import 'stylist_commission_detail_page.dart';
 
 /// 8.2 — Rapport par coiffeur : CA généré et commission due.
@@ -27,9 +29,18 @@ class StylistReportPage extends ConsumerWidget {
     final commissions = ref.watch(commissionsProvider);
     // Toute l'équipe, y compris qui n'a rien encaissé sur la période.
     final items = ref.watch(stylistReportProvider);
+    // Déjà versé sur la même période que le CA et la commission.
+    final paid = ref.watch(paidByStylistProvider);
 
     return AppScreen(
       title: 'Par coiffeur',
+      // Même en-tête que Finance et Résultat net : le gérant qui suit une
+      // journée veut aussi savoir qui l'a faite. Sans lui, l'écran restait
+      // prisonnier de l'échelle choisie ailleurs.
+      header: const Padding(
+        padding: EdgeInsets.fromLTRB(18, 0, 18, 12),
+        child: FinancePeriodHeader(),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -61,7 +72,7 @@ class StylistReportPage extends ConsumerWidget {
                       message:
                           'Ajoutez votre équipe pour suivre les '
                           'commissions.',
-                      icon: Icons.insights_outlined,
+                      icon: LucideIcons.chartLine,
                     )
                   : Column(
                       children: [
@@ -70,6 +81,7 @@ class StylistReportPage extends ConsumerWidget {
                             commission: items[i],
                             accent: AppColors
                                 .chartSeries[i % AppColors.chartSeries.length],
+                            paidFcfa: paid[items[i].stylistId] ?? 0,
                           ),
                           const SizedBox(height: 12),
                         ],
@@ -83,10 +95,17 @@ class StylistReportPage extends ConsumerWidget {
 }
 
 class _StylistCard extends StatelessWidget {
-  const _StylistCard({required this.commission, required this.accent});
+  const _StylistCard({
+    required this.commission,
+    required this.accent,
+    required this.paidFcfa,
+  });
 
   final StylistCommission commission;
   final Color accent;
+
+  /// Déjà versé sur la période affichée.
+  final int paidFcfa;
 
   @override
   Widget build(BuildContext context) {
@@ -161,6 +180,9 @@ class _StylistCard extends StatelessWidget {
                 label: 'Commission',
                 color: AppColors.primary,
               ),
+              // Ce qui a réellement quitté la caisse. La différence avec la
+              // commission est le reste dû, que le gérant vient chercher ici.
+              (value: Formatters.fcfa(paidFcfa), label: 'Versé', color: null),
             ],
           ),
         ],

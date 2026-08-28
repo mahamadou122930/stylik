@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -58,7 +59,7 @@ class RemindersPage extends ConsumerWidget {
                     message:
                         'Activez les rappels de rendez-vous pour réduire les '
                         'absences.',
-                    icon: Icons.notifications_active_outlined,
+                    icon: LucideIcons.bellRing,
                   )
                 : Column(
                     children: [
@@ -96,20 +97,20 @@ class _ReminderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color, background) = switch (rule.channel) {
       CampaignChannel.whatsapp => (
-          Icons.chat_rounded,
-          AppColors.violet,
-          AppColors.tintViolet,
-        ),
+        LucideIcons.messageCircle,
+        AppColors.violet,
+        AppColors.tintViolet,
+      ),
       CampaignChannel.both => (
-          Icons.mark_email_unread_rounded,
-          AppColors.primary,
-          AppColors.tintGreen,
-        ),
+        LucideIcons.mailOpen,
+        AppColors.primary,
+        AppColors.tintGreen,
+      ),
       CampaignChannel.sms => (
-          Icons.sms_rounded,
-          AppColors.primary,
-          AppColors.tintGreen,
-        ),
+        LucideIcons.messageSquare,
+        AppColors.primary,
+        AppColors.tintGreen,
+      ),
     };
 
     return AppCard(

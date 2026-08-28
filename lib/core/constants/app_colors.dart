@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Palette visuelle de L'Atelier, extraite de la maquette `Salon App.dc.html`.
+/// Palette visuelle de Stylik, extraite de la maquette `Salon App.dc.html`.
 ///
 /// Toute couleur utilisée dans l'application doit provenir de cette classe
 /// (ou du [ColorScheme] dérivé dans `app_theme.dart`) — jamais de littéral
@@ -153,10 +153,6 @@ abstract final class AppColors {
 
   /// Ombre portée des cartes : `0 1px 2px rgba(20,30,20,.04)`.
   static const List<BoxShadow> cardShadow = [
-    BoxShadow(
-      color: Color(0x0A141E14),
-      blurRadius: 2,
-      offset: Offset(0, 1),
-    ),
+    BoxShadow(color: Color(0x0A141E14), blurRadius: 2, offset: Offset(0, 1)),
   ];
 }

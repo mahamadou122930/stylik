@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -29,7 +30,7 @@ class SalonInfoPage extends ConsumerWidget {
             ? const AppEmptyState(
                 title: 'Salon introuvable',
                 message: 'Aucun salon n\'est rattaché à ce compte.',
-                icon: Icons.storefront_outlined,
+                icon: LucideIcons.store,
               )
             : _SalonFormBody(salon: data),
       ),
@@ -98,7 +99,7 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
     _dayStates = List.generate(7, (index) {
       final weekday = index + 1;
       final raw = jsonHours['$weekday'];
-      
+
       bool isClosed = false;
       TimeOfDay openTime = const TimeOfDay(hour: 9, minute: 0);
       TimeOfDay closeTime = const TimeOfDay(hour: 19, minute: 0);
@@ -154,10 +155,7 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
     return fallback;
   }
 
-  Future<void> _pickTime(
-    _DayScheduleState day,
-    bool isOpenTime,
-  ) async {
+  Future<void> _pickTime(_DayScheduleState day, bool isOpenTime) async {
     final initial = isOpenTime ? day.openTime : day.closeTime;
     final picked = await showTimePicker(
       context: context,
@@ -194,7 +192,8 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
   void _copyFirstDayToWeekdays() {
     final firstDay = _dayStates.first;
     setState(() {
-      for (var i = 1; i < 6; i++) { // Du Lundi au Samedi
+      for (var i = 1; i < 6; i++) {
+        // Du Lundi au Samedi
         _dayStates[i].isClosed = firstDay.isClosed;
         _dayStates[i].openTime = firstDay.openTime;
         _dayStates[i].closeTime = firstDay.closeTime;
@@ -285,7 +284,7 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
                   child: (widget.salon.logoUrl?.isNotEmpty ?? false)
                       ? null
                       : const Icon(
-                          Icons.content_cut_rounded,
+                          LucideIcons.scissors,
                           color: Colors.white,
                           size: 28,
                         ),
@@ -327,7 +326,7 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
             padding: const EdgeInsets.fromLTRB(2, 2, 2, 8),
             trailing: TextButton.icon(
               onPressed: _copyFirstDayToWeekdays,
-              icon: const Icon(Icons.copy_rounded, size: 16),
+              icon: const Icon(LucideIcons.copy, size: 16),
               label: Text(
                 'Appliquer Lun → Sam',
                 style: AppTypography.manrope(12, FontWeight.w700),
@@ -416,7 +415,7 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
                                           MainAxisAlignment.center,
                                       children: [
                                         const Icon(
-                                          Icons.access_time_rounded,
+                                          LucideIcons.clock,
                                           size: 16,
                                           color: AppColors.primary,
                                         ),
@@ -455,7 +454,7 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
                                           MainAxisAlignment.center,
                                       children: [
                                         const Icon(
-                                          Icons.access_time_filled_rounded,
+                                          LucideIcons.clock,
                                           size: 16,
                                           color: AppColors.textSecondary,
                                         ),
@@ -526,7 +525,9 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
 
           // Bouton d'enregistrement
           AppButton(
-            label: _isSaving ? 'Enregistrement…' : 'Enregistrer les modifications',
+            label: _isSaving
+                ? 'Enregistrement…'
+                : 'Enregistrer les modifications',
             onPressed: _isSaving ? null : _save,
           ),
           const SizedBox(height: 24),
@@ -535,4 +536,3 @@ class _SalonFormBodyState extends ConsumerState<_SalonFormBody> {
     );
   }
 }
-

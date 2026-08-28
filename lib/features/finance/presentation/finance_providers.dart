@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/providers.dart';
 import '../../../core/utils/formatters.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../home/presentation/home_providers.dart';
 import '../../staff/presentation/staff_providers.dart';
 import '../data/finance_repository.dart';
 import '../domain/finance_summary.dart';
@@ -127,8 +128,12 @@ enum FinancePeriod {
             ),
         ];
       case year:
-        // Quatre exercices : de quoi lire une tendance sans écraser l'échelle.
-        final first = anchor.year - 3;
+        // Jusqu'à quatre exercices, sans jamais remonter avant le premier :
+        // des colonnes forcément vides fausseraient la lecture.
+        final first = [
+          anchor.year - 3,
+          financeFirstYear,
+        ].reduce((a, b) => a > b ? a : b);
         return [
           for (var y = first; y <= anchor.year; y++)
             (from: DateTime(y), to: DateTime(y + 1), label: '$y'),
@@ -170,10 +175,25 @@ final financeAnchorProvider = StateProvider<DateTime>((ref) {
   return DateTime(now.year, now.month, now.day);
 });
 
+/// Premier exercice du salon.
+///
+/// Les sélecteurs d'année et l'histogramme s'arrêtaient trois ans en arrière,
+/// quelle que soit l'ancienneté du salon : on proposait donc 2023 et 2024, qui
+/// ne peuvent contenir que des zéros. Une colonne vide n'est pas une
+/// information, elle écrase l'échelle des autres et fait douter du calcul.
+///
+/// Constante plutôt que dérivée de la date de création du salon : la table
+/// `salons` ne l'expose pas dans le modèle. Le jour où elle le fera, c'est
+/// cette valeur qu'il faudra remplacer.
+const int financeFirstYear = 2025;
+
 /// Années proposées dans le sélecteur, de la plus récente à la plus ancienne.
 final financeYearsProvider = Provider<List<int>>((ref) {
   final current = DateTime.now().year;
-  return [for (var y = current; y >= current - 3; y--) y];
+  // L'année en cours reste proposée même si l'horloge de l'appareil précède le
+  // premier exercice : mieux vaut une année que zéro.
+  final first = current < financeFirstYear ? current : financeFirstYear;
+  return [for (var y = current; y >= first; y--) y];
 });
 
 /// Fenêtre effectivement interrogée : la période choisie, décalée du nombre de
@@ -371,6 +391,31 @@ final allPayoutsProvider = FutureProvider<List<PayoutRequest>>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
   return ref.watch(financeRepositoryProvider).fetchPayouts(salonId: salonId);
+});
+
+/// Montant déjà versé à chaque coiffeur **sur la période affichée**.
+///
+/// Calé sur `financeRangeProvider`, comme le chiffre d'affaires et la
+/// commission de la même carte : les trois colonnes doivent parler du même
+/// mois. Un total « versé » depuis toujours, à côté d'une commission d'août,
+/// laisserait croire à un solde alors qu'il compare deux périodes.
+///
+/// Seules les demandes réglées comptent : une demande en attente n'a rien mis
+/// dans la poche du coiffeur.
+final paidByStylistProvider = Provider<Map<String, int>>((ref) {
+  final payouts = ref.watch(allPayoutsProvider).valueOrNull ?? const [];
+  final range = ref.watch(financeRangeProvider);
+
+  final totals = <String, int>{};
+  for (final payout in payouts) {
+    final paidAt = payout.paidAt;
+    if (!payout.isSettled || paidAt == null) continue;
+    if (paidAt.isBefore(range.from) || !paidAt.isBefore(range.to)) continue;
+
+    totals[payout.profileId] =
+        (totals[payout.profileId] ?? 0) + payout.amountFcfa;
+  }
+  return totals;
 });
 
 /// Demandes et versements d'un membre spécifique (vue gérant).
@@ -724,3 +769,42 @@ final exportSummaryProvider = FutureProvider<({int revenue, int expenses})>((
     expenses: expenses.fold<int>(0, (sum, e) => sum + e.amountFcfa),
   );
 });
+
+/// Tout ce qui se calcule à partir des transactions.
+///
+/// Ces providers ne sont pas `autoDispose` : une fois lus, ils gardent leur
+/// valeur jusqu'à invalidation explicite. Après une vente, l'encaissement
+/// invalidait bien le journal de caisse, mais ni les commissions, ni le
+/// chiffre d'affaires, ni les rapports — qui restaient donc figés sur leur
+/// dernier calcul. Redémarrer l'application était le seul moyen de les
+/// rafraîchir.
+///
+/// Une liste plutôt qu'une suite d'appels : elle est inspectable depuis les
+/// tests, et le prochain provider dérivé des ventes n'a qu'un endroit où
+/// s'ajouter.
+final List<ProviderOrFamily> salesDerivedProviders = [
+  // Finance : synthèse, commissions, rapports, graphes.
+  financeSummaryProvider,
+  commissionsProvider,
+  monthCommissionsProvider,
+  myMonthCommissionProvider,
+  servicePerformanceProvider,
+  financeBucketsProvider,
+  exportSummaryProvider,
+
+  // Accueil : les barres de la semaine et leur comparaison.
+  twoWeekTransactionsProvider,
+
+  // Fiche du personnel : le chiffre du mois d'un membre.
+  staffStatsProvider,
+];
+
+/// Force le recalcul de tout ce qui dépend des ventes.
+///
+/// Appelée après un encaissement, un remboursement, une mise en attente ou une
+/// annulation : ces quatre gestes déplacent exactement les mêmes chiffres.
+void invalidateSalesDerived(Ref ref) {
+  for (final provider in salesDerivedProviders) {
+    ref.invalidate(provider);
+  }
+}

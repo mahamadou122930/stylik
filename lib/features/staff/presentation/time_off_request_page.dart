@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -110,7 +111,9 @@ class _TimeOffRequestPageState extends ConsumerState<TimeOffRequestPage> {
 
     setState(() => _sending = true);
     try {
-      await ref.read(staffRepositoryProvider).requestTimeOff(
+      await ref
+          .read(staffRepositoryProvider)
+          .requestTimeOff(
             TimeOff(
               id: '',
               salonId: profile.salonId,
@@ -138,9 +141,9 @@ class _TimeOffRequestPageState extends ConsumerState<TimeOffRequestPage> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _sending = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Envoi impossible : $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Envoi impossible : $error')));
     }
   }
 
@@ -154,14 +157,16 @@ class _TimeOffRequestPageState extends ConsumerState<TimeOffRequestPage> {
       title: 'Demander un congé',
       footer: AppButton(
         label: 'Envoyer la demande',
-        icon: Icons.send_rounded,
+        icon: LucideIcons.send,
         isLoading: _sending,
         onPressed: profile == null ? null : _submit,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (profile != null && profile.role != UserRole.coiffeur && team.isNotEmpty) ...[
+          if (profile != null &&
+              profile.role != UserRole.coiffeur &&
+              team.isNotEmpty) ...[
             AppSelectField(
               label: 'Coiffeur / Employé concerné',
               value: targetProfile?.fullName ?? 'Choisir un employé',
@@ -249,7 +254,7 @@ class _TimeOffRequestPageState extends ConsumerState<TimeOffRequestPage> {
                 label: 'Solde congés',
                 strong: true,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                leading: const AppIconTile(icon: Icons.beach_access_outlined),
+                leading: const AppIconTile(icon: LucideIcons.palmtree),
                 trailing: Text(
                   '${profile?.leaveBalanceDays ?? 0} j restants',
                   style: AppTypography.sora(
@@ -296,9 +301,9 @@ class _TypeChoice extends StatelessWidget {
   final VoidCallback onTap;
 
   static const Map<TimeOffType, ({String label, IconData icon})> _display = {
-    TimeOffType.vacation: (label: 'Congé', icon: Icons.beach_access_outlined),
-    TimeOffType.sickLeave: (label: 'Maladie', icon: Icons.info_outline_rounded),
-    TimeOffType.unpaid: (label: 'Absence', icon: Icons.schedule_rounded),
+    TimeOffType.vacation: (label: 'Congé', icon: LucideIcons.palmtree),
+    TimeOffType.sickLeave: (label: 'Maladie', icon: LucideIcons.info),
+    TimeOffType.unpaid: (label: 'Absence', icon: LucideIcons.clock),
   };
 
   @override

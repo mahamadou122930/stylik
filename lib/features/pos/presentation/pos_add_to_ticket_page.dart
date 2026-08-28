@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -101,10 +102,10 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
           AppInput(
             controller: _searchController,
             hint: 'Rechercher une prestation...',
-            prefixIcon: Icons.search_rounded,
+            prefixIcon: LucideIcons.search,
             suffix: _searchQuery.isNotEmpty
                 ? IconButton(
-                    icon: const Icon(Icons.clear_rounded, size: 18),
+                    icon: const Icon(LucideIcons.x, size: 18),
                     onPressed: () => _searchController.clear(),
                   )
                 : null,
@@ -271,7 +272,7 @@ class _ServiceRow extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: const Icon(
-                Icons.add_rounded,
+                LucideIcons.plus,
                 color: Colors.white,
                 size: 20,
               ),

@@ -19,20 +19,26 @@ DateTime startOfWeek(DateTime day) {
 ///
 /// Une seule requête sert les trois lectures de l'accueil : les barres de la
 /// semaine, son total, et la comparaison au même jour la semaine passée.
-final twoWeekTransactionsProvider =
-    FutureProvider<List<SalonTransaction>>((ref) async {
+final twoWeekTransactionsProvider = FutureProvider<List<SalonTransaction>>((
+  ref,
+) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
 
   final thisWeek = startOfWeek(DateTime.now());
-  return ref.watch(posRepositoryProvider).fetchRange(
+  return ref
+      .watch(posRepositoryProvider)
+      .fetchRange(
         salonId: salonId,
         from: thisWeek.subtract(const Duration(days: 7)),
         to: thisWeek.add(const Duration(days: 7)),
       );
 });
 
-/// Encaissement d'un jour donné, remboursements déduits.
+/// Encaissement d'un jour donné.
+///
+/// Les tickets remboursés, annulés et mis en attente comptent pour zéro : la
+/// barre du jour doit montrer ce qui est resté en caisse.
 int _totalOn(List<SalonTransaction> transactions, DateTime day) {
   return transactions
       .where((transaction) {
@@ -42,25 +48,25 @@ int _totalOn(List<SalonTransaction> transactions, DateTime day) {
             at.month == day.month &&
             at.day == day.day;
       })
-      .fold(0, (sum, transaction) => sum + transaction.signedAmountFcfa);
+      .fold(0, (sum, transaction) => sum + transaction.cashImpactFcfa);
 }
 
 /// Les sept jours de la semaine en cours, du lundi au dimanche.
-final weekRevenueProvider = Provider<List<({DateTime day, int totalFcfa})>>(
-  (ref) {
-    final transactions =
-        ref.watch(twoWeekTransactionsProvider).valueOrNull ?? const [];
-    final monday = startOfWeek(DateTime.now());
+final weekRevenueProvider = Provider<List<({DateTime day, int totalFcfa})>>((
+  ref,
+) {
+  final transactions =
+      ref.watch(twoWeekTransactionsProvider).valueOrNull ?? const [];
+  final monday = startOfWeek(DateTime.now());
 
-    return [
-      for (var i = 0; i < 7; i++)
-        (
-          day: monday.add(Duration(days: i)),
-          totalFcfa: _totalOn(transactions, monday.add(Duration(days: i))),
-        ),
-    ];
-  },
-);
+  return [
+    for (var i = 0; i < 7; i++)
+      (
+        day: monday.add(Duration(days: i)),
+        totalFcfa: _totalOn(transactions, monday.add(Duration(days: i))),
+      ),
+  ];
+});
 
 /// Variation du CA du jour par rapport au même jour de la semaine passée.
 ///
@@ -70,7 +76,10 @@ final revenueTrendProvider = Provider<double?>((ref) {
   final transactions =
       ref.watch(twoWeekTransactionsProvider).valueOrNull ?? const [];
   final today = DateTime.now();
-  final previous = _totalOn(transactions, today.subtract(const Duration(days: 7)));
+  final previous = _totalOn(
+    transactions,
+    today.subtract(const Duration(days: 7)),
+  );
   if (previous <= 0) return null;
 
   return (ref.watch(todayCashTotalProvider) - previous) / previous;
@@ -78,13 +87,16 @@ final revenueTrendProvider = Provider<double?>((ref) {
 
 /// Panier moyen du jour : encaissement divisé par le nombre de ventes.
 ///
-/// Les remboursements sont exclus du diviseur — ce ne sont pas des ventes —
-/// mais restent déduits du montant, sinon le panier moyen serait surévalué
-/// un jour de remboursement.
+/// Numérateur et dénominateur comptent la même chose — les tickets payés.
+/// Un ticket remboursé, annulé ou en attente n'entre ni dans l'un ni dans
+/// l'autre : le compter au dénominateur seul écraserait la moyenne des ventes
+/// réelles.
 final averageTicketProvider = Provider<({int valueFcfa, int saleCount})>((ref) {
   final transactions =
       ref.watch(todayTransactionsProvider).valueOrNull ?? const [];
-  final sales = transactions.where((t) => !t.isRefund).length;
+  final sales = transactions
+      .where((t) => t.status == TransactionStatus.paid)
+      .length;
   if (sales == 0) return (valueFcfa: 0, saleCount: 0);
 
   return (
@@ -99,8 +111,7 @@ final averageTicketProvider = Provider<({int valueFcfa, int saleCount})>((ref) {
 /// deux coiffeurs sur une journée de 10 h offrent 20 h de rendez-vous. Les
 /// créneaux libres sont comptés par tranches de 30 minutes, l'unité de
 /// réservation la plus courte du catalogue.
-final occupancyProvider =
-    Provider<({double? rate, int freeSlots})>((ref) {
+final occupancyProvider = Provider<({double? rate, int freeSlots})>((ref) {
   final salon = ref.watch(currentSalonProvider).valueOrNull;
   final stylists = ref.watch(stylistsProvider).valueOrNull ?? const [];
   final appointments =
@@ -115,10 +126,7 @@ final occupancyProvider =
       .fold<int>(0, (sum, a) => sum + a.duration.inMinutes);
 
   final free = (capacity - booked).clamp(0, capacity);
-  return (
-    rate: (booked / capacity).clamp(0.0, 1.0),
-    freeSlots: free ~/ 30,
-  );
+  return (rate: (booked / capacity).clamp(0.0, 1.0), freeSlots: free ~/ 30);
 });
 
 /// Prestations terminées aujourd'hui dont le paiement n'a pas été encaissé.
@@ -139,9 +147,11 @@ final unpaidCompletedProvider = Provider<List<Appointment>>((ref) {
   };
 
   return appointments
-      .where((appointment) =>
-          appointment.status == AppointmentStatus.completed &&
-          !settled.contains(appointment.id))
+      .where(
+        (appointment) =>
+            appointment.status == AppointmentStatus.completed &&
+            !settled.contains(appointment.id),
+      )
       .toList();
 });
 
@@ -151,11 +161,14 @@ final upcomingTodayProvider = Provider<List<Appointment>>((ref) {
   final appointments =
       ref.watch(dayAppointmentsProvider).valueOrNull ?? const <Appointment>[];
 
-  final upcoming = appointments
-      .where((appointment) =>
-          appointment.status.isActive && appointment.endTime.isAfter(now))
-      .toList()
-    ..sort((a, b) => a.startTime.compareTo(b.startTime));
+  final upcoming =
+      appointments
+          .where(
+            (appointment) =>
+                appointment.status.isActive && appointment.endTime.isAfter(now),
+          )
+          .toList()
+        ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
   return upcoming;
 });

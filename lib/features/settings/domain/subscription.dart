@@ -44,12 +44,12 @@ class Subscription {
   bool get isActive => status == 'active' || status == 'trialing';
 
   String get statusLabel => switch (status) {
-        'active' => 'Actif',
-        'trialing' => 'Essai',
-        'past_due' => 'Impayé',
-        'canceled' => 'Résilié',
-        _ => status,
-      };
+    'active' => 'Actif',
+    'trialing' => 'Essai',
+    'past_due' => 'Impayé',
+    'canceled' => 'Résilié',
+    _ => status,
+  };
 
   String get nextChargeLabel => nextChargeAt == null
       ? 'Aucun prélèvement planifié'
@@ -63,20 +63,19 @@ class Subscription {
   int get chargeAmountFcfa => billingCycle.chargeAmount(pricePerMonthFcfa);
 
   factory Subscription.fromMap(Map<String, dynamic> map) => Subscription(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        planCode: map['plan_code'] as String?,
-        billingCycle: BillingCycle.fromValue(map['billing_cycle'] as String?),
-        planName: (map['plan_name'] as String?) ?? 'Formule',
-        pricePerMonthFcfa:
-            (map['price_per_month_fcfa'] as num?)?.toInt() ?? 0,
-        status: (map['status'] as String?) ?? 'active',
-        features:
-            (map['features'] as List?)?.map((e) => e.toString()).toList() ??
-                const [],
-        paymentLabel: map['payment_label'] as String?,
-        nextChargeAt: map['next_charge_at'] == null
-            ? null
-            : DateTime.parse(map['next_charge_at'] as String).toLocal(),
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    planCode: map['plan_code'] as String?,
+    billingCycle: BillingCycle.fromValue(map['billing_cycle'] as String?),
+    planName: (map['plan_name'] as String?) ?? 'Formule',
+    pricePerMonthFcfa: (map['price_per_month_fcfa'] as num?)?.toInt() ?? 0,
+    status: (map['status'] as String?) ?? 'active',
+    features:
+        (map['features'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
+    paymentLabel: map['payment_label'] as String?,
+    nextChargeAt: map['next_charge_at'] == null
+        ? null
+        : DateTime.parse(map['next_charge_at'] as String).toLocal(),
+  );
 }

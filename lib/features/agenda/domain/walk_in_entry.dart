@@ -44,23 +44,23 @@ class WalkInEntry {
   Duration get waitingTime => DateTime.now().difference(arrivalTime);
 
   factory WalkInEntry.fromMap(Map<String, dynamic> map) => WalkInEntry(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        clientName: (map['client_name'] as String?) ?? 'Client',
-        serviceRequested: (map['service_requested'] as String?) ?? '',
-        arrivalTime: DateTime.parse(map['arrival_time'] as String).toLocal(),
-        status: WalkInStatus.fromValue(map['status'] as String?),
-        assignedStylistId: map['assigned_stylist_id'] as String?,
-        phone: map['phone'] as String?,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    clientName: (map['client_name'] as String?) ?? 'Client',
+    serviceRequested: (map['service_requested'] as String?) ?? '',
+    arrivalTime: DateTime.parse(map['arrival_time'] as String).toLocal(),
+    status: WalkInStatus.fromValue(map['status'] as String?),
+    assignedStylistId: map['assigned_stylist_id'] as String?,
+    phone: map['phone'] as String?,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'client_name': clientName,
-        'service_requested': serviceRequested,
-        'arrival_time': arrivalTime.toUtc().toIso8601String(),
-        'status': status.value,
-        'assigned_stylist_id': assignedStylistId,
-        'phone': phone,
-      };
+    'salon_id': salonId,
+    'client_name': clientName,
+    'service_requested': serviceRequested,
+    'arrival_time': arrivalTime.toUtc().toIso8601String(),
+    'status': status.value,
+    'assigned_stylist_id': assignedStylistId,
+    'phone': phone,
+  };
 }

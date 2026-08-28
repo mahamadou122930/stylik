@@ -31,27 +31,26 @@ class Salon {
   final String? inviteCode;
 
   factory Salon.fromMap(Map<String, dynamic> map) => Salon(
-        id: map['id'] as String,
-        name: (map['name'] as String?) ?? '',
-        phone: (map['phone'] as String?) ?? '',
-        address: (map['address'] as String?) ?? '',
-        email: map['email'] as String?,
-        logoUrl: map['logo_url'] as String?,
-        openingHours:
-            (map['opening_hours'] as Map<String, dynamic>?) ?? const {},
-        currency: (map['currency'] as String?) ?? 'FCFA',
-        inviteCode: map['invite_code'] as String?,
-      );
+    id: map['id'] as String,
+    name: (map['name'] as String?) ?? '',
+    phone: (map['phone'] as String?) ?? '',
+    address: (map['address'] as String?) ?? '',
+    email: map['email'] as String?,
+    logoUrl: map['logo_url'] as String?,
+    openingHours: (map['opening_hours'] as Map<String, dynamic>?) ?? const {},
+    currency: (map['currency'] as String?) ?? 'FCFA',
+    inviteCode: map['invite_code'] as String?,
+  );
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'phone': phone,
-        'address': address,
-        'email': email,
-        'logo_url': logoUrl,
-        'opening_hours': openingHours,
-        'currency': currency,
-      };
+    'name': name,
+    'phone': phone,
+    'address': address,
+    'email': email,
+    'logo_url': logoUrl,
+    'opening_hours': openingHours,
+    'currency': currency,
+  };
 
   Salon copyWith({
     String? name,
@@ -60,18 +59,17 @@ class Salon {
     String? email,
     String? logoUrl,
     Map<String, dynamic>? openingHours,
-  }) =>
-      Salon(
-        id: id,
-        name: name ?? this.name,
-        phone: phone ?? this.phone,
-        address: address ?? this.address,
-        email: email ?? this.email,
-        logoUrl: logoUrl ?? this.logoUrl,
-        openingHours: openingHours ?? this.openingHours,
-        currency: currency,
-        inviteCode: inviteCode,
-      );
+  }) => Salon(
+    id: id,
+    name: name ?? this.name,
+    phone: phone ?? this.phone,
+    address: address ?? this.address,
+    email: email ?? this.email,
+    logoUrl: logoUrl ?? this.logoUrl,
+    openingHours: openingHours ?? this.openingHours,
+    currency: currency,
+    inviteCode: inviteCode,
+  );
 }
 
 /// Créneau d'ouverture affiché dans la fiche salon.

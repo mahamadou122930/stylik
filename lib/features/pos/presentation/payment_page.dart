@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -250,7 +251,7 @@ class _RadioDot extends StatelessWidget {
             : Border.all(color: AppColors.borderStrong, width: 2),
       ),
       child: selected
-          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+          ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
           : null,
     );
   }

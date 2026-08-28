@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -45,9 +46,10 @@ class PlanSelectionPage extends ConsumerWidget {
         data: (items) => items.isEmpty
             ? const AppEmptyState(
                 title: 'Aucune formule',
-                message: 'Le catalogue des abonnements est vide. '
+                message:
+                    'Le catalogue des abonnements est vide. '
                     'Contactez le support.',
-                icon: Icons.workspace_premium_outlined,
+                icon: LucideIcons.award,
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,10 +59,9 @@ class PlanSelectionPage extends ConsumerWidget {
                       plan: plan,
                       cycle: cycle,
                       current: current,
-                      onTap: () => Navigator.of(context).pushNamed(
-                        PlanCheckoutPage.routeName,
-                        arguments: plan,
-                      ),
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(PlanCheckoutPage.routeName, arguments: plan),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -103,10 +104,10 @@ class _PlanCard extends StatelessWidget {
       (current!.planCode == plan.code || current!.planName == plan.name);
 
   IconData get _icon => switch (plan.code) {
-        'solo' => Icons.person_outline_rounded,
-        'multi' => Icons.apartment_rounded,
-        _ => Icons.star_outline_rounded,
-      };
+    'solo' => LucideIcons.user,
+    'multi' => LucideIcons.building2,
+    _ => LucideIcons.star,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -123,8 +124,8 @@ class _PlanCard extends StatelessWidget {
             color: onDark
                 ? AppColors.accent
                 : (plan.code == 'multi'
-                    ? AppColors.tintViolet
-                    : AppColors.surfaceMuted),
+                      ? AppColors.tintViolet
+                      : AppColors.surfaceMuted),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
@@ -133,8 +134,8 @@ class _PlanCard extends StatelessWidget {
             color: onDark
                 ? Colors.white
                 : (plan.code == 'multi'
-                    ? AppColors.violet
-                    : AppColors.textBody),
+                      ? AppColors.violet
+                      : AppColors.textBody),
           ),
         ),
         const SizedBox(width: 11),
@@ -203,8 +204,8 @@ class _PlanCard extends StatelessWidget {
     final summary = Text(
       cycle == BillingCycle.annual
           ? '${plan.summary ?? ''}\nFacturé '
-              '${Formatters.fcfa(cycle.chargeAmount(plan.pricePerMonthFcfa))} '
-              'par an'
+                '${Formatters.fcfa(cycle.chargeAmount(plan.pricePerMonthFcfa))} '
+                'par an'
           : (plan.summary ?? ''),
       style: AppTypography.manrope(
         12,

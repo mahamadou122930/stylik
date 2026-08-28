@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
 import '../../clients/domain/client.dart';
+import '../../settings/presentation/settings_providers.dart';
 import '../domain/loyalty_campaign.dart';
 import 'loyalty_providers.dart';
 import 'promotions_page.dart';
@@ -26,7 +28,7 @@ class LoyaltyPage extends ConsumerWidget {
       title: 'Fidélité',
       showBack: false,
       action: AppIconButton(
-        icon: Icons.campaign_rounded,
+        icon: LucideIcons.megaphone,
         filled: true,
         onTap: () => Navigator.of(context).pushNamed(PromotionsPage.routeName),
       ),
@@ -46,9 +48,10 @@ class LoyaltyPage extends ConsumerWidget {
                 ? const AppEmptyState(
                     compact: true,
                     title: 'Aucune récompense',
-                    message: 'Créez les récompenses échangeables par vos '
+                    message:
+                        'Créez les récompenses échangeables par vos '
                         'clientes contre leurs points.',
-                    icon: Icons.card_giftcard_rounded,
+                    icon: LucideIcons.gift,
                   )
                 : Column(
                     children: [
@@ -82,7 +85,7 @@ class LoyaltyPage extends ConsumerWidget {
                 strong: true,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 leading: const AppIconTile(
-                  icon: Icons.local_offer_rounded,
+                  icon: LucideIcons.tag,
                   color: AppColors.violet,
                   background: AppColors.tintViolet,
                 ),
@@ -95,7 +98,7 @@ class LoyaltyPage extends ConsumerWidget {
                 subtitle: 'SMS & WhatsApp',
                 strong: true,
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                leading: const AppIconTile(icon: Icons.sms_rounded),
+                leading: const AppIconTile(icon: LucideIcons.messageSquare),
                 trailing: const AppChevron(),
                 onTap: () =>
                     Navigator.of(context).pushNamed(RemindersPage.routeName),
@@ -114,15 +117,16 @@ class LoyaltyPage extends ConsumerWidget {
                 ? const AppEmptyState(
                     compact: true,
                     title: 'Aucun client fidèle',
-                    icon: Icons.emoji_events_outlined,
+                    icon: LucideIcons.trophy,
                   )
                 : AppListCard(
                     children: [
                       for (final client in clients.take(6))
                         AppListRow(
                           label: client.fullName,
-                          subtitle:
-                              LoyaltyTier.forPoints(client.loyaltyPoints).label,
+                          subtitle: LoyaltyTier.forPoints(
+                            client.loyaltyPoints,
+                          ).label,
                           strong: true,
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           leading: AppAvatar(
@@ -134,9 +138,9 @@ class LoyaltyPage extends ConsumerWidget {
                             color: AppColors.primary,
                             background: AppColors.tintGreen,
                           ),
-                          onTap: () => ref
-                              .read(loyaltyClientProvider.notifier)
-                              .state = client,
+                          onTap: () =>
+                              ref.read(loyaltyClientProvider.notifier).state =
+                                  client,
                         ),
                     ],
                   ),
@@ -148,19 +152,23 @@ class LoyaltyPage extends ConsumerWidget {
 }
 
 /// Carte de fidélité sombre en tête d'écran.
-class _LoyaltyCard extends StatelessWidget {
+class _LoyaltyCard extends ConsumerWidget {
   const _LoyaltyCard({required this.client});
 
   final Client client;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // La carte appartient au salon, pas à l'application : c'est son nom qui
+    // doit y figurer. « Carte Stylik » ferait porter la fidélité par l'éditeur
+    // du logiciel plutôt que par le commerce que la cliente fréquente.
+    final salonName = ref.watch(currentSalonProvider).valueOrNull?.name;
     final tier = LoyaltyTier.forPoints(client.loyaltyPoints);
     final next = tier.next;
     final progress = next == null
         ? 1.0
         : (client.loyaltyPoints - tier.threshold) /
-            (next.threshold - tier.threshold);
+              (next.threshold - tier.threshold);
 
     return AppGradientCard(
       gradient: AppColors.darkGradient,
@@ -186,7 +194,9 @@ class _LoyaltyCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'Carte L\'Atelier',
+                      salonName == null || salonName.trim().isEmpty
+                          ? 'Carte de fidélité'
+                          : 'Carte $salonName',
                       style: AppTypography.sora(
                         15,
                         FontWeight.w800,
@@ -254,10 +264,7 @@ class _LoyaltyCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          AppProgressBar(
-            value: progress,
-            background: Colors.white24,
-          ),
+          AppProgressBar(value: progress, background: Colors.white24),
         ],
       ),
     );
@@ -287,10 +294,11 @@ class _RewardTile extends StatelessWidget {
         child: Row(
           children: [
             AppIconTile(
-              icon: unlocked ? Icons.redeem_rounded : Icons.lock_outline_rounded,
+              icon: unlocked ? LucideIcons.gift : LucideIcons.lock,
               color: unlocked ? AppColors.primary : AppColors.textFaint,
-              background:
-                  unlocked ? AppColors.tintGreen : AppColors.surfaceMuted,
+              background: unlocked
+                  ? AppColors.tintGreen
+                  : AppColors.surfaceMuted,
             ),
             const SizedBox(width: 12),
             Expanded(

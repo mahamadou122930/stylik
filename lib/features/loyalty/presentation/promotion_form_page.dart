@@ -149,7 +149,9 @@ class _PromotionFormPageState extends ConsumerState<PromotionFormPage> {
                           },
                           selectedColor: AppColors.primary,
                           labelStyle: TextStyle(
-                            color: _isPercentage ? Colors.white : AppColors.textPrimary,
+                            color: _isPercentage
+                                ? Colors.white
+                                : AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -161,7 +163,9 @@ class _PromotionFormPageState extends ConsumerState<PromotionFormPage> {
                           },
                           selectedColor: AppColors.primary,
                           labelStyle: TextStyle(
-                            color: !_isPercentage ? Colors.white : AppColors.textPrimary,
+                            color: !_isPercentage
+                                ? Colors.white
+                                : AppColors.textPrimary,
                           ),
                         ),
                       ],

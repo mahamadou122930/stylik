@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -64,7 +65,7 @@ class ExportPage extends ConsumerWidget {
           Expanded(
             child: AppButton.outline(
               label: 'Télécharger',
-              icon: Icons.download_rounded,
+              icon: LucideIcons.download,
               onPressed: () => _download(context, ref),
             ),
           ),
@@ -72,7 +73,7 @@ class ExportPage extends ConsumerWidget {
           Expanded(
             child: AppButton(
               label: 'Au comptable',
-              icon: Icons.mail_outline_rounded,
+              icon: LucideIcons.mail,
               onPressed: () => _sendToAccountant(context, ref),
             ),
           ),
@@ -196,7 +197,7 @@ class _FormatOption extends StatelessWidget {
               borderRadius: BorderRadius.circular(11),
             ),
             child: Icon(
-              isPdf ? Icons.picture_as_pdf_rounded : Icons.table_chart_outlined,
+              isPdf ? LucideIcons.fileText : LucideIcons.table,
               size: 19,
               color: isPdf ? AppColors.dangerDeep : AppColors.primary,
             ),
@@ -226,7 +227,7 @@ class _FormatOption extends StatelessWidget {
                   : Border.all(color: AppColors.borderStrong, width: 2),
             ),
             child: selected
-                ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                ? const Icon(LucideIcons.check, size: 13, color: Colors.white)
                 : null,
           ),
         ],

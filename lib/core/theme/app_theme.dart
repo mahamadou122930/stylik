@@ -5,7 +5,7 @@ import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 import '../constants/app_typography.dart';
 
-/// ThemeData global de L'Atelier (Material 3), aligné sur la maquette.
+/// ThemeData global de Stylik (Material 3), aligné sur la maquette.
 abstract final class AppTheme {
   static ThemeData get light {
     const colorScheme = ColorScheme(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -348,7 +349,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.shopping_bag_outlined,
+                                    LucideIcons.shoppingBag,
                                     size: 18,
                                     color: _usage == ProductUsage.resale
                                         ? AppColors.primary
@@ -400,7 +401,7 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.science_outlined,
+                                    LucideIcons.flaskConical,
                                     size: 18,
                                     color: _usage == ProductUsage.consumable
                                         ? AppColors.primary

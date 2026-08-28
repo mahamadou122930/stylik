@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
@@ -90,7 +91,7 @@ class ImageSlot extends StatelessWidget {
                       top: AppSizes.sm,
                       right: AppSizes.sm,
                       child: _RoundIconButton(
-                        icon: Icons.close_rounded,
+                        icon: LucideIcons.x,
                         onTap: onRemove!,
                       ),
                     ),
@@ -102,47 +103,46 @@ class ImageSlot extends StatelessWidget {
       ],
     );
   }
-
 }
 
 /// Feuille « appareil photo / galerie », partagée par tous les emplacements
 /// image. Renvoie `null` si l'utilisateur annule.
 Future<File?> pickImageFile(BuildContext context) async {
-    final source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: Text(
-                'Prendre une photo',
-                style: AppTypography.manrope(14, FontWeight.w600),
-              ),
-              onTap: () => Navigator.pop(context, ImageSource.camera),
+  final source = await showModalBottomSheet<ImageSource>(
+    context: context,
+    builder: (context) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(LucideIcons.camera),
+            title: Text(
+              'Prendre une photo',
+              style: AppTypography.manrope(14, FontWeight.w600),
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: Text(
-                'Choisir dans la galerie',
-                style: AppTypography.manrope(14, FontWeight.w600),
-              ),
-              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            onTap: () => Navigator.pop(context, ImageSource.camera),
+          ),
+          ListTile(
+            leading: const Icon(LucideIcons.images),
+            title: Text(
+              'Choisir dans la galerie',
+              style: AppTypography.manrope(14, FontWeight.w600),
             ),
-            const SizedBox(height: 8),
-          ],
-        ),
+            onTap: () => Navigator.pop(context, ImageSource.gallery),
+          ),
+          const SizedBox(height: 8),
+        ],
       ),
-    );
-    if (source == null) return null;
+    ),
+  );
+  if (source == null) return null;
 
-    final picked = await ImagePicker().pickImage(
-      source: source,
-      maxWidth: 1600,
-      imageQuality: 85,
-    );
-    return picked == null ? null : File(picked.path);
+  final picked = await ImagePicker().pickImage(
+    source: source,
+    maxWidth: 1600,
+    imageQuality: 85,
+  );
+  return picked == null ? null : File(picked.path);
 }
 
 class _Placeholder extends StatelessWidget {
@@ -159,7 +159,7 @@ class _Placeholder extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(
-            Icons.add_a_photo_outlined,
+            LucideIcons.imagePlus,
             color: AppColors.textFaint,
             size: 22,
           ),
@@ -237,8 +237,8 @@ class LogoSlot extends StatelessWidget {
             },
             child: hasImage
                 ? (file != null
-                    ? Image.file(file!, fit: BoxFit.cover)
-                    : Image.network(imageUrl!, fit: BoxFit.cover))
+                      ? Image.file(file!, fit: BoxFit.cover)
+                      : Image.network(imageUrl!, fit: BoxFit.cover))
                 : CustomPaint(
                     painter: DashedBorderPainter(
                       radius: 26,
@@ -249,7 +249,7 @@ class LogoSlot extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Icon(
-                          Icons.image_outlined,
+                          LucideIcons.image,
                           size: 24,
                           color: AppColors.primary,
                         ),

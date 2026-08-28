@@ -19,11 +19,14 @@ class SyncEngine extends StateNotifier<bool> {
   StreamSubscription<bool>? _connectivitySub;
 
   void _initListener() {
-    _connectivitySub = _ref.read(connectivityServiceProvider).onConnectivityChanged.listen((isOnline) {
-      if (isOnline) {
-        syncPendingItems();
-      }
-    });
+    _connectivitySub = _ref
+        .read(connectivityServiceProvider)
+        .onConnectivityChanged
+        .listen((isOnline) {
+          if (isOnline) {
+            syncPendingItems();
+          }
+        });
   }
 
   /// Déclenche la synchronisation sécurisée de toutes les mutations en attente vers Supabase.
@@ -41,7 +44,9 @@ class SyncEngine extends StateNotifier<bool> {
       for (final item in items) {
         // Si l'élément a échoué trop de fois (ex: erreur de contrainte permanente), on le retire pour débloquer la file.
         if (item.retryCount >= 5) {
-          debugPrint('SyncItem ${item.id} (${item.tableName}) supprimé après 5 échecs consécutifs.');
+          debugPrint(
+            'SyncItem ${item.id} (${item.tableName}) supprimé après 5 échecs consécutifs.',
+          );
           await _dbService.removeSyncItem(item.id);
           continue;
         }
@@ -54,7 +59,9 @@ class SyncEngine extends StateNotifier<bool> {
               } on PostgrestException catch (pe) {
                 // Code 23505 : Violations de clé unique (l'enregistrement existe déjà)
                 if (pe.code == '23505') {
-                  debugPrint('Élément ${item.recordId} déjà existant dans Supabase (${item.tableName}). Tentative de mise à jour.');
+                  debugPrint(
+                    'Élément ${item.recordId} déjà existant dans Supabase (${item.tableName}). Tentative de mise à jour.',
+                  );
                   await _supabaseClient
                       .from(item.tableName)
                       .update(item.payload)
@@ -83,10 +90,14 @@ class SyncEngine extends StateNotifier<bool> {
           // Retirer l'élément de la file d'attente une fois synchronisé avec succès
           await _dbService.removeSyncItem(item.id);
         } on PostgrestException catch (e) {
-          debugPrint('Erreur Postgres lors de la synchronisation de l\'item ${item.id} (${item.tableName}): ${e.message} [Code ${e.code}]');
+          debugPrint(
+            'Erreur Postgres lors de la synchronisation de l\'item ${item.id} (${item.tableName}): ${e.message} [Code ${e.code}]',
+          );
           await _dbService.incrementRetry(item.id);
         } catch (e) {
-          debugPrint('Erreur réseau / générale lors de la synchronisation de l\'item ${item.id}: $e');
+          debugPrint(
+            'Erreur réseau / générale lors de la synchronisation de l\'item ${item.id}: $e',
+          );
           await _dbService.incrementRetry(item.id);
           // Arrêter la boucle pour retenter ultérieurement lors de la prochaine reconnexion
           break;

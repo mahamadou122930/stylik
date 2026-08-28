@@ -318,13 +318,20 @@ class AppSplitMetrics extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    Text(
-                      entries[i].value,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.sora(
-                        15,
-                        FontWeight.w800,
-                        color: entries[i].color ?? AppColors.textPrimary,
+                    // À trois colonnes sur un téléphone, chaque case fait une
+                    // centaine de pixels : « 2 920 000 F » n'y tient pas en
+                    // taille pleine. Il se réduit plutôt que de déborder.
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        entries[i].value,
+                        maxLines: 1,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.sora(
+                          15,
+                          FontWeight.w800,
+                          color: entries[i].color ?? AppColors.textPrimary,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
@@ -43,11 +44,7 @@ class AppCard extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius,
-        child: content,
-      ),
+      child: InkWell(onTap: onTap, borderRadius: borderRadius, child: content),
     );
   }
 }
@@ -129,10 +126,11 @@ class AppListRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: (strong
-                          ? AppTypography.rowTitleStrong
-                          : AppTypography.rowTitle)
-                      .copyWith(color: labelColor),
+                  style:
+                      (strong
+                              ? AppTypography.rowTitleStrong
+                              : AppTypography.rowTitle)
+                          .copyWith(color: labelColor),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 1),
@@ -243,7 +241,8 @@ class AppStatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = valueColor ?? (tinted ? AppColors.primary : AppColors.textPrimary);
+    final accentColor =
+        valueColor ?? (tinted ? AppColors.primary : AppColors.textPrimary);
 
     return AppCard(
       onTap: onTap,
@@ -285,7 +284,7 @@ class AppCallout extends StatelessWidget {
   const AppCallout({
     super.key,
     required this.message,
-    this.icon = Icons.info_outline_rounded,
+    this.icon = LucideIcons.info,
     this.color = AppColors.primary,
     this.background = AppColors.tintGreenSoft,
     this.borderColor = AppColors.tintGreenBorder,

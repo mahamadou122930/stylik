@@ -35,11 +35,7 @@ class AuthRepository {
     return _client.auth.signUp(
       email: email,
       password: password,
-      data: {
-        'full_name': fullName,
-        'role': role.value,
-        'salon_id': ?salonId,
-      },
+      data: {'full_name': fullName, 'role': role.value, 'salon_id': ?salonId},
     );
   }
 
@@ -80,10 +76,7 @@ class AuthRepository {
     return _client.auth.signUp(
       email: email,
       password: password,
-      data: {
-        'full_name': fullName,
-        'join_code': code.trim().toUpperCase(),
-      },
+      data: {'full_name': fullName, 'join_code': code.trim().toUpperCase()},
     );
   }
 
@@ -129,10 +122,7 @@ class AuthRepository {
   Future<bool> verifyPin({required String profileId, required String pin}) {
     return _client.rpc<bool>(
       'verify_pin',
-      params: {
-        'p_profile_id': profileId,
-        'p_pin': pin,
-      },
+      params: {'p_profile_id': profileId, 'p_pin': pin},
     );
   }
 }

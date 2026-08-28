@@ -48,7 +48,7 @@ class WelcomePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 26),
                         Text(
-                          'L\'Atelier',
+                          'Stylik',
                           textAlign: TextAlign.center,
                           style: AppTypography.sora(
                             38,
@@ -87,15 +87,17 @@ class WelcomePage extends StatelessWidget {
                       AppButton(
                         label: 'Créer un compte',
                         variant: AppButtonVariant.light,
-                        onPressed: () => Navigator.of(context)
-                            .pushNamed(SignupChoicePage.routeName),
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pushNamed(SignupChoicePage.routeName),
                       ),
                       const SizedBox(height: 11),
                       AppButton(
                         label: 'J\'ai déjà un compte',
                         variant: AppButtonVariant.outlineLight,
-                        onPressed: () => Navigator.of(context)
-                            .pushNamed(LoginPage.routeName),
+                        onPressed: () => Navigator.of(
+                          context,
+                        ).pushNamed(LoginPage.routeName),
                       ),
                     ],
                   ),

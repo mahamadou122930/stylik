@@ -77,8 +77,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
             AppListCard(
               children: [
-                for (final preference in NotificationPreference.values
-                    .where((item) => item.section == section))
+                for (final preference in NotificationPreference.values.where(
+                  (item) => item.section == section,
+                ))
                   AppListRow(
                     label: preference.label,
                     subtitle: preference.subtitle,

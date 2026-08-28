@@ -13,9 +13,9 @@ enum UserRole {
   final String label;
 
   static UserRole fromValue(String? value) => UserRole.values.firstWhere(
-        (role) => role.value == value,
-        orElse: () => UserRole.coiffeur,
-      );
+    (role) => role.value == value,
+    orElse: () => UserRole.coiffeur,
+  );
 
   bool can(RolePermission permission) => permission.isGrantedTo(this);
 
@@ -51,10 +51,7 @@ enum RolePermission {
   }),
   // Le coiffeur réalise la prestation, la réception encaisse : lui laisser la
   // caisse reviendrait à lui ouvrir le détail financier des tickets du salon.
-  checkout('Encaisser', {
-    UserRole.gerant,
-    UserRole.receptionniste,
-  }),
+  checkout('Encaisser', {UserRole.gerant, UserRole.receptionniste}),
   viewClients('Voir les fiches clients', {
     UserRole.gerant,
     UserRole.coiffeur,
@@ -67,10 +64,7 @@ enum RolePermission {
     UserRole.coiffeur,
     UserRole.receptionniste,
   }),
-  manageInventory('Gérer le stock', {
-    UserRole.gerant,
-    UserRole.receptionniste,
-  }),
+  manageInventory('Gérer le stock', {UserRole.gerant, UserRole.receptionniste}),
   viewFinance('Voir la finance', {UserRole.gerant}),
   manageStaff('Gérer le personnel', {UserRole.gerant}),
   // Le catalogue fixe les prix du salon : la réception en a besoin au

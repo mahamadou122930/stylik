@@ -58,14 +58,28 @@ void main() {
       expect(c.read(todayCashTotalProvider), 10000);
     });
 
-    test('un remboursement se soustrait', () async {
+    test('un ticket remboursé ne retire pas le montant deux fois', () async {
+      // Le remboursement met à jour la ligne existante : c'est la MÊME vente
+      // qui passe de « payé » à « remboursé ». La compter en négatif retirait
+      // et ce qu'elle n'apporte plus, et son montant — soit 20 000 F de moins
+      // sur la journée pour un ticket de 10 000 F.
       final c = withTransactions([
-        ticket(id: 'a', amount: 10000, status: TransactionStatus.paid),
-        ticket(id: 'b', amount: 3000, status: TransactionStatus.refunded),
+        ticket(id: 'a', amount: 25000, status: TransactionStatus.paid),
+        ticket(id: 'b', amount: 10000, status: TransactionStatus.refunded),
       ]);
       await c.read(todayTransactionsProvider.future);
 
-      expect(c.read(todayCashTotalProvider), 7000);
+      expect(c.read(todayCashTotalProvider), 25000);
+    });
+
+    test('rembourser la seule vente du jour ramène la caisse à zéro', () async {
+      final c = withTransactions([
+        ticket(id: 'a', amount: 10000, status: TransactionStatus.refunded),
+      ]);
+      await c.read(todayTransactionsProvider.future);
+
+      // Et non −10 000 F : l'argent est entré puis ressorti.
+      expect(c.read(todayCashTotalProvider), 0);
     });
   });
 

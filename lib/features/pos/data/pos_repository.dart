@@ -321,18 +321,31 @@ class PosRepository {
     }
   }
 
+  /// Rembourse tout ou partie d'un ticket.
+  ///
+  /// [amountFcfa] est la somme rendue. Égale au total, elle bascule le ticket
+  /// en « remboursé » ; inférieure, elle laisse le ticket **payé** et n'en
+  /// retire que la part rendue — la vente a bien eu lieu pour le reste.
+  ///
+  /// Ce montant n'était jusqu'ici écrit nulle part : la table n'avait pas de
+  /// colonne pour l'accueillir, et un remboursement partiel annulait donc le
+  /// ticket entier.
   Future<void> refund({
     required String transactionId,
     required int amountFcfa,
     required RefundReason reason,
+    required int ticketTotalFcfa,
   }) async {
+    final isFull = amountFcfa >= ticketTotalFcfa;
+
     final cached = await _localDb.getCachedRecordById(
       tableName: SupabaseTables.transactions,
       recordId: transactionId,
     );
 
     if (cached != null) {
-      cached['status'] = TransactionStatus.refunded.value;
+      if (isFull) cached['status'] = TransactionStatus.refunded.value;
+      cached['refunded_amount_fcfa'] = amountFcfa;
       final currentNotes = (cached['notes'] as String?) ?? '';
       cached['notes'] = '$currentNotes [Remboursé: ${reason.label}]';
       await _localDb.cacheRecord(
@@ -345,7 +358,11 @@ class PosRepository {
     try {
       await _client.rpc<void>(
         'refund_transaction',
-        params: {'p_transaction_id': transactionId, 'p_reason': reason.value},
+        params: {
+          'p_transaction_id': transactionId,
+          'p_reason': reason.value,
+          'p_amount': amountFcfa,
+        },
       );
       return;
     } catch (e) {
@@ -354,12 +371,16 @@ class PosRepository {
       );
     }
 
-    // Repli pour les bases où la fonction n'est pas encore créée. Le statut
-    // suffit : c'est lui que lisent la caisse du jour et les commissions.
+    // Repli pour les bases où la fonction n'est pas encore créée.
     try {
+      final payload = <String, dynamic>{
+        'refunded_amount_fcfa': amountFcfa,
+        if (isFull) 'status': TransactionStatus.refunded.value,
+      };
+
       final updated = await _client
           .from(SupabaseTables.transactions)
-          .update({'status': TransactionStatus.refunded.value})
+          .update(payload)
           .eq('id', transactionId)
           // Même borne que la RPC : un ticket déjà remboursé ne l'est pas
           // deux fois.
@@ -370,6 +391,25 @@ class PosRepository {
         throw StateError('Transaction introuvable ou déjà remboursée.');
       }
     } on PostgrestException catch (e) {
+      // 42703 : `refunded_amount_fcfa` n'existe pas encore. Un remboursement
+      // intégral reste exprimable par le seul statut, on le passe. Un
+      // remboursement partiel, lui, serait enregistré comme total : mieux vaut
+      // le refuser que rendre 1 000 F et en retirer 5 000 du chiffre.
+      if (e.code == '42703') {
+        if (!isFull) {
+          throw StateError(
+            'Remboursement partiel indisponible : la base doit être mise à '
+            'jour (migration 20260826_partial_refunds).',
+          );
+        }
+        await _client
+            .from(SupabaseTables.transactions)
+            .update({'status': TransactionStatus.refunded.value})
+            .eq('id', transactionId)
+            .eq('status', TransactionStatus.paid.value);
+        return;
+      }
+
       // Refus de la base — droits, contrainte : rejouer n'y changera rien.
       // Sans ce `rethrow`, l'écran annonçait « Remboursement enregistré »
       // alors que la vente restait payée en caisse.
@@ -382,7 +422,10 @@ class PosRepository {
         action: 'UPDATE',
         tableName: SupabaseTables.transactions,
         recordId: transactionId,
-        payload: {'status': TransactionStatus.refunded.value},
+        payload: {
+          'refunded_amount_fcfa': amountFcfa,
+          if (isFull) 'status': TransactionStatus.refunded.value,
+        },
       );
     }
   }

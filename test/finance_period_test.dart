@@ -105,17 +105,27 @@ void main() {
       expect(buckets.last.to, DateTime(2027));
     });
 
-    test('l\'année se lit sur quatre exercices', () {
+    test('l\'année ne remonte pas avant le premier exercice', () {
       final buckets = FinancePeriod.year.chartBuckets(DateTime(2026, 8, 20));
 
+      // 2023 et 2024 ne peuvent contenir que des zéros : une colonne vide
+      // n'apprend rien et écrase l'échelle des autres.
+      expect(buckets.map((b) => b.label), ['2025', '2026']);
+      expect(buckets.first.from, DateTime(financeFirstYear));
+    });
+
+    test('l\'année se lit sur quatre exercices au plus', () {
+      // Quand le recul existe, on n'en montre pas davantage.
+      final buckets = FinancePeriod.year.chartBuckets(DateTime(2031, 8, 20));
+
       expect(buckets.length, 4);
-      expect(buckets.map((b) => b.label), ['2023', '2024', '2025', '2026']);
+      expect(buckets.map((b) => b.label), ['2028', '2029', '2030', '2031']);
     });
 
     test('la tranche courante est repérée', () {
       expect(FinancePeriod.day.highlightIndexFor(thursday), 3);
       expect(FinancePeriod.month.highlightIndexFor(DateTime(2026, 8, 20)), 7);
-      expect(FinancePeriod.year.highlightIndexFor(DateTime(2026, 8, 20)), 3);
+      expect(FinancePeriod.year.highlightIndexFor(DateTime(2026, 8, 20)), 1);
     });
 
     test('aucun libellé générique ne subsiste', () {
@@ -296,6 +306,19 @@ void main() {
       expect(january.to, DateTime(2026, 2, 1));
       expect(january.to, february.from);
       expect(january.to.difference(january.from).inDays, 31);
+    });
+  });
+
+  group("sélecteur d'années", () {
+    test("les années proposées s'arrêtent au premier exercice", () {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+
+      final years = c.read(financeYearsProvider);
+      expect(years.first, DateTime.now().year);
+      expect(years.last, financeFirstYear);
+      // Proposer 2023 ouvrait un écran vide, sans rien pour l'expliquer.
+      expect(years, isNot(contains(financeFirstYear - 1)));
     });
   });
 }

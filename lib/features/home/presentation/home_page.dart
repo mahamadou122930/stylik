@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -62,8 +63,9 @@ class HomePage extends ConsumerWidget {
           // en attendant le profil ferait clignoter le mauvais tableau de bord.
           ? const AppLoader(compact: true)
           : switch (profile.role) {
-              _ when !role.canViewFullAgenda =>
-                StylistHomePage(profile: profile),
+              _ when !role.canViewFullAgenda => StylistHomePage(
+                profile: profile,
+              ),
               _ when !role.canViewFinance => const ReceptionHomePage(),
               _ => _managerBody(context, ref, today: today, upcoming: upcoming),
             },
@@ -81,109 +83,113 @@ class HomePage extends ConsumerWidget {
     final lowStock = ref.watch(lowStockProductsProvider);
 
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _statGrid(context, ref, todayCount: today.length, upcoming: upcoming.length),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _statGrid(
+          context,
+          ref,
+          todayCount: today.length,
+          upcoming: upcoming.length,
+        ),
+        const SizedBox(height: 14),
+        const _WeekCard(),
+        if (lowStock.isNotEmpty) ...[
           const SizedBox(height: 14),
-          const _WeekCard(),
-          if (lowStock.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            AppCard(
-              onTap: () =>
-                  Navigator.of(context).pushNamed(InventoryPage.routeName),
-              radius: 14,
-              shadow: false,
-              color: AppColors.tintAmber,
-              borderColor: AppColors.amberBorder,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    size: 20,
-                    color: AppColors.amber,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '${lowStock.length} produit(s) à réapprovisionner',
-                      style: AppTypography.manrope(
-                        13,
-                        FontWeight.w600,
-                        color: AppColors.amberDeep,
-                      ),
+          AppCard(
+            onTap: () =>
+                Navigator.of(context).pushNamed(InventoryPage.routeName),
+            radius: 14,
+            shadow: false,
+            color: AppColors.tintAmber,
+            borderColor: AppColors.amberBorder,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.triangleAlert,
+                  size: 20,
+                  color: AppColors.amber,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${lowStock.length} produit(s) à réapprovisionner',
+                    style: AppTypography.manrope(
+                      13,
+                      FontWeight.w600,
+                      color: AppColors.amberDeep,
                     ),
                   ),
-                  const AppChevron(),
-                ],
-              ),
-            ),
-          ],
-          AppSectionTitle(
-            'Prochains rendez-vous',
-            trailing: GestureDetector(
-              onTap: () =>
-                  Navigator.of(context).pushNamed(AgendaPage.routeName),
-              child: Text(
-                'Tout voir',
-                style: AppTypography.manrope(
-                  12.5,
-                  FontWeight.w700,
-                  color: AppColors.primary,
                 ),
-              ),
+                const AppChevron(),
+              ],
             ),
-          ),
-          appointments.when(
-            loading: () => const AppLoader(compact: true),
-            error: (error, _) => AppErrorState(
-              message: '$error',
-              compact: true,
-              onRetry: () => ref.invalidate(dayAppointmentsProvider),
-            ),
-            data: (_) => upcoming.isEmpty
-                ? const AppEmptyState(
-                    compact: true,
-                    title: 'Plus de rendez-vous',
-                    message: 'La journée est terminée côté planning.',
-                    icon: Icons.event_available_outlined,
-                  )
-                : AppListCard(
-                    children: [
-                      for (final appointment in upcoming.take(4))
-                        AppListRow(
-                          label: appointment.clientName ?? 'Client de passage',
-                          subtitle: appointment.summary,
-                          strong: true,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          leading: SizedBox(
-                            width: 42,
-                            child: Text(
-                              Formatters.time(appointment.startTime),
-                              style: AppTypography.sora(
-                                13,
-                                FontWeight.w700,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                          trailing: appointment.stylistName == null
-                              ? const AppChevron()
-                              : AppBadge(
-                                  label: appointment.stylistName!,
-                                  color: AppColors.primary,
-                                  background: AppColors.tintGreen,
-                                  dense: true,
-                                ),
-                          onTap: () => Navigator.of(context).pushNamed(
-                            AppointmentDetailPage.routeName,
-                            arguments: appointment.id,
-                          ),
-                        ),
-                    ],
-                  ),
           ),
         ],
+        AppSectionTitle(
+          'Prochains rendez-vous',
+          trailing: GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed(AgendaPage.routeName),
+            child: Text(
+              'Tout voir',
+              style: AppTypography.manrope(
+                12.5,
+                FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
+        appointments.when(
+          loading: () => const AppLoader(compact: true),
+          error: (error, _) => AppErrorState(
+            message: '$error',
+            compact: true,
+            onRetry: () => ref.invalidate(dayAppointmentsProvider),
+          ),
+          data: (_) => upcoming.isEmpty
+              ? const AppEmptyState(
+                  compact: true,
+                  title: 'Plus de rendez-vous',
+                  message: 'La journée est terminée côté planning.',
+                  icon: LucideIcons.calendarCheck,
+                )
+              : AppListCard(
+                  children: [
+                    for (final appointment in upcoming.take(4))
+                      AppListRow(
+                        label: appointment.clientName ?? 'Client de passage',
+                        subtitle: appointment.summary,
+                        strong: true,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        leading: SizedBox(
+                          width: 42,
+                          child: Text(
+                            Formatters.time(appointment.startTime),
+                            style: AppTypography.sora(
+                              13,
+                              FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                        trailing: appointment.stylistName == null
+                            ? const AppChevron()
+                            : AppBadge(
+                                label: appointment.stylistName!,
+                                color: AppColors.primary,
+                                background: AppColors.tintGreen,
+                                dense: true,
+                              ),
+                        onTap: () => Navigator.of(context).pushNamed(
+                          AppointmentDetailPage.routeName,
+                          arguments: appointment.id,
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+      ],
     );
   }
 
@@ -216,7 +222,7 @@ class HomePage extends ConsumerWidget {
                   caption: trend == null
                       ? 'aujourd\'hui'
                       : '${trend < 0 ? '▼' : '▲'} '
-                          '${(trend.abs() * 100).round()} % vs sem. dern.',
+                            '${(trend.abs() * 100).round()} % vs sem. dern.',
                   captionColor: trend == null || trend >= 0
                       ? AppColors.primary
                       : AppColors.expense,
@@ -247,7 +253,7 @@ class HomePage extends ConsumerWidget {
                   caption: basket.saleCount == 0
                       ? 'aucune vente'
                       : 'sur ${basket.saleCount} vente'
-                          '${basket.saleCount > 1 ? 's' : ''}',
+                            '${basket.saleCount > 1 ? 's' : ''}',
                 ),
               ),
               const SizedBox(width: 10),
@@ -349,8 +355,9 @@ class _WeekCardState extends ConsumerState<_WeekCard> {
 
     // Une semaine plus courte que prévu (données partielles) invaliderait
     // l'indice mémorisé.
-    final selected =
-        (_selected != null && _selected! < week.length) ? _selected : null;
+    final selected = (_selected != null && _selected! < week.length)
+        ? _selected
+        : null;
     final entry = selected == null ? null : week[selected];
 
     return AppCard(
@@ -391,15 +398,14 @@ class _WeekCardState extends ConsumerState<_WeekCard> {
             highlightIndex: selected ?? todayIndex,
             // Retaper le jour déjà choisi revient à la semaine : sans ça, on
             // ne pourrait plus quitter la vue d'un jour.
-            onSliceTap: (index) => setState(
-              () => _selected = _selected == index ? null : index,
-            ),
+            onSliceTap: (index) =>
+                setState(() => _selected = _selected == index ? null : index),
             slices: [
               for (final day in week)
                 ChartSlice(
-                  label: Formatters.weekdayShort(day.day)
-                      .substring(0, 1)
-                      .toUpperCase(),
+                  label: Formatters.weekdayShort(
+                    day.day,
+                  ).substring(0, 1).toUpperCase(),
                   value: day.totalFcfa,
                   // Un jour sans encaissement reste visible en piste neutre :
                   // une barre verte au ras du sol se lirait comme un montant.
@@ -416,7 +422,7 @@ class _WeekCardState extends ConsumerState<_WeekCard> {
                     entry.totalFcfa == 0
                         ? 'Aucun encaissement ce jour-là.'
                         : 'Encaissé le ${Formatters.dayMonth(entry.day)}, '
-                            'remboursements déduits.',
+                              'remboursements déduits.',
                     style: AppTypography.manrope(
                       11.5,
                       FontWeight.w500,

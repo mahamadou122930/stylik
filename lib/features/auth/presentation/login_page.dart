@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -36,18 +37,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final navigator = Navigator.of(context);
-    final success = await ref.read(authControllerProvider.notifier).signIn(
-          email: _email.text.trim(),
-          password: _password.text,
-        );
+    final success = await ref
+        .read(authControllerProvider.notifier)
+        .signIn(email: _email.text.trim(), password: _password.text);
 
     if (!mounted) return;
 
     if (!success) {
       final error = ref.read(authControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authErrorMessage(error))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
       return;
     }
 
@@ -61,9 +61,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (!email.contains('@')) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Saisissez d\'abord votre email.'),
-        ),
+        const SnackBar(content: Text('Saisissez d\'abord votre email.')),
       );
       return;
     }
@@ -124,8 +122,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             ),
                             const SizedBox(height: 14),
                             GestureDetector(
-                              onTap: () => Navigator.of(context)
-                                  .pushNamed(SignupChoicePage.routeName),
+                              onTap: () => Navigator.of(
+                                context,
+                              ).pushNamed(SignupChoicePage.routeName),
                               child: Text.rich(
                                 TextSpan(
                                   text: 'Pas de compte ? ',
@@ -176,14 +175,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               color: AppColors.accent,
               borderRadius: BorderRadius.circular(22),
             ),
-            child: const Center(
-              child: AppGlyph(size: 36, color: Colors.white),
-            ),
+            child: const Center(child: AppGlyph(size: 36, color: Colors.white)),
           ),
         ),
         const SizedBox(height: 20),
         Text(
-          'L\'Atelier',
+          'Stylik',
           textAlign: TextAlign.center,
           style: AppTypography.sora(
             28,
@@ -209,10 +206,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
-          prefixIcon: Icons.email_outlined,
-          validator: (value) => (value == null || !value.contains('@'))
-              ? 'Email invalide'
-              : null,
+          prefixIcon: LucideIcons.mail,
+          validator: (value) =>
+              (value == null || !value.contains('@')) ? 'Email invalide' : null,
         ),
         const SizedBox(height: 12),
         AppInput(
@@ -221,19 +217,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           controller: _password,
           obscureText: _obscure,
           textInputAction: TextInputAction.done,
-          prefixIcon: Icons.lock_outline_rounded,
+          prefixIcon: LucideIcons.lock,
           suffix: GestureDetector(
             onTap: () => setState(() => _obscure = !_obscure),
             child: Icon(
-              _obscure
-                  ? Icons.visibility_off_outlined
-                  : Icons.visibility_outlined,
+              _obscure ? LucideIcons.eyeOff : LucideIcons.eye,
               size: 19,
               color: Colors.white60,
             ),
           ),
-          validator: (value) =>
-              (value == null || value.length < 6) ? '6 caractères minimum' : null,
+          validator: (value) => (value == null || value.length < 6)
+              ? '6 caractères minimum'
+              : null,
         ),
         const SizedBox(height: 14),
         Align(

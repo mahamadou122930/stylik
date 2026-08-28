@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -26,10 +27,9 @@ class TimeOffPage extends ConsumerWidget {
       final messenger = ScaffoldMessenger.of(context);
       final delta = request.balanceDeltaFor(status);
 
-      await ref.read(staffRepositoryProvider).decideTimeOff(
-            request: request,
-            status: status,
-          );
+      await ref
+          .read(staffRepositoryProvider)
+          .decideTimeOff(request: request, status: status);
 
       // Le solde vient d'être touché : les fiches employé le portent.
       ref.invalidate(timeOffProvider);
@@ -45,8 +45,8 @@ class TimeOffPage extends ConsumerWidget {
             delta == 0
                 ? 'Demande ${status.label.toLowerCase()}.'
                 : 'Demande ${status.label.toLowerCase()} · '
-                    '${delta.abs()} jour(s) '
-                    '${delta < 0 ? 'retirés du' : 'rendus au'} solde.',
+                      '${delta.abs()} jour(s) '
+                      '${delta < 0 ? 'retirés du' : 'rendus au'} solde.',
           ),
         ),
       );
@@ -64,7 +64,7 @@ class TimeOffPage extends ConsumerWidget {
             ? const AppEmptyState(
                 title: 'Aucune absence',
                 message: 'Les demandes de congé de l\'équipe arriveront ici.',
-                icon: Icons.beach_access_outlined,
+                icon: LucideIcons.palmtree,
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -90,7 +91,7 @@ class _BreakdownCardState extends ConsumerState<_BreakdownCard> {
                     compact: true,
                     title: 'Aucune donnée',
                     message: 'Aucun encaissement sur cette période.',
-                    icon: Icons.insights_outlined,
+                    icon: LucideIcons.chartLine,
                   )
                 : AppBarChart(
                     // Hors sélection, c'est la période regardée qui ressort,
@@ -160,7 +161,7 @@ class FinancePage extends ConsumerWidget {
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.payments_outlined,
+                      LucideIcons.banknote,
                       size: 20,
                       color: AppColors.amberDeep,
                     ),
@@ -221,7 +222,7 @@ class FinancePage extends ConsumerWidget {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   leading: const AppIconTile(
-                    icon: Icons.receipt_long_rounded,
+                    icon: LucideIcons.receiptText,
                     color: AppColors.amber,
                     background: AppColors.tintAmber,
                   ),
@@ -236,7 +237,7 @@ class FinancePage extends ConsumerWidget {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   leading: const AppIconTile(
-                    icon: Icons.savings_rounded,
+                    icon: LucideIcons.piggyBank,
                     color: AppColors.blue,
                     background: AppColors.tintBlue,
                   ),
@@ -249,7 +250,7 @@ class FinancePage extends ConsumerWidget {
                   subtitle: 'Performance et commissions',
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  leading: const AppIconTile(icon: Icons.people_alt_rounded),
+                  leading: const AppIconTile(icon: LucideIcons.users),
                   trailing: const AppChevron(),
                   onTap: () => Navigator.of(
                     context,
@@ -261,7 +262,7 @@ class FinancePage extends ConsumerWidget {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   leading: const AppIconTile(
-                    icon: Icons.payments_outlined,
+                    icon: LucideIcons.banknote,
                     color: AppColors.amberDeep,
                     background: AppColors.tintAmber,
                   ),
@@ -283,7 +284,7 @@ class FinancePage extends ConsumerWidget {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   leading: const AppIconTile(
-                    icon: Icons.donut_small_rounded,
+                    icon: LucideIcons.chartPie,
                     color: AppColors.blue,
                     background: AppColors.tintBlue,
                   ),
@@ -298,7 +299,7 @@ class FinancePage extends ConsumerWidget {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   leading: const AppIconTile(
-                    icon: Icons.receipt_long_rounded,
+                    icon: LucideIcons.receiptText,
                     color: AppColors.expense,
                     background: AppColors.tintExpense,
                   ),
@@ -312,7 +313,7 @@ class FinancePage extends ConsumerWidget {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   leading: const AppIconTile(
-                    icon: Icons.ios_share_rounded,
+                    icon: LucideIcons.share2,
                     color: AppColors.amber,
                     background: AppColors.tintAmber,
                   ),
@@ -385,8 +386,8 @@ class _RevenueCard extends StatelessWidget {
               children: [
                 Icon(
                   growth != null && growth < 0
-                      ? Icons.trending_down_rounded
-                      : Icons.trending_up_rounded,
+                      ? LucideIcons.trendingDown
+                      : LucideIcons.trendingUp,
                   size: 14,
                   color: Colors.white,
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:stylik/core/constants/app_colors.dart';
 import 'package:stylik/core/widgets/widgets.dart';
 
@@ -27,7 +28,7 @@ void main() {
   );
 
   testWidgets('sans action, le bouton revient en arrière', (tester) async {
-    await tester.pumpWidget(host(const AppIconButton(icon: Icons.close)));
+    await tester.pumpWidget(host(const AppIconButton(icon: LucideIcons.x)));
     await tester.tap(find.text('ouvrir'));
     await tester.pumpAndSettle();
     expect(find.byType(AppIconButton), findsOneWidget);
@@ -41,7 +42,7 @@ void main() {
 
   testWidgets('désactivé, il ne fait rien du tout', (tester) async {
     await tester.pumpWidget(
-      host(const AppIconButton(icon: Icons.chevron_right, enabled: false)),
+      host(const AppIconButton(icon: LucideIcons.chevronRight, enabled: false)),
     );
     await tester.tap(find.text('ouvrir'));
     await tester.pumpAndSettle();
@@ -59,7 +60,10 @@ void main() {
       const MaterialApp(
         home: Scaffold(
           body: Center(
-            child: AppIconButton(icon: Icons.chevron_right, enabled: false),
+            child: AppIconButton(
+              icon: LucideIcons.chevronRight,
+              enabled: false,
+            ),
           ),
         ),
       ),
@@ -75,7 +79,10 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: Center(
-            child: AppIconButton(icon: Icons.chevron_left, onTap: () => taps++),
+            child: AppIconButton(
+              icon: LucideIcons.chevronLeft,
+              onTap: () => taps++,
+            ),
           ),
         ),
       ),

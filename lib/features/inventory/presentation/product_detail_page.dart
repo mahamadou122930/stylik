@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -55,7 +56,7 @@ class ProductDetailPage extends ConsumerWidget {
       action: product.valueOrNull == null
           ? null
           : AppIconButton(
-              icon: Icons.edit_outlined,
+              icon: LucideIcons.pencil,
               onTap: () async {
                 final saved = await Navigator.of(context).pushNamed(
                   ProductFormPage.routeName,
@@ -83,7 +84,7 @@ class ProductDetailPage extends ConsumerWidget {
                   child: product.value!.usage == ProductUsage.consumable
                       ? AppButton(
                           label: 'Ouvrir une unité',
-                          icon: Icons.local_drink_outlined,
+                          icon: LucideIcons.droplet,
                           onPressed: product.value!.stockQuantity <= 0
                               ? null
                               : () => _openUnit(context, ref, product.value!),
@@ -106,7 +107,7 @@ class ProductDetailPage extends ConsumerWidget {
         data: (data) => data == null
             ? const AppEmptyState(
                 title: 'Produit introuvable',
-                icon: Icons.inventory_2_outlined,
+                icon: LucideIcons.package,
               )
             : _ProductBody(product: data),
       ),
@@ -138,7 +139,7 @@ class _ProductBody extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  Icons.warning_amber_rounded,
+                  LucideIcons.triangleAlert,
                   size: 22,
                   color: product.isOutOfStock
                       ? AppColors.expense
@@ -281,10 +282,7 @@ class _AdjustStockSheetState extends State<_AdjustStockSheet> {
             const SizedBox(height: 20),
             Row(
               children: [
-                AppIconButton(
-                  icon: Icons.remove_rounded,
-                  onTap: () => _bump(-1),
-                ),
+                AppIconButton(icon: LucideIcons.minus, onTap: () => _bump(-1)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
@@ -302,7 +300,7 @@ class _AdjustStockSheetState extends State<_AdjustStockSheet> {
                 ),
                 const SizedBox(width: 12),
                 AppIconButton(
-                  icon: Icons.add_rounded,
+                  icon: LucideIcons.plus,
                   filled: true,
                   onTap: () => _bump(1),
                 ),

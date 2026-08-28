@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -33,10 +34,9 @@ class StaffPage extends ConsumerWidget {
       largeTitle: true,
       showBack: false,
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         filled: true,
-        onTap: () =>
-            Navigator.of(context).pushNamed(StaffFormPage.routeName),
+        onTap: () => Navigator.of(context).pushNamed(StaffFormPage.routeName),
       ),
       header: Padding(
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 14),
@@ -73,7 +73,7 @@ class StaffPage extends ConsumerWidget {
                 ? const AppEmptyState(
                     title: 'Aucun membre',
                     message: 'Invitez vos coiffeurs et réceptionnistes.',
-                    icon: Icons.badge_outlined,
+                    icon: LucideIcons.idCard,
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,7 +97,8 @@ class StaffPage extends ConsumerWidget {
           ),
           const AppSectionTitle('Rejoindre le salon'),
           const InviteCodeCard(
-            message: 'Créez d\'abord la fiche de la personne avec son email, '
+            message:
+                'Créez d\'abord la fiche de la personne avec son email, '
                 'puis donnez-lui ce code : il lui servira à créer son compte.',
           ),
           const AppSectionTitle('Absences'),
@@ -109,7 +110,7 @@ class StaffPage extends ConsumerWidget {
                 strong: true,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 leading: const AppIconTile(
-                  icon: Icons.beach_access_rounded,
+                  icon: LucideIcons.palmtree,
                   color: AppColors.amber,
                   background: AppColors.tintAmber,
                 ),
@@ -195,8 +196,7 @@ class _StaffCard extends StatelessWidget {
                 Text(
                   [
                     member.role.label,
-                    if (member.specialties.isNotEmpty)
-                      member.specialties.first,
+                    if (member.specialties.isNotEmpty) member.specialties.first,
                   ].join(' · '),
                   style: AppTypography.manrope(
                     12,

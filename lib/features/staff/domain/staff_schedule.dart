@@ -40,9 +40,11 @@ class StaffSchedule {
     if (startParts.length < 2 || endParts.length < 2) return 0;
 
     final startMinutes =
-        (int.tryParse(startParts[0]) ?? 0) * 60 + (int.tryParse(startParts[1]) ?? 0);
+        (int.tryParse(startParts[0]) ?? 0) * 60 +
+        (int.tryParse(startParts[1]) ?? 0);
     final endMinutes =
-        (int.tryParse(endParts[0]) ?? 0) * 60 + (int.tryParse(endParts[1]) ?? 0);
+        (int.tryParse(endParts[0]) ?? 0) * 60 +
+        (int.tryParse(endParts[1]) ?? 0);
     return (endMinutes - startMinutes).clamp(0, 24 * 60) / 60;
   }
 
@@ -63,10 +65,10 @@ class StaffSchedule {
       );
 
   Map<String, dynamic> toMap() => {
-        'start': start,
-        'end': end,
-        'is_day_off': isDayOff,
-      };
+    'start': start,
+    'end': end,
+    'is_day_off': isDayOff,
+  };
 
   /// Convertit la colonne JSONB complète en semaine ordonnée, en complétant
   /// les jours absents par un jour de repos.
@@ -105,9 +107,9 @@ enum TimeOffType {
   final String label;
 
   static TimeOffType fromValue(String? value) => TimeOffType.values.firstWhere(
-        (type) => type.value == value,
-        orElse: () => vacation,
-      );
+    (type) => type.value == value,
+    orElse: () => vacation,
+  );
 }
 
 /// Statut d'une demande d'absence.
@@ -121,11 +123,8 @@ enum TimeOffStatus {
   final String value;
   final String label;
 
-  static TimeOffStatus fromValue(String? value) =>
-      TimeOffStatus.values.firstWhere(
-        (status) => status.value == value,
-        orElse: () => pending,
-      );
+  static TimeOffStatus fromValue(String? value) => TimeOffStatus.values
+      .firstWhere((status) => status.value == value, orElse: () => pending);
 }
 
 /// Congé ou absence — table `time_off`.
@@ -179,28 +178,28 @@ class TimeOff {
   }
 
   factory TimeOff.fromMap(Map<String, dynamic> map) => TimeOff(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        profileId: map['profile_id'] as String,
-        type: TimeOffType.fromValue(map['type'] as String?),
-        status: TimeOffStatus.fromValue(map['status'] as String?),
-        startDate: DateTime.parse(map['start_date'] as String).toLocal(),
-        endDate: DateTime.parse(map['end_date'] as String).toLocal(),
-        profileName: map['profiles'] is Map<String, dynamic>
-            ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
-            : null,
-        note: map['note'] as String?,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    profileId: map['profile_id'] as String,
+    type: TimeOffType.fromValue(map['type'] as String?),
+    status: TimeOffStatus.fromValue(map['status'] as String?),
+    startDate: DateTime.parse(map['start_date'] as String).toLocal(),
+    endDate: DateTime.parse(map['end_date'] as String).toLocal(),
+    profileName: map['profiles'] is Map<String, dynamic>
+        ? (map['profiles'] as Map<String, dynamic>)['full_name'] as String?
+        : null,
+    note: map['note'] as String?,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'profile_id': profileId,
-        'type': type.value,
-        'status': status.value,
-        'start_date': startDate.toUtc().toIso8601String(),
-        'end_date': endDate.toUtc().toIso8601String(),
-        'note': note,
-      };
+    'salon_id': salonId,
+    'profile_id': profileId,
+    'type': type.value,
+    'status': status.value,
+    'start_date': startDate.toUtc().toIso8601String(),
+    'end_date': endDate.toUtc().toIso8601String(),
+    'note': note,
+  };
 
   /// Effet du passage au statut [to] sur le solde de congés du membre.
   ///

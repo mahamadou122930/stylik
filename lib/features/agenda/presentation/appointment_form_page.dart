@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -122,13 +123,18 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
 
   Future<void> _confirm() async {
     final salonId = ref.read(currentSalonIdProvider);
-    if (salonId == null || _client == null || _stylist == null || _slot == null) {
+    if (salonId == null ||
+        _client == null ||
+        _stylist == null ||
+        _slot == null) {
       return;
     }
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(agendaRepositoryProvider).create(
+      await ref
+          .read(agendaRepositoryProvider)
+          .create(
             Appointment(
               id: '',
               salonId: salonId,
@@ -156,9 +162,9 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Création impossible : $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Création impossible : $error')));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -166,7 +172,8 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final stylists = ref.watch(stylistsProvider).valueOrNull ?? const <Profile>[];
+    final stylists =
+        ref.watch(stylistsProvider).valueOrNull ?? const <Profile>[];
     final day = ref.watch(selectedDayProvider);
 
     final slots = _stylist == null
@@ -180,7 +187,10 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
           );
 
     final canConfirm =
-        _client != null && _stylist != null && _slot != null && _services.isNotEmpty;
+        _client != null &&
+        _stylist != null &&
+        _slot != null &&
+        _services.isNotEmpty;
 
     return AppScreen(
       title: 'Nouveau RDV',
@@ -245,8 +255,10 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                 GestureDetector(
                   onTap: () => setState(() => _services.remove(service)),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.tintGreen,
                       borderRadius: BorderRadius.circular(11),
@@ -264,7 +276,7 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                         ),
                         const SizedBox(width: 6),
                         const Icon(
-                          Icons.close_rounded,
+                          LucideIcons.x,
                           size: 13,
                           color: AppColors.primary,
                         ),
@@ -280,13 +292,15 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                     color: AppColors.dashLine,
                   ),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 8,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(
-                          Icons.add_rounded,
+                          LucideIcons.plus,
                           size: 13,
                           color: AppColors.primary,
                         ),
@@ -317,7 +331,9 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                 for (final stylist in stylists)
                   stylist.fullName.split(' ').first,
               ],
-              selectedIndex: _stylist == null ? -1 : stylists.indexOf(_stylist!),
+              selectedIndex: _stylist == null
+                  ? -1
+                  : stylists.indexOf(_stylist!),
               onChanged: (index) => setState(() {
                 _stylist = stylists[index];
                 _slot = null;
@@ -327,7 +343,8 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
           _FieldLabel('Créneau · ${Formatters.day(day)}'),
           slots.when(
             loading: () => const AppLoader(compact: true),
-            error: (error, _) => AppErrorState(message: '$error', compact: true),
+            error: (error, _) =>
+                AppErrorState(message: '$error', compact: true),
             data: (values) => values.isEmpty
                 ? Text(
                     _stylist == null
@@ -384,14 +401,14 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 2, bottom: 7),
-        child: Text(
-          label,
-          style: AppTypography.sora(
-            12.5,
-            FontWeight.w600,
-            color: AppColors.textBody,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(left: 2, bottom: 7),
+    child: Text(
+      label,
+      style: AppTypography.sora(
+        12.5,
+        FontWeight.w600,
+        color: AppColors.textBody,
+      ),
+    ),
+  );
 }

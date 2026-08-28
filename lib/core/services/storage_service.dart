@@ -20,11 +20,9 @@ class StorageService {
     required File file,
     bool upsert = true,
   }) async {
-    await _client.storage.from(bucket).upload(
-          path,
-          file,
-          fileOptions: FileOptions(upsert: upsert),
-        );
+    await _client.storage
+        .from(bucket)
+        .upload(path, file, fileOptions: FileOptions(upsert: upsert));
     return _client.storage.from(bucket).getPublicUrl(path);
   }
 

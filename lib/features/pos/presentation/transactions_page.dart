@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -182,7 +183,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
             ? const AppEmptyState(
                 title: 'Aucune transaction',
                 message: 'Aucune transaction ne correspond à ce filtre.',
-                icon: Icons.receipt_long_outlined,
+                icon: LucideIcons.receiptText,
               )
             : AppListCard(
                 children: [
@@ -230,7 +231,7 @@ class _TransactionRow extends StatelessWidget {
       onTap: onTap,
       padding: const EdgeInsets.symmetric(vertical: 12),
       leading: AppIconTile(
-        icon: isRefund ? Icons.remove_rounded : method.icon,
+        icon: isRefund ? LucideIcons.minus : method.icon,
         color: color,
         background: background,
         size: 36,

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -83,7 +84,7 @@ class ReceiptPage extends ConsumerWidget {
         child: AppEmptyState(
           title: 'Aucune facture',
           message: 'Encaissez une prestation pour générer une facture.',
-          icon: Icons.receipt_long_outlined,
+          icon: LucideIcons.receiptText,
         ),
       );
     }
@@ -92,20 +93,20 @@ class ReceiptPage extends ConsumerWidget {
       title: 'Facture',
       bodyPadding: const EdgeInsets.fromLTRB(18, 8, 18, 20),
       action: AppIconButton(
-        icon: Icons.print_outlined,
+        icon: LucideIcons.printer,
         onTap: () => _print(context, ref, transaction, salon),
       ),
       footer: Row(
         children: [
           AppIconButton(
-            icon: Icons.file_download_outlined,
+            icon: LucideIcons.download,
             onTap: () => _share(context, ref, transaction, salon),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: AppButton(
               label: 'Envoyer au client',
-              icon: Icons.send_rounded,
+              icon: LucideIcons.send,
               onPressed: () async {
                 final messenger = ScaffoldMessenger.of(context);
                 // Le document part par le partage du téléphone (WhatsApp,

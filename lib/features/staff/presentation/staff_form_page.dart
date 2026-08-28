@@ -59,9 +59,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
     );
     // Un nouvel employé démarre à zéro : c'est au gérant de poser le droit
     // annuel qu'il accorde, aucune valeur par défaut ne serait légitime.
-    _leaveBalance = TextEditingController(
-      text: '${m?.leaveBalanceDays ?? 0}',
-    );
+    _leaveBalance = TextEditingController(text: '${m?.leaveBalanceDays ?? 0}');
     _role = m?.role ?? UserRole.coiffeur;
     _specialties = m != null ? Set.from(m.specialties) : {};
   }
@@ -85,10 +83,8 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
     try {
       final email = _email.text.trim();
       final phone = _phone.text.trim();
-      final commissionRate = double.tryParse(
-            _commission.text.trim().replaceAll(',', '.'),
-          ) ??
-          0;
+      final commissionRate =
+          double.tryParse(_commission.text.trim().replaceAll(',', '.')) ?? 0;
       final leaveBalanceDays = int.tryParse(_leaveBalance.text.trim()) ?? 0;
       final repository = ref.read(staffRepositoryProvider);
 
@@ -150,7 +146,9 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
     return AppScreen(
       title: isEditing ? 'Éditer l\'employé' : 'Nouvel employé',
       footer: AppButton(
-        label: isEditing ? 'Enregistrer les modifications' : 'Ajouter à l\'équipe',
+        label: isEditing
+            ? 'Enregistrer les modifications'
+            : 'Ajouter à l\'équipe',
         isLoading: _isSaving,
         onPressed: _save,
       ),
@@ -190,10 +188,11 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
             AppInput.phone(
               controller: _phone,
               validator: (value) =>
-                  (value != null && value.trim().isNotEmpty &&
-                          value.trim().length < 6)
-                      ? 'Numéro invalide'
-                      : null,
+                  (value != null &&
+                      value.trim().isNotEmpty &&
+                      value.trim().length < 6)
+                  ? 'Numéro invalide'
+                  : null,
             ),
             const SizedBox(height: 15),
             AppInput(
@@ -271,12 +270,14 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
             const SizedBox(height: 18),
             if (!isEditing) ...[
               const AppCallout(
-                message: 'Aucun compte n\'est créé : le membre apparaît au '
+                message:
+                    'Aucun compte n\'est créé : le membre apparaît au '
                     'planning et touche ses commissions sans se connecter.',
               ),
               const AppSectionTitle('Code d\'invitation'),
               const InviteCodeCard(
-                message: 'L\'employé l\'entre pour rejoindre le salon, avec '
+                message:
+                    'L\'employé l\'entre pour rejoindre le salon, avec '
                     'l\'email renseigné ci-dessus : son compte se rattachera '
                     'alors à cette fiche.',
               ),

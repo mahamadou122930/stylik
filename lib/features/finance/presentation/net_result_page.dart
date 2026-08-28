@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -111,7 +112,7 @@ class NetResultPage extends ConsumerWidget {
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.hourglass_empty_rounded,
+                      LucideIcons.hourglass,
                       size: 18,
                       color: AppColors.amberDeep,
                     ),
@@ -212,9 +213,7 @@ class _HeroCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    isLoss
-                        ? Icons.trending_down_rounded
-                        : Icons.trending_up_rounded,
+                    isLoss ? LucideIcons.trendingDown : LucideIcons.trendingUp,
                     size: 15,
                     color: Colors.white,
                   ),
@@ -310,7 +309,7 @@ class _NetChartCardState extends ConsumerState<_NetChartCard> {
                     compact: true,
                     title: 'Aucune donnée',
                     message: 'Aucun encaissement sur cette période.',
-                    icon: Icons.insights_outlined,
+                    icon: LucideIcons.chartLine,
                   )
                 : AppBarChart(
                     height: 96,

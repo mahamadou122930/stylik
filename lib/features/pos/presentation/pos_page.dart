@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -113,7 +114,7 @@ class PosPage extends ConsumerWidget {
       title: 'Encaissement',
       showBack: false,
       action: AppIconButton(
-        icon: Icons.receipt_long_rounded,
+        icon: LucideIcons.receiptText,
         onTap: () =>
             Navigator.of(context).pushNamed(TransactionsPage.routeName),
       ),
@@ -125,7 +126,7 @@ class PosPage extends ConsumerWidget {
           // qu'une Row ne sait pas contraindre.
           AppButton(
             label: 'Attente',
-            icon: Icons.pause_rounded,
+            icon: LucideIcons.pause,
             variant: AppButtonVariant.outline,
             height: 56,
             expanded: false,
@@ -162,7 +163,7 @@ class PosPage extends ConsumerWidget {
               child: Row(
                 children: [
                   const Icon(
-                    Icons.hourglass_empty_rounded,
+                    LucideIcons.hourglass,
                     size: 20,
                     color: AppColors.amberDeep,
                   ),
@@ -250,7 +251,7 @@ class PosPage extends ConsumerWidget {
             AppEmptyState(
               title: 'Ticket vide',
               message: 'Ajoutez les prestations réalisées puis encaissez.',
-              icon: Icons.point_of_sale_rounded,
+              icon: LucideIcons.receipt,
               actionLabel: 'Ajouter au ticket',
               onAction: () => _showAddPickerSheet(context, ref),
             )
@@ -375,11 +376,7 @@ class _TicketLineRow extends ConsumerWidget {
       child: Row(
         children: [
           if (line.isProduct) ...[
-            const AppIconTile(
-              icon: Icons.local_drink_outlined,
-              size: 34,
-              radius: 10,
-            ),
+            const AppIconTile(icon: LucideIcons.droplet, size: 34, radius: 10),
             const SizedBox(width: 11),
           ],
           Expanded(
@@ -439,7 +436,7 @@ class _TicketLineRow extends ConsumerWidget {
                           ),
                           const SizedBox(width: 3),
                           const Icon(
-                            Icons.keyboard_arrow_down_rounded,
+                            LucideIcons.chevronDown,
                             size: 14,
                             color: AppColors.primary,
                           ),
@@ -493,7 +490,7 @@ class _TicketLineRow extends ConsumerWidget {
               ),
               alignment: Alignment.center,
               child: const Icon(
-                Icons.close_rounded,
+                LucideIcons.x,
                 size: 16,
                 color: Color(0xFFDC2626),
               ),
@@ -592,7 +589,7 @@ class _DashedAction extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.add_rounded, size: 18, color: AppColors.primary),
+              const Icon(LucideIcons.plus, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
@@ -675,10 +672,10 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
             AppInput(
               controller: _searchController,
               hint: 'Rechercher un client (nom, téléphone)...',
-              prefixIcon: Icons.search_rounded,
+              prefixIcon: LucideIcons.search,
               suffix: _query.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      icon: const Icon(LucideIcons.x, size: 18),
                       onPressed: () => _searchController.clear(),
                     )
                   : null,
@@ -686,7 +683,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
             const SizedBox(height: 10),
             ListTile(
               leading: const AppIconTile(
-                icon: Icons.person_outline_rounded,
+                icon: LucideIcons.user,
                 color: AppColors.textSecondary,
                 background: AppColors.surfaceSubtle,
               ),
@@ -852,10 +849,10 @@ class _StylistPickerSheetState extends ConsumerState<_StylistPickerSheet> {
             AppInput(
               controller: _searchController,
               hint: 'Rechercher un coiffeur (nom, rôle)...',
-              prefixIcon: Icons.search_rounded,
+              prefixIcon: LucideIcons.search,
               suffix: _query.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      icon: const Icon(LucideIcons.x, size: 18),
                       onPressed: () => _searchController.clear(),
                     )
                   : null,

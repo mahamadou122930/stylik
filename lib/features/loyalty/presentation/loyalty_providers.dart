@@ -65,8 +65,7 @@ final campaignTagsProvider = StateProvider<List<String>>((ref) => const []);
 final campaignAudienceProvider = FutureProvider<List<Client>>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
   if (salonId == null) return const [];
-  return ref.watch(loyaltyRepositoryProvider).fetchSegment(
-        salonId: salonId,
-        tags: ref.watch(campaignTagsProvider),
-      );
+  return ref
+      .watch(loyaltyRepositoryProvider)
+      .fetchSegment(salonId: salonId, tags: ref.watch(campaignTagsProvider));
 });

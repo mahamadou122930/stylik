@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
@@ -40,12 +41,12 @@ class AppInput extends StatelessWidget {
     this.textInputAction,
     this.autofocus = false,
     this.dark = false,
-  })  : keyboardType = TextInputType.phone,
-        inputFormatters = null,
-        obscureText = false,
-        maxLines = 1,
-        prefixIcon = Icons.phone_outlined,
-        suffix = null;
+  }) : keyboardType = TextInputType.phone,
+       inputFormatters = null,
+       obscureText = false,
+       maxLines = 1,
+       prefixIcon = LucideIcons.phone,
+       suffix = null;
 
   /// Champ montant en FCFA (chiffres uniquement, suffixe « F »).
   AppInput.amount({
@@ -60,15 +61,12 @@ class AppInput extends StatelessWidget {
     this.textInputAction,
     this.autofocus = false,
     this.dark = false,
-  })  : keyboardType = TextInputType.number,
-        inputFormatters = [FilteringTextInputFormatter.digitsOnly],
-        obscureText = false,
-        maxLines = 1,
-        prefixIcon = null,
-        suffix = Text(
-          'F',
-          style: AppTypography.sora(14, FontWeight.w700),
-        );
+  }) : keyboardType = TextInputType.number,
+       inputFormatters = [FilteringTextInputFormatter.digitsOnly],
+       obscureText = false,
+       maxLines = 1,
+       prefixIcon = null,
+       suffix = Text('F', style: AppTypography.sora(14, FontWeight.w700));
 
   final String? label;
   final String? hint;
@@ -118,9 +116,10 @@ class AppInput extends StatelessWidget {
           maxLines: obscureText ? 1 : maxLines,
           autofocus: autofocus,
           textInputAction: textInputAction,
-          style: AppTypography.manrope(13.5, FontWeight.w600).copyWith(
-            color: dark ? Colors.white : AppColors.textPrimary,
-          ),
+          style: AppTypography.manrope(
+            13.5,
+            FontWeight.w600,
+          ).copyWith(color: dark ? Colors.white : AppColors.textPrimary),
           cursorColor: dark ? Colors.white : AppColors.accent,
           decoration: InputDecoration(
             hintText: hint,
@@ -139,8 +138,10 @@ class AppInput extends StatelessWidget {
                     size: 18,
                     color: dark ? Colors.white60 : AppColors.primary,
                   ),
-            prefixIconConstraints:
-                const BoxConstraints(minWidth: 42, minHeight: 20),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 42,
+              minHeight: 20,
+            ),
             enabledBorder: dark
                 ? OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppSizes.radiusMd),
@@ -211,7 +212,7 @@ class AppSearchField extends StatelessWidget {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 prefixIcon: const Icon(
-                  Icons.search_rounded,
+                  LucideIcons.search,
                   size: 19,
                   color: AppColors.textFaint,
                 ),
@@ -295,7 +296,7 @@ class AppSelectField extends StatelessWidget {
                     ),
                   ),
                   const Icon(
-                    Icons.expand_more_rounded,
+                    LucideIcons.chevronDown,
                     size: 20,
                     color: AppColors.textFaint,
                   ),

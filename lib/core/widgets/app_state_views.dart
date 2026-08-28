@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../utils/error_messages.dart';
 
@@ -13,7 +14,7 @@ class AppEmptyState extends StatelessWidget {
     super.key,
     required this.title,
     this.message,
-    this.icon = Icons.inbox_outlined,
+    this.icon = LucideIcons.inbox,
     this.actionLabel,
     this.onAction,
     this.compact = false,
@@ -65,7 +66,10 @@ class AppEmptyState extends StatelessWidget {
     );
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: compact ? 28 : 56, horizontal: 24),
+      padding: EdgeInsets.symmetric(
+        vertical: compact ? 28 : 56,
+        horizontal: 24,
+      ),
       child: Center(child: content),
     );
   }
@@ -91,15 +95,13 @@ class AppErrorState extends StatelessWidget {
     final offline = ErrorMessages.isOffline(message);
 
     return AppEmptyState(
-        title: offline ? 'Pas de connexion' : 'Une erreur est survenue',
-        message: offline ? ErrorMessages.offlineMessage : message,
-        icon: offline
-            ? Icons.wifi_off_rounded
-            : Icons.error_outline_rounded,
-        actionLabel: onRetry == null ? null : 'Réessayer',
-        onAction: onRetry,
-        compact: compact,
-      );
+      title: offline ? 'Pas de connexion' : 'Une erreur est survenue',
+      message: offline ? ErrorMessages.offlineMessage : message,
+      icon: offline ? LucideIcons.wifiOff : LucideIcons.circleAlert,
+      actionLabel: onRetry == null ? null : 'Réessayer',
+      onAction: onRetry,
+      compact: compact,
+    );
   }
 }
 
@@ -111,13 +113,13 @@ class AppLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.symmetric(vertical: compact ? 28 : 56),
-        child: const Center(
-          child: SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.4),
-          ),
-        ),
-      );
+    padding: EdgeInsets.symmetric(vertical: compact ? 28 : 56),
+    child: const Center(
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2.4),
+      ),
+    ),
+  );
 }

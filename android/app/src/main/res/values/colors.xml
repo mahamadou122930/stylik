@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Vert de marque du splash (1.0 de la maquette). Le même que le premier
+         arrêt du dégradé Flutter, pour que le passage du splash natif à
+         l'écran Dart ne se voie pas. -->
+    <color name="splash_background">#0C7A50</color>
+</resources>

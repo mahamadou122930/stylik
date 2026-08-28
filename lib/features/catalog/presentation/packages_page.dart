@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -24,33 +25,33 @@ class PackagesPage extends ConsumerWidget {
       title: 'Forfaits',
       largeTitle: true,
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         filled: true,
-        onTap: () =>
-            Navigator.of(context).pushNamed(PackageFormPage.routeName),
+        onTap: () => Navigator.of(context).pushNamed(PackageFormPage.routeName),
       ),
       child: services.isLoading
           ? const AppLoader()
           : packages.isEmpty
-              ? const AppEmptyState(
-                  title: 'Aucun forfait',
-                  message: 'Combinez plusieurs prestations à prix réduit pour '
-                      'augmenter le panier moyen.',
-                  icon: Icons.auto_awesome_rounded,
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < packages.length; i++) ...[
-                      _PackageCard(
-                        package: packages[i],
-                        accent: AppColors
-                            .chartSeries[i % AppColors.chartSeries.length],
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ],
-                ),
+          ? const AppEmptyState(
+              title: 'Aucun forfait',
+              message:
+                  'Combinez plusieurs prestations à prix réduit pour '
+                  'augmenter le panier moyen.',
+              icon: LucideIcons.sparkles,
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < packages.length; i++) ...[
+                  _PackageCard(
+                    package: packages[i],
+                    accent:
+                        AppColors.chartSeries[i % AppColors.chartSeries.length],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ],
+            ),
     );
   }
 }
@@ -75,7 +76,7 @@ class _PackageCard extends ConsumerWidget {
           Row(
             children: [
               AppIconTile(
-                icon: Icons.auto_awesome_rounded,
+                icon: LucideIcons.sparkles,
                 color: accent,
                 background: accent.withValues(alpha: 0.14),
               ),

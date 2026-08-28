@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -46,7 +47,7 @@ class StylistCommissionDetailPage extends ConsumerWidget {
       title: 'Commissions — $firstName',
       footer: AppButton(
         label: 'Enregistrer un versement',
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         onPressed: () => _openRegisterSheet(context, ref, balance.available),
       ),
       child: Column(
@@ -90,7 +91,7 @@ class StylistCommissionDetailPage extends ConsumerWidget {
                     compact: true,
                     title: 'Aucun versement',
                     message: 'Les réglages de commission apparaîtront ici.',
-                    icon: Icons.payments_outlined,
+                    icon: LucideIcons.banknote,
                   )
                 : AppListCard(
                     children: [
@@ -377,7 +378,7 @@ class _PendingRequestCard extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.access_time_rounded,
+                  LucideIcons.clock,
                   color: AppColors.amberDeep,
                   size: 20,
                 ),
@@ -469,7 +470,7 @@ class _PayoutRow extends StatelessWidget {
       strong: true,
       padding: const EdgeInsets.symmetric(vertical: 12),
       leading: const AppIconTile(
-        icon: Icons.check_rounded,
+        icon: LucideIcons.check,
         color: AppColors.primary,
         background: AppColors.tintGreen,
         size: 38,
@@ -566,7 +567,7 @@ class _SettlePayoutSheetState extends State<_SettlePayoutSheet> {
             const SizedBox(height: 20),
             AppButton(
               label: 'Valider & régler',
-              icon: Icons.check_rounded,
+              icon: LucideIcons.check,
               onPressed: () => Navigator.pop(context, (
                 method: _selectedMethod,
                 ref: _refController.text.trim(),
@@ -685,7 +686,7 @@ class _RegisterPayoutSheetState extends State<_RegisterPayoutSheet> {
             const SizedBox(height: 20),
             AppButton(
               label: 'Enregistrer',
-              icon: Icons.check_rounded,
+              icon: LucideIcons.check,
               onPressed: () {
                 final amount = int.tryParse(_amountController.text.trim()) ?? 0;
                 if (amount <= 0) return;

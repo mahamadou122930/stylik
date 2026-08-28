@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -31,12 +32,14 @@ class SubscriptionPage extends ConsumerWidget {
         data: (data) => data == null
             ? AppEmptyState(
                 title: 'Aucun abonnement',
-                message: 'Ce salon n\'a pas encore de formule active. '
+                message:
+                    'Ce salon n\'a pas encore de formule active. '
                     'Comparez les formules pour en activer une.',
-                icon: Icons.workspace_premium_outlined,
+                icon: LucideIcons.award,
                 actionLabel: 'Choisir un abonnement',
-                onAction: () => Navigator.of(context)
-                    .pushNamed(PlanSelectionPage.routeName),
+                onAction: () => Navigator.of(
+                  context,
+                ).pushNamed(PlanSelectionPage.routeName),
               )
             : _SubscriptionBody(subscription: data),
       ),
@@ -134,7 +137,7 @@ class _SubscriptionBody extends StatelessWidget {
         const SizedBox(height: 12),
         AppButton.outline(
           label: 'Changer de formule',
-          icon: Icons.swap_horiz_rounded,
+          icon: LucideIcons.arrowLeftRight,
           onPressed: () =>
               Navigator.of(context).pushNamed(PlanSelectionPage.routeName),
         ),
@@ -162,7 +165,7 @@ class _SubscriptionBody extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
-                            Icons.check_rounded,
+                            LucideIcons.check,
                             size: 12,
                             color: AppColors.primary,
                           ),
@@ -194,7 +197,7 @@ class _SubscriptionBody extends StatelessWidget {
               strong: true,
               padding: const EdgeInsets.symmetric(vertical: 12),
               leading: const AppIconTile(
-                icon: Icons.credit_card_rounded,
+                icon: LucideIcons.creditCard,
                 radius: 11,
                 size: 36,
               ),
@@ -212,7 +215,7 @@ class _SubscriptionBody extends StatelessWidget {
               strong: true,
               padding: const EdgeInsets.symmetric(vertical: 12),
               leading: const AppIconTile.neutral(
-                icon: Icons.description_outlined,
+                icon: LucideIcons.fileText,
                 radius: 11,
                 size: 36,
               ),

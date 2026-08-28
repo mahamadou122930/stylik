@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
@@ -81,7 +82,7 @@ class _RolesPageState extends State<RolesPage> {
           ),
           const SizedBox(height: 14),
           const AppCallout(
-            icon: Icons.star_border_rounded,
+            icon: LucideIcons.star,
             message:
                 'Le gérant a tous les accès et ne peut pas être restreint.',
           ),

@@ -43,7 +43,7 @@ void main() {
   ) async {
     await pumpScreen(tester, const WelcomePage());
 
-    expect(find.text('L\'Atelier'), findsOneWidget);
+    expect(find.text('Stylik'), findsOneWidget);
     expect(
       find.text('La gestion complète de votre salon, dans une seule app.'),
       findsOneWidget,
@@ -55,7 +55,7 @@ void main() {
   testWidgets('1.2 Connexion suit les libellés de la maquette', (tester) async {
     await pumpScreen(tester, const LoginPage());
 
-    expect(find.text('L\'Atelier'), findsOneWidget);
+    expect(find.text('Stylik'), findsOneWidget);
     expect(find.text('La gestion de votre salon, simplifiée'), findsOneWidget);
     expect(find.text('Mot de passe oublié ?'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);

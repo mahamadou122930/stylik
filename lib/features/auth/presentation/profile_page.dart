@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -106,7 +107,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     style: AppTypography.sora(18, FontWeight.w700),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(LucideIcons.x),
                     onPressed: () => Navigator.pop(sheetContext),
                   ),
                 ],
@@ -153,9 +154,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     }
                   } catch (e) {
                     if (sheetContext.mounted) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        SnackBar(content: Text('Erreur: $e')),
-                      );
+                      ScaffoldMessenger.of(
+                        sheetContext,
+                      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
                     }
                   }
                 },
@@ -208,7 +209,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     style: AppTypography.sora(18, FontWeight.w700),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded),
+                    icon: const Icon(LucideIcons.x),
                     onPressed: () => Navigator.pop(sheetContext),
                   ),
                 ],
@@ -234,7 +235,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   if (pwd.length < 6) {
                     ScaffoldMessenger.of(sheetContext).showSnackBar(
                       const SnackBar(
-                        content: Text('Le mot de passe doit faire 6 caractères min.'),
+                        content: Text(
+                          'Le mot de passe doit faire 6 caractères min.',
+                        ),
                       ),
                     );
                     return;
@@ -242,7 +245,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   if (pwd != confirm) {
                     ScaffoldMessenger.of(sheetContext).showSnackBar(
                       const SnackBar(
-                        content: Text('Les mots de passe ne correspondent pas.'),
+                        content: Text(
+                          'Les mots de passe ne correspondent pas.',
+                        ),
                       ),
                     );
                     return;
@@ -265,9 +270,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     }
                   } catch (e) {
                     if (sheetContext.mounted) {
-                      ScaffoldMessenger.of(sheetContext).showSnackBar(
-                        SnackBar(content: Text('Erreur: $e')),
-                      );
+                      ScaffoldMessenger.of(
+                        sheetContext,
+                      ).showSnackBar(SnackBar(content: Text('Erreur: $e')));
                     }
                   }
                 },
@@ -280,89 +285,130 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final profile = ref.watch(currentProfileProvider).valueOrNull;
-    final salon = ref.watch(currentSalonProvider).valueOrNull;
+  /// En-tête d'identité : avatar, nom, email et rôle.
+  ///
+  /// Rien n'est inventé tant que le profil n'est pas lu. Le code affichait
+  /// auparavant « Fatoumata Traoré », une adresse d'exemple et un salon fictif
+  /// en repli : hors ligne ou session non restaurée, l'utilisateur voyait
+  /// l'identité de quelqu'un d'autre présentée comme la sienne.
+  Widget _identityHeader() {
+    final profileState = ref.watch(currentProfileProvider);
+    final salonName = ref.watch(currentSalonProvider).valueOrNull?.name.trim();
 
-    final fullName = profile?.fullName ?? 'Fatoumata Traoré';
-    final email = profile?.email ?? 'fatoumata@latelier.ml';
-    final roleLabel = profile?.role.label ?? 'Gérante';
-    final salonName = salon?.name ?? 'L\'Atelier Coiffure';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: profileState.when(
+        loading: () => const AppLoader(compact: true),
+        error: (error, _) => AppErrorState(
+          message: '$error',
+          compact: true,
+          onRetry: () => ref.invalidate(currentProfileProvider),
+        ),
+        data: (profile) {
+          if (profile == null) {
+            return AppErrorState(
+              message: 'Profil introuvable pour ce compte.',
+              compact: true,
+              onRetry: () => ref.invalidate(currentProfileProvider),
+            );
+          }
 
-    return AppScreen(
-      title: 'Mon profil',
-      action: AppIconButton(
-        icon: Icons.edit_outlined,
-        onTap: _editPersonalInfo,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Bloc En-tête Profil (Avatar, Nom, Email, Badge)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(
-              children: [
-                // Avatar vert carré arrondi
-                Container(
-                  width: 76,
-                  height: 76,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(22),
-                  ),
-                  child: Text(
-                    Formatters.initials(fullName),
-                    style: AppTypography.sora(
-                      26,
-                      FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
+          final fullName = profile.fullName.trim();
+          final email = profile.email?.trim();
+          // Le salon se charge séparément : afficher le rôle seul vaut mieux
+          // qu'un nom de salon inventé le temps de la lecture.
+          final badge = (salonName == null || salonName.isEmpty)
+              ? profile.role.label
+              : '${profile.role.label} · $salonName';
+
+          return Column(
+            children: [
+              Container(
+                width: 76,
+                height: 76,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(22),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  fullName,
+                child: Text(
+                  fullName.isEmpty ? '?' : Formatters.initials(fullName),
                   style: AppTypography.sora(
-                    21,
+                    26,
                     FontWeight.w800,
-                    letterSpacing: -0.5,
+                    color: Colors.white,
                   ),
                 ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                fullName.isEmpty ? 'Sans nom' : fullName,
+                textAlign: TextAlign.center,
+                style: AppTypography.sora(
+                  21,
+                  FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              // Ligne omise plutôt que remplie d'une adresse d'exemple : un
+              // compte créé par le gérant pour un coiffeur n'a pas toujours
+              // d'email.
+              if (email != null && email.isNotEmpty) ...[
                 const SizedBox(height: 3),
                 Text(
                   email,
+                  textAlign: TextAlign.center,
                   style: AppTypography.manrope(
                     13,
                     FontWeight.w500,
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 10),
-                // Badge "Gérante · L'Atelier Coiffure"
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.tintGreenSoft,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '$roleLabel · $salonName',
-                    style: AppTypography.manrope(
-                      12.5,
-                      FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
+              ],
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.tintGreenSoft,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  badge,
+                  style: AppTypography.manrope(
+                    12.5,
+                    FontWeight.w700,
+                    color: AppColors.primary,
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = ref.watch(currentProfileProvider).valueOrNull;
+    // Sans profil chargé, l'édition n'a rien à modifier et les entrées
+    // réservées au gérant ne peuvent pas être décidées.
+    final hasProfile = profile != null;
+
+    return AppScreen(
+      title: 'Mon profil',
+      action: AppIconButton(
+        icon: LucideIcons.pencil,
+        enabled: hasProfile,
+        onTap: hasProfile ? _editPersonalInfo : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _identityHeader(),
 
           const SizedBox(height: 12),
 
@@ -378,7 +424,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 strong: true,
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 leading: const AppIconTile(
-                  icon: Icons.person_outline_rounded,
+                  icon: LucideIcons.user,
                   color: AppColors.primary,
                   background: AppColors.tintGreen,
                   size: 38,
@@ -392,7 +438,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 strong: true,
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 leading: const AppIconTile(
-                  icon: Icons.lock_outline_rounded,
+                  icon: LucideIcons.lock,
                   color: AppColors.blue,
                   background: AppColors.tintBlue,
                   size: 38,
@@ -407,7 +453,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   strong: true,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   leading: const AppIconTile(
-                    icon: Icons.star_outline_rounded,
+                    icon: LucideIcons.star,
                     color: AppColors.amber,
                     background: AppColors.tintAmber,
                     size: 38,
@@ -436,7 +482,8 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 trailing: Switch.adaptive(
                   value: _notificationsEnabled,
                   activeTrackColor: AppColors.primary,
-                  onChanged: (val) => setState(() => _notificationsEnabled = val),
+                  onChanged: (val) =>
+                      setState(() => _notificationsEnabled = val),
                 ),
               ),
               AppListRow(
@@ -471,7 +518,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Icon(
-                      Icons.logout_rounded,
+                      LucideIcons.logOut,
                       color: AppColors.dangerDeep,
                       size: 20,
                     ),

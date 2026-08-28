@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -42,8 +43,8 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
     final mine = (appointments.valueOrNull ?? const <Appointment>[])
         .where((appointment) => appointment.stylistId == widget.stylist.id)
         .toList();
-    final canBook =
-        (ref.watch(currentRoleProvider) ?? UserRole.coiffeur).canBookAppointments;
+    final canBook = (ref.watch(currentRoleProvider) ?? UserRole.coiffeur)
+        .canBookAppointments;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -65,8 +66,9 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
                       borderRadius: BorderRadius.circular(13),
                     ),
                     child: Text(
-                      Formatters.initials(widget.stylist.fullName)
-                          .substring(0, 1),
+                      Formatters.initials(
+                        widget.stylist.fullName,
+                      ).substring(0, 1),
                       style: AppTypography.sora(
                         16,
                         FontWeight.w700,
@@ -106,7 +108,7 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
                   ),
                   if (widget.showBack)
                     AppIconButton(
-                      icon: Icons.arrow_back_ios_new_rounded,
+                      icon: LucideIcons.chevronLeft,
                       onTap: () => Navigator.of(context).maybePop(),
                     ),
                 ],
@@ -132,11 +134,12 @@ class _StylistAgendaPageState extends ConsumerState<StylistAgendaPage> {
                         message: canBook
                             ? 'Aucun rendez-vous pour ce coiffeur.'
                             : 'Aucun rendez-vous prévu aujourd\'hui.',
-                        icon: Icons.event_available_outlined,
+                        icon: LucideIcons.calendarCheck,
                         actionLabel: canBook ? 'Nouveau RDV' : null,
                         onAction: canBook
-                            ? () => Navigator.of(context)
-                                .pushNamed(AppointmentFormPage.routeName)
+                            ? () => Navigator.of(
+                                context,
+                              ).pushNamed(AppointmentFormPage.routeName)
                             : null,
                       )
                     : _Timeline(appointments: mine),
@@ -215,8 +218,8 @@ class _FreeSlotRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.of(context)
-                .pushNamed(AppointmentFormPage.routeName),
+            onTap: () =>
+                Navigator.of(context).pushNamed(AppointmentFormPage.routeName),
             behavior: HitTestBehavior.opaque,
             child: CustomPaint(
               painter: const DashedBorderPainter(
@@ -231,7 +234,7 @@ class _FreeSlotRow extends StatelessWidget {
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.add_rounded,
+                      LucideIcons.plus,
                       size: 16,
                       color: AppColors.textFaint,
                     ),
@@ -377,23 +380,28 @@ class _TimelineRow extends StatelessWidget {
             child: GestureDetector(
               onTap: onTap,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: isNow ? AppColors.tintGreenSoft : AppColors.surface,
                   borderRadius: BorderRadius.circular(14),
                   border: Border(
                     top: BorderSide(
-                      color:
-                          isNow ? AppColors.tintGreenBorder : AppColors.border,
+                      color: isNow
+                          ? AppColors.tintGreenBorder
+                          : AppColors.border,
                     ),
                     right: BorderSide(
-                      color:
-                          isNow ? AppColors.tintGreenBorder : AppColors.border,
+                      color: isNow
+                          ? AppColors.tintGreenBorder
+                          : AppColors.border,
                     ),
                     bottom: BorderSide(
-                      color:
-                          isNow ? AppColors.tintGreenBorder : AppColors.border,
+                      color: isNow
+                          ? AppColors.tintGreenBorder
+                          : AppColors.border,
                     ),
                     left: BorderSide(color: appointment.status.color, width: 3),
                   ),

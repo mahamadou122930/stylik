@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -24,7 +25,7 @@ class PromotionsPage extends ConsumerWidget {
       largeTitle: true,
       showBack: true,
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         filled: true,
         onTap: () =>
             Navigator.of(context).pushNamed(PromotionFormPage.routeName),
@@ -40,21 +41,23 @@ class PromotionsPage extends ConsumerWidget {
             return const AppEmptyState(
               title: 'Aucune promotion',
               message: 'Créez une offre pour remplir les heures creuses.',
-              icon: Icons.local_offer_outlined,
+              icon: LucideIcons.tag,
             );
           }
 
           final running = items
-              .where((promotion) => promotion.isActive && !promotion.isScheduled)
+              .where(
+                (promotion) => promotion.isActive && !promotion.isScheduled,
+              )
               .toList();
-          final scheduled =
-              items.where((promotion) => promotion.isScheduled).toList();
+          final scheduled = items
+              .where((promotion) => promotion.isScheduled)
+              .toList();
 
           Future<void> toggle(Promotion promotion, bool value) async {
-            await ref.read(loyaltyRepositoryProvider).setPromotionActive(
-                  promotionId: promotion.id,
-                  isActive: value,
-                );
+            await ref
+                .read(loyaltyRepositoryProvider)
+                .setPromotionActive(promotionId: promotion.id, isActive: value);
             ref.invalidate(promotionsProvider);
           }
 
@@ -214,9 +217,7 @@ class _PromotionRow extends StatelessWidget {
       child: Row(
         children: [
           AppIconTile(
-            icon: upcoming
-                ? Icons.event_available_rounded
-                : Icons.auto_awesome_rounded,
+            icon: upcoming ? LucideIcons.calendarCheck : LucideIcons.sparkles,
             color: color,
             background: background,
             size: 44,

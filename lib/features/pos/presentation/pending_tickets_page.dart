@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -109,7 +110,7 @@ class PendingTicketsPage extends ConsumerWidget {
               message:
                   'Les tickets mis de côté en caisse apparaissent ici, '
                   'jusqu\'à leur règlement.',
-              icon: Icons.hourglass_empty_rounded,
+              icon: LucideIcons.hourglass,
             );
           }
 
@@ -251,13 +252,13 @@ class _PendingCard extends StatelessWidget {
               // L'abandon reste en retrait : c'est le règlement qu'on vient
               // chercher ici. Mais sans lui, un ticket que la cliente ne
               // paiera jamais resterait dans la liste indéfiniment.
-              AppIconButton(icon: Icons.more_horiz_rounded, onTap: onCancel),
+              AppIconButton(icon: LucideIcons.ellipsis, onTap: onCancel),
             ],
           ),
           const SizedBox(height: 12),
           AppButton(
             label: 'Rappeler & encaisser',
-            icon: Icons.refresh_rounded,
+            icon: LucideIcons.refreshCw,
             height: 48,
             onPressed: onSettle,
           ),
@@ -294,7 +295,7 @@ class _Avatar extends StatelessWidget {
               ),
             )
           : const Icon(
-              Icons.person_outline_rounded,
+              LucideIcons.user,
               size: 20,
               color: AppColors.textSecondary,
             ),

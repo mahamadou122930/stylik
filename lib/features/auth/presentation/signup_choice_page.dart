@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -36,7 +37,7 @@ class SignupChoicePage extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           _ChoiceCard(
-            icon: Icons.storefront_outlined,
+            icon: LucideIcons.store,
             iconColor: AppColors.primary,
             iconBackground: AppColors.tintGreen,
             title: 'Je crée mon salon',
@@ -46,7 +47,7 @@ class SignupChoicePage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _ChoiceCard(
-            icon: Icons.person_outline_rounded,
+            icon: LucideIcons.user,
             iconColor: AppColors.blue,
             iconBackground: AppColors.tintBlue,
             title: 'Je rejoins un salon',
@@ -57,7 +58,8 @@ class SignupChoicePage extends StatelessWidget {
           ),
           const SizedBox(height: 22),
           const AppCallout(
-            message: 'Le code d\'invitation est fourni par votre gérant quand '
+            message:
+                'Le code d\'invitation est fourni par votre gérant quand '
                 'il ajoute votre fiche employé.',
           ),
         ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -32,7 +33,7 @@ class ServiceReportPage extends ConsumerWidget {
               title: 'Aucune donnée',
               message:
                   'Aucune prestation ni vente encaissée sur cette période.',
-              icon: Icons.donut_small_outlined,
+              icon: LucideIcons.chartPie,
             );
           }
 

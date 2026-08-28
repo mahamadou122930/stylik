@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -23,13 +24,15 @@ class ServiceEditPage extends ConsumerStatefulWidget {
 }
 
 class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
-  late final TextEditingController _name =
-      TextEditingController(text: widget.service?.name ?? '');
+  late final TextEditingController _name = TextEditingController(
+    text: widget.service?.name ?? '',
+  );
   late final TextEditingController _price = TextEditingController(
     text: widget.service == null ? '' : '${widget.service!.priceFcfa}',
   );
-  late final TextEditingController _description =
-      TextEditingController(text: widget.service?.description ?? '');
+  late final TextEditingController _description = TextEditingController(
+    text: widget.service?.description ?? '',
+  );
 
   late int _durationMinutes = widget.service?.durationMinutes ?? 30;
   late String _category = widget.service?.category ?? '';
@@ -201,8 +204,11 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 onTap: () => Navigator.pop(context, minutes),
                 trailing: minutes == _durationMinutes
-                    ? const Icon(Icons.check_rounded,
-                        size: 18, color: AppColors.accent)
+                    ? const Icon(
+                        LucideIcons.check,
+                        size: 18,
+                        color: AppColors.accent,
+                      )
                     : null,
               ),
           ],
@@ -265,7 +271,7 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
                 child: AppSelectField(
                   label: 'Durée',
                   value: Formatters.duration(_durationMinutes),
-                  icon: Icons.schedule_rounded,
+                  icon: LucideIcons.clock,
                   onTap: _pickDuration,
                 ),
               ),
@@ -341,7 +347,7 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
-                        Icons.add_rounded,
+                        LucideIcons.plus,
                         size: 16,
                         color: AppColors.accent,
                       ),
@@ -386,8 +392,7 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
                           for (final value in const [0, 10, 20, 25, 30, 35, 40])
                             AppListRow(
                               label: '$value %',
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 13),
+                              padding: const EdgeInsets.symmetric(vertical: 13),
                               onTap: () =>
                                   Navigator.pop(context, value.toDouble()),
                             ),

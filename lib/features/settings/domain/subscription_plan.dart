@@ -11,10 +11,8 @@ enum BillingCycle {
   /// Remise appliquée à l'engagement annuel (0 pour le mensuel).
   final int discountPercent;
 
-  static BillingCycle fromValue(String? value) => BillingCycle.values.firstWhere(
-        (cycle) => cycle.value == value,
-        orElse: () => monthly,
-      );
+  static BillingCycle fromValue(String? value) => BillingCycle.values
+      .firstWhere((cycle) => cycle.value == value, orElse: () => monthly);
 
   /// Prix mensuel réellement payé (le tarif annuel est remisé).
   int monthlyPrice(int basePricePerMonth) =>
@@ -95,7 +93,8 @@ class SubscriptionPlan {
 
   bool has(PlanCapability capability) => capabilities.contains(capability);
 
-  factory SubscriptionPlan.fromMap(Map<String, dynamic> map) => SubscriptionPlan(
+  factory SubscriptionPlan.fromMap(Map<String, dynamic> map) =>
+      SubscriptionPlan(
         id: map['id'] as String,
         code: map['code'] as String,
         name: (map['name'] as String?) ?? 'Formule',
@@ -106,8 +105,9 @@ class SubscriptionPlan {
             .map((code) => PlanCapability.values.where((c) => c.code == code))
             .expand((matches) => matches)
             .toList(),
-        features:
-            ((map['features'] as List?) ?? const []).map((e) => '$e').toList(),
+        features: ((map['features'] as List?) ?? const [])
+            .map((e) => '$e')
+            .toList(),
         isPopular: (map['is_popular'] as bool?) ?? false,
         sortOrder: (map['sort_order'] as num?)?.toInt() ?? 0,
       );

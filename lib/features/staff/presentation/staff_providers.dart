@@ -26,45 +26,51 @@ final stylistsProvider = FutureProvider<List<Profile>>((ref) async {
 });
 
 /// Fiche d'un membre.
-final staffDetailProvider =
-    FutureProvider.family<Profile?, String>((ref, profileId) {
+final staffDetailProvider = FutureProvider.family<Profile?, String>((
+  ref,
+  profileId,
+) {
   return ref.watch(staffRepositoryProvider).fetchById(profileId);
 });
 
 /// Horaires hebdomadaires d'un membre.
 final staffScheduleProvider =
     FutureProvider.family<List<StaffSchedule>, String>((ref, profileId) {
-  return ref.watch(staffRepositoryProvider).fetchSchedule(profileId);
-});
+      return ref.watch(staffRepositoryProvider).fetchSchedule(profileId);
+    });
 
 /// Statistiques du mois d'un membre (CA, clients, note).
-final staffStatsProvider =
-    FutureProvider.family<Map<String, dynamic>?, String>((ref, profileId) async {
-  final salonId = ref.watch(currentSalonIdProvider);
-  if (salonId != null) {
-    try {
-      final now = DateTime.now();
-      final commissions =
-          await ref.watch(financeRepositoryProvider).fetchCommissions(
-                salonId: salonId,
-                from: DateTime(now.year, now.month),
-                to: DateTime(now.year, now.month + 1),
-              );
+final staffStatsProvider = FutureProvider.family<Map<String, dynamic>?, String>(
+  (ref, profileId) async {
+    final salonId = ref.watch(currentSalonIdProvider);
+    if (salonId != null) {
+      try {
+        final now = DateTime.now();
+        final commissions = await ref
+            .watch(financeRepositoryProvider)
+            .fetchCommissions(
+              salonId: salonId,
+              from: DateTime(now.year, now.month),
+              to: DateTime(now.year, now.month + 1),
+            );
 
-      for (final c in commissions) {
-        if (c.stylistId == profileId) {
-          return {
-            'revenue_fcfa': c.revenueFcfa,
-            'commission_fcfa': c.commissionFcfa,
-            'client_count': c.clientCount > 0 ? c.clientCount : c.serviceCount,
-            'service_count': c.serviceCount,
-          };
+        for (final c in commissions) {
+          if (c.stylistId == profileId) {
+            return {
+              'revenue_fcfa': c.revenueFcfa,
+              'commission_fcfa': c.commissionFcfa,
+              'client_count': c.clientCount > 0
+                  ? c.clientCount
+                  : c.serviceCount,
+              'service_count': c.serviceCount,
+            };
+          }
         }
-      }
-    } catch (_) {}
-  }
-  return ref.watch(staffRepositoryProvider).fetchStats(profileId);
-});
+      } catch (_) {}
+    }
+    return ref.watch(staffRepositoryProvider).fetchStats(profileId);
+  },
+);
 
 /// Toutes les absences du salon.
 final timeOffProvider = FutureProvider<List<TimeOff>>((ref) async {
@@ -79,10 +85,9 @@ final myTimeOffProvider = FutureProvider<List<TimeOff>>((ref) async {
   final profile = ref.watch(currentProfileProvider).valueOrNull;
   if (salonId == null || profile == null) return const [];
 
-  return ref.watch(staffRepositoryProvider).fetchTimeOff(
-        salonId: salonId,
-        profileId: profile.id,
-      );
+  return ref
+      .watch(staffRepositoryProvider)
+      .fetchTimeOff(salonId: salonId, profileId: profile.id);
 });
 
 /// Demandes déjà tranchées, la plus récente d'abord.
@@ -119,9 +124,11 @@ final upcomingTimeOffProvider = Provider<List<TimeOff>>((ref) {
   final items = ref.watch(timeOffProvider).valueOrNull ?? const [];
   final now = DateTime.now();
   return items
-      .where((request) =>
-          request.status == TimeOffStatus.approved &&
-          request.endDate.isAfter(now.subtract(const Duration(days: 1))))
+      .where(
+        (request) =>
+            request.status == TimeOffStatus.approved &&
+            request.endDate.isAfter(now.subtract(const Duration(days: 1))),
+      )
       .toList();
 });
 

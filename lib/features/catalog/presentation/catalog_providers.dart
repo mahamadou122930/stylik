@@ -37,8 +37,7 @@ final packagesProvider = Provider<List<SalonService>>((ref) {
 final serviceCategoriesProvider = Provider<List<String>>((ref) {
   final categories = <String>{
     for (final service in ref.watch(simpleServicesProvider)) service.category,
-  }.toList()
-    ..sort();
+  }.toList()..sort();
   return ['Toutes', ...categories];
 });
 
@@ -46,12 +45,15 @@ final serviceCategoriesProvider = Provider<List<String>>((ref) {
 final selectedCategoryIndexProvider = StateProvider<int>((ref) => 0);
 
 /// Prestations groupées par catégorie, filtrées par la puce sélectionnée.
-final servicesByCategoryProvider =
-    Provider<Map<String, List<SalonService>>>((ref) {
+final servicesByCategoryProvider = Provider<Map<String, List<SalonService>>>((
+  ref,
+) {
   final services = ref.watch(simpleServicesProvider);
   final categories = ref.watch(serviceCategoriesProvider);
   final index = ref.watch(selectedCategoryIndexProvider);
-  final filter = index > 0 && index < categories.length ? categories[index] : null;
+  final filter = index > 0 && index < categories.length
+      ? categories[index]
+      : null;
 
   final grouped = <String, List<SalonService>>{};
   for (final service in services) {
@@ -64,9 +66,9 @@ final servicesByCategoryProvider =
 /// Prestations incluses dans un forfait, résolues par identifiant.
 final packageContentProvider =
     Provider.family<List<SalonService>, SalonService>((ref, package) {
-  final services = ref.watch(servicesProvider).valueOrNull ?? const [];
-  return [
-    for (final id in package.includedServiceIds)
-      ...services.where((service) => service.id == id),
-  ];
-});
+      final services = ref.watch(servicesProvider).valueOrNull ?? const [];
+      return [
+        for (final id in package.includedServiceIds)
+          ...services.where((service) => service.id == id),
+      ];
+    });

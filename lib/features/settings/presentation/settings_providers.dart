@@ -29,8 +29,9 @@ final subscriptionProvider = FutureProvider<Subscription?>((ref) async {
 });
 
 /// Catalogue des formules proposées (écran « Choisir un abonnement »).
-final subscriptionPlansProvider =
-    FutureProvider<List<SubscriptionPlan>>((ref) async {
+final subscriptionPlansProvider = FutureProvider<List<SubscriptionPlan>>((
+  ref,
+) async {
   return ref.watch(settingsRepositoryProvider).fetchPlans();
 });
 

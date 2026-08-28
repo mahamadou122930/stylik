@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
 import '../services/connectivity_service.dart';
@@ -33,7 +34,7 @@ class OfflineBanner extends ConsumerWidget {
       bgColor = const Color(0xFA2C2416);
       borderColor = const Color(0xFFB97706);
       textColor = const Color(0xFFFBBF24);
-      iconData = Icons.wifi_off_rounded;
+      iconData = LucideIcons.wifiOff;
       label = pendingCount > 0
           ? 'Hors-ligne • $pendingCount en attente'
           : 'Mode hors-ligne';
@@ -41,13 +42,13 @@ class OfflineBanner extends ConsumerWidget {
       bgColor = const Color(0xFA1E2838);
       borderColor = const Color(0xFF2A5FC0);
       textColor = const Color(0xFF93C5FD);
-      iconData = Icons.sync_rounded;
+      iconData = LucideIcons.refreshCw;
       label = 'Synchronisation…';
     } else {
       bgColor = const Color(0xFA162B22);
       borderColor = AppColors.accent;
       textColor = const Color(0xFF6EE7B7);
-      iconData = Icons.cloud_done_rounded;
+      iconData = LucideIcons.cloudCheck;
       label = '$pendingCount modification(s) en attente';
     }
 
@@ -69,13 +70,17 @@ class OfflineBanner extends ConsumerWidget {
                   duration: const Duration(milliseconds: 300),
                   offset: showBanner ? Offset.zero : const Offset(0, -0.6),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: bgColor,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                          color: borderColor.withValues(alpha: 0.6), width: 1),
+                        color: borderColor.withValues(alpha: 0.6),
+                        width: 1,
+                      ),
                       boxShadow: const [
                         BoxShadow(
                           color: Color(0x33000000),
@@ -105,8 +110,9 @@ class OfflineBanner extends ConsumerWidget {
                             height: 10,
                             child: CircularProgressIndicator(
                               strokeWidth: 1.8,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(textColor),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                textColor,
+                              ),
                             ),
                           ),
                         ],

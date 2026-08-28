@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
@@ -22,6 +23,7 @@ import 'features/auth/presentation/profile_page.dart';
 import 'features/auth/presentation/register_page.dart';
 import 'features/auth/presentation/role_selection_page.dart';
 import 'features/auth/presentation/signup_choice_page.dart';
+import 'features/auth/presentation/splash_page.dart';
 import 'features/auth/presentation/welcome_page.dart';
 import 'features/catalog/domain/salon_service.dart';
 import 'features/catalog/presentation/catalog_page.dart';
@@ -81,9 +83,9 @@ import 'features/staff/presentation/time_off_request_page.dart';
 import 'core/services/sync_engine.dart';
 import 'core/widgets/offline_banner.dart';
 
-/// Racine de l'application L'Atelier.
-class AtelierApp extends ConsumerWidget {
-  const AtelierApp({super.key});
+/// Racine de l'application Stylik.
+class StylikApp extends ConsumerWidget {
+  const StylikApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,7 +93,7 @@ class AtelierApp extends ConsumerWidget {
     ref.listen(syncEngineProvider, (previous, next) {});
 
     return MaterialApp(
-      title: 'L\'Atelier',
+      title: 'Stylik',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       // Sans ces délégués, `showDatePicker` et `showTimePicker` ne trouvent
@@ -219,20 +221,39 @@ class AtelierApp extends ConsumerWidget {
 }
 
 /// Aiguille vers la connexion ou l'espace de travail selon la session.
-class _AuthGate extends ConsumerWidget {
+class _AuthGate extends ConsumerStatefulWidget {
   const _AuthGate();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends ConsumerState<_AuthGate> {
+  /// Le splash reste affiché au moins [SplashPage.minimumDuration], même si la
+  /// session est déjà restaurée : sans ce plancher, il n'apparaîtrait que sur
+  /// connexion lente, et se réduirait ailleurs à un clignotement.
+  bool _minimumElapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(SplashPage.minimumDuration, () {
+      if (mounted) setState(() => _minimumElapsed = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_minimumElapsed) return const SplashPage();
+
     final session = ref.watch(currentSessionProvider);
     if (session == null) return const WelcomePage();
 
     final profile = ref.watch(currentProfileProvider);
     return profile.when(
-      loading: () => const Scaffold(
-        backgroundColor: AppColors.background,
-        body: AppLoader(),
-      ),
+      // Le profil se lit après la session : c'est encore du démarrage, donc le
+      // même écran, plutôt qu'un chargeur nu sur fond beige.
+      loading: () => const SplashPage(),
       error: (error, _) => Scaffold(
         backgroundColor: AppColors.background,
         body: AppErrorState(
@@ -270,32 +291,32 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   static const _Tab _homeTab = _Tab(
     'Accueil',
-    Icons.home_outlined,
-    Icons.home_rounded,
+    LucideIcons.house,
+    LucideIcons.house,
     HomePage(),
   );
   static const _Tab _agendaTab = _Tab(
     'Agenda',
-    Icons.calendar_today_outlined,
-    Icons.calendar_today_rounded,
+    LucideIcons.calendar,
+    LucideIcons.calendar,
     AgendaPage(),
   );
   static const _Tab _posTab = _Tab(
     'Caisse',
-    Icons.receipt_long_outlined,
-    Icons.receipt_long_rounded,
+    LucideIcons.receiptText,
+    LucideIcons.receiptText,
     PosPage(),
   );
   static const _Tab _clientsTab = _Tab(
     'Clients',
-    Icons.people_outline_rounded,
-    Icons.people_rounded,
+    LucideIcons.users,
+    LucideIcons.users,
     ClientsPage(),
   );
   static const _Tab _moreTab = _Tab(
     'Plus',
-    Icons.grid_view_outlined,
-    Icons.grid_view_rounded,
+    LucideIcons.layoutGrid,
+    LucideIcons.layoutGrid,
     MorePage(),
   );
 
@@ -334,7 +355,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         if (settings.name == '/' || settings.name == null) {
           return MaterialPageRoute(builder: (_) => tabs[index].page);
         }
-        return AtelierApp.buildRoute(settings);
+        return StylikApp.buildRoute(settings);
       },
     );
   }
@@ -479,8 +500,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                           ),
                           child: Icon(
                             _index == posIndex
-                                ? Icons.receipt_long_rounded
-                                : Icons.add_rounded,
+                                ? LucideIcons.receiptText
+                                : LucideIcons.plus,
                             size: 28,
                             color: _index == posIndex
                                 ? const Color(0xFF0A2A16)
@@ -544,6 +565,15 @@ class _Tab {
 
   final String label;
   final IconData icon;
+
+  /// Icône de l'onglet actif.
+  ///
+  /// Égale à [icon] depuis le passage à Lucide : ce jeu est entièrement en
+  /// trait, sans variante pleine, là où Material appariait `_outlined` et
+  /// `_rounded`. La sélection reste lisible par la couleur et la graisse du
+  /// libellé. Le champ est conservé pour le jour où une icône pleine
+  /// distinguerait un onglet.
   final IconData activeIcon;
+
   final Widget page;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -48,8 +49,9 @@ class ReceptionHomePage extends ConsumerWidget {
                   label: 'À encaisser',
                   value: '${unpaid.length}',
                   caption: 'prestation(s) terminée(s)',
-                  captionColor:
-                      unpaid.isEmpty ? AppColors.textSecondary : AppColors.amber,
+                  captionColor: unpaid.isEmpty
+                      ? AppColors.textSecondary
+                      : AppColors.amber,
                 ),
               ),
             ],
@@ -63,17 +65,18 @@ class ReceptionHomePage extends ConsumerWidget {
               Expanded(
                 child: _QuickAction(
                   label: 'Nouveau RDV',
-                  icon: Icons.add_rounded,
+                  icon: LucideIcons.plus,
                   filled: true,
-                  onTap: () => Navigator.of(context)
-                      .pushNamed(AppointmentFormPage.routeName),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pushNamed(AppointmentFormPage.routeName),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _QuickAction(
                   label: 'Ouvrir caisse',
-                  icon: Icons.receipt_long_rounded,
+                  icon: LucideIcons.receiptText,
                   onTap: () =>
                       Navigator.of(context).pushNamed(PosPage.routeName),
                 ),
@@ -107,14 +110,15 @@ class ReceptionHomePage extends ConsumerWidget {
                   compact: true,
                   title: 'Plus de rendez-vous',
                   message: 'La journée est terminée côté planning.',
-                  icon: Icons.event_available_outlined,
+                  icon: LucideIcons.calendarCheck,
                 )
               : AppListCard(
                   children: [
                     for (final appointment in upcoming.take(4))
                       AppListRow(
                         label: appointment.clientName ?? 'Client de passage',
-                        subtitle: '${appointment.summary} · '
+                        subtitle:
+                            '${appointment.summary} · '
                             '${Formatters.fcfa(appointment.totalPriceFcfa)}',
                         strong: true,
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -157,7 +161,7 @@ class ReceptionHomePage extends ConsumerWidget {
             child: Row(
               children: [
                 const Icon(
-                  Icons.error_outline_rounded,
+                  LucideIcons.circleAlert,
                   size: 20,
                   color: AppColors.amber,
                 ),

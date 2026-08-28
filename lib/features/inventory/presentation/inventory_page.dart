@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -44,7 +45,7 @@ class InventoryPage extends ConsumerWidget {
       largeTitle: true,
       showBack: false,
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         filled: true,
         onTap: () async {
           final res = await Navigator.of(
@@ -138,7 +139,7 @@ class InventoryPage extends ConsumerWidget {
           ? null
           : AppButton(
               label: 'Commander les ${lowStock.length} en alerte',
-              icon: Icons.receipt_long_rounded,
+              icon: LucideIcons.receiptText,
               onPressed: () =>
                   Navigator.of(context).pushNamed(StockReceptionPage.routeName),
             ),
@@ -152,7 +153,7 @@ class InventoryPage extends ConsumerWidget {
             ? const AppEmptyState(
                 title: 'Stock vide',
                 message: 'Ajoutez vos produits de revente et consommables.',
-                icon: Icons.inventory_2_outlined,
+                icon: LucideIcons.package,
               )
             // Filtre ou recherche sans résultat : ne pas laisser croire au
             // stock vide, et dire lequel des deux critères ne donne rien.
@@ -172,7 +173,7 @@ class InventoryPage extends ConsumerWidget {
                           'Ouvrez un produit et changez sa destination pour '
                           'pouvoir en déduire les unités ouvertes.'
                     : 'Aucune fiche n\'est marquée « Revendu au client ».',
-                icon: Icons.search_off_rounded,
+                icon: LucideIcons.searchX,
                 actionLabel: search.isNotEmpty
                     ? 'Effacer la recherche'
                     : 'Voir tous les produits',
@@ -200,7 +201,7 @@ class InventoryPage extends ConsumerWidget {
                       child: Row(
                         children: [
                           const Icon(
-                            Icons.info_outline_rounded,
+                            LucideIcons.info,
                             size: 20,
                             color: AppColors.amber,
                           ),
@@ -231,7 +232,9 @@ class InventoryPage extends ConsumerWidget {
                         subtitle: 'Ouvrir une unité, suivre le coût du mois',
                         strong: true,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        leading: const AppIconTile(icon: Icons.science_rounded),
+                        leading: const AppIconTile(
+                          icon: LucideIcons.flaskConical,
+                        ),
                         trailing: const AppChevron(),
                         onTap: () => Navigator.of(
                           context,
@@ -243,7 +246,7 @@ class InventoryPage extends ConsumerWidget {
                         strong: true,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         leading: const AppIconTile(
-                          icon: Icons.local_shipping_rounded,
+                          icon: LucideIcons.truck,
                           color: AppColors.amber,
                           background: AppColors.tintAmber,
                         ),
@@ -330,7 +333,7 @@ class ProductRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(11),
         ),
         child: const Icon(
-          Icons.local_drink_outlined,
+          LucideIcons.droplet,
           size: 19,
           color: AppColors.primary,
         ),

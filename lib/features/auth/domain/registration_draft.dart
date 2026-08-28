@@ -29,13 +29,13 @@ class RegistrationDraft {
   final UserRole role;
 
   RegistrationDraft copyWith({UserRole? role}) => RegistrationDraft(
-        salonName: salonName,
-        salonPhone: salonPhone,
-        salonAddress: salonAddress,
-        fullName: fullName,
-        email: email,
-        password: password,
-        logo: logo,
-        role: role ?? this.role,
-      );
+    salonName: salonName,
+    salonPhone: salonPhone,
+    salonAddress: salonAddress,
+    fullName: fullName,
+    email: email,
+    password: password,
+    logo: logo,
+    role: role ?? this.role,
+  );
 }

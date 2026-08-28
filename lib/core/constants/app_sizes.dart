@@ -13,6 +13,15 @@ abstract final class AppSizes {
   /// Marge horizontale du corps des écrans (`padding:0 18px`).
   static const double screenPadding = 18;
 
+  /// Largeur maximale du contenu d'un écran.
+  ///
+  /// Les maquettes sont dessinées pour un téléphone, et les grilles y sont
+  /// réglées en ratio largeur/hauteur. Dans une fenêtre de navigateur, une
+  /// carte de grille devenait aussi haute que l'écran. Le contenu reste donc
+  /// dans une colonne centrée, à peu près large comme une tablette en
+  /// portrait.
+  static const double maxContentWidth = 620;
+
   /// Marge horizontale de l'en-tête (`padding:6px 16px 12px`).
   static const double headerPadding = 16;
 

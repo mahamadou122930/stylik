@@ -68,10 +68,9 @@ class _StaffSchedulePageState extends ConsumerState<StaffSchedulePage> {
     if (_week == null) return;
     setState(() => _isSaving = true);
     try {
-      await ref.read(staffRepositoryProvider).saveSchedule(
-            profileId: widget.member.id,
-            schedule: _week!,
-          );
+      await ref
+          .read(staffRepositoryProvider)
+          .saveSchedule(profileId: widget.member.id, schedule: _week!);
       ref.invalidate(staffScheduleProvider(widget.member.id));
 
       if (!mounted) return;
@@ -114,7 +113,9 @@ class _StaffSchedulePageState extends ConsumerState<StaffSchedulePage> {
                 for (final day in week ?? const <StaffSchedule>[])
                   AppListRow(
                     label: day.weekdayLabel,
-                    subtitle: day.isDayOff ? 'Repos' : '${day.start} – ${day.end}',
+                    subtitle: day.isDayOff
+                        ? 'Repos'
+                        : '${day.start} – ${day.end}',
                     strong: true,
                     muted: day.isDayOff,
                     padding: const EdgeInsets.symmetric(vertical: 12),

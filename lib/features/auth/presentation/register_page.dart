@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
@@ -108,7 +109,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               label: 'Adresse',
               hint: 'Rue 224, Hamdallaye ACI 2000, Bamako',
               controller: _salonAddress,
-              prefixIcon: Icons.place_outlined,
+              prefixIcon: LucideIcons.mapPin,
               textInputAction: TextInputAction.next,
               validator: _required,
             ),
@@ -127,7 +128,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               hint: 'fatoumata@latelier.ml',
               controller: _email,
               keyboardType: TextInputType.emailAddress,
-              prefixIcon: Icons.email_outlined,
+              prefixIcon: LucideIcons.mail,
               textInputAction: TextInputAction.next,
               validator: (value) => (value == null || !value.contains('@'))
                   ? 'Email invalide'
@@ -138,9 +139,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               label: 'Mot de passe',
               controller: _password,
               obscureText: true,
-              prefixIcon: Icons.lock_outline_rounded,
-              validator: (value) =>
-                  (value == null || value.length < 6) ? '6 caractères min.' : null,
+              prefixIcon: LucideIcons.lock,
+              validator: (value) => (value == null || value.length < 6)
+                  ? '6 caractères min.'
+                  : null,
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -51,7 +52,8 @@ class AgendaPage extends ConsumerWidget {
     }
 
     final day = ref.watch(selectedDayProvider);
-    final stylists = ref.watch(stylistsProvider).valueOrNull ?? const <Profile>[];
+    final stylists =
+        ref.watch(stylistsProvider).valueOrNull ?? const <Profile>[];
     final appointments = ref.watch(dayAppointmentsProvider);
     final byStylist = ref.watch(appointmentsByStylistProvider);
 
@@ -62,10 +64,8 @@ class AgendaPage extends ConsumerWidget {
             Navigator.of(context).pushNamed(AppointmentFormPage.routeName),
         backgroundColor: AppColors.accent,
         elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: const Icon(Icons.add_rounded, size: 26, color: Colors.white),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: const Icon(LucideIcons.plus, size: 26, color: Colors.white),
       ),
       body: SafeArea(
         bottom: false,
@@ -88,27 +88,25 @@ class AgendaPage extends ConsumerWidget {
                           ),
                         ),
                         const SizedBox(height: 1),
-                        Text(
-                          'Planning',
-                          style: AppTypography.screenTitleLarge,
-                        ),
+                        Text('Planning', style: AppTypography.screenTitleLarge),
                       ],
                     ),
                   ),
                   AppIconButton(
-                    icon: Icons.groups_outlined,
-                    onTap: () => Navigator.of(context)
-                        .pushNamed(WalkInQueuePage.routeName),
+                    icon: LucideIcons.users,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(WalkInQueuePage.routeName),
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
-                    icon: Icons.chevron_left_rounded,
+                    icon: LucideIcons.chevronLeft,
                     onTap: () => ref.read(selectedDayProvider.notifier).state =
                         day.subtract(const Duration(days: 1)),
                   ),
                   const SizedBox(width: 8),
                   AppIconButton(
-                    icon: Icons.chevron_right_rounded,
+                    icon: LucideIcons.chevronRight,
                     onTap: () => ref.read(selectedDayProvider.notifier).state =
                         day.add(const Duration(days: 1)),
                   ),
@@ -125,9 +123,10 @@ class AgendaPage extends ConsumerWidget {
                 data: (items) => stylists.isEmpty
                     ? const AppEmptyState(
                         title: 'Aucun coiffeur',
-                        message: 'Ajoutez votre équipe pour afficher le '
+                        message:
+                            'Ajoutez votre équipe pour afficher le '
                             'planning.',
-                        icon: Icons.people_outline_rounded,
+                        icon: LucideIcons.users,
                       )
                     : _DayGrid(
                         stylists: stylists,
@@ -177,8 +176,9 @@ class _StylistHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(9),
                       ),
                       child: Text(
-                        Formatters.initials(stylists[i].fullName)
-                            .substring(0, 1),
+                        Formatters.initials(
+                          stylists[i].fullName,
+                        ).substring(0, 1),
                         style: AppTypography.sora(
                           13,
                           FontWeight.w700,
@@ -302,8 +302,10 @@ class _DayGridState extends State<_DayGrid> {
                               SizedBox(
                                 height: AgendaPage.hourHeight,
                                 child: Padding(
-                                  padding:
-                                      const EdgeInsets.only(left: 10, top: 6),
+                                  padding: const EdgeInsets.only(
+                                    left: 10,
+                                    top: 6,
+                                  ),
                                   child: Text(
                                     '${AgendaPage.openingHour + i}h',
                                     style: AppTypography.sora(
@@ -363,9 +365,10 @@ class _DayGridState extends State<_DayGrid> {
                                             child: Stack(
                                               children: [
                                                 for (final appointment
-                                                    in widget.appointmentsByStylist[
-                                                            widget.stylists[i]
-                                                                .id] ??
+                                                    in widget
+                                                            .appointmentsByStylist[widget
+                                                            .stylists[i]
+                                                            .id] ??
                                                         const <Appointment>[])
                                                   _positioned(
                                                     context,
@@ -396,7 +399,8 @@ class _DayGridState extends State<_DayGrid> {
   }
 
   Widget _positioned(BuildContext context, Appointment appointment, int index) {
-    final startOffset = appointment.startTime.hour +
+    final startOffset =
+        appointment.startTime.hour +
         appointment.startTime.minute / 60 -
         AgendaPage.openingHour;
     final accent = _StylistHeader._accent(index);
@@ -404,8 +408,10 @@ class _DayGridState extends State<_DayGrid> {
     // La hauteur du bloc est proportionnelle à la durée : une prestation de
     // trente minutes ne fait qu'une trentaine de pixels, marges comprises.
     final height =
-        (appointment.duration.inMinutes / 60 * AgendaPage.hourHeight - 4)
-            .clamp(28.0, double.infinity);
+        (appointment.duration.inMinutes / 60 * AgendaPage.hourHeight - 4).clamp(
+          28.0,
+          double.infinity,
+        );
 
     // En dessous, deux lignes de texte ne tiennent pas — c'est ce qui
     // provoquait le « BOTTOM OVERFLOWED ». On garde alors le nom du client,
@@ -421,10 +427,9 @@ class _DayGridState extends State<_DayGrid> {
       top: startOffset * AgendaPage.hourHeight + 2,
       height: height,
       child: GestureDetector(
-        onTap: () => Navigator.of(context).pushNamed(
-          AppointmentDetailPage.routeName,
-          arguments: appointment.id,
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).pushNamed(AppointmentDetailPage.routeName, arguments: appointment.id),
         child: Container(
           padding: EdgeInsets.fromLTRB(7, padding, 7, padding),
           decoration: BoxDecoration(
@@ -481,13 +486,12 @@ class StylistAgendaLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AppListRow(
-        label: stylist.fullName,
-        subtitle: stylist.role.label,
-        strong: true,
-        trailing: const AppChevron(),
-        onTap: () => Navigator.of(context).pushNamed(
-          StylistAgendaPage.routeName,
-          arguments: stylist,
-        ),
-      );
+    label: stylist.fullName,
+    subtitle: stylist.role.label,
+    strong: true,
+    trailing: const AppChevron(),
+    onTap: () => Navigator.of(
+      context,
+    ).pushNamed(StylistAgendaPage.routeName, arguments: stylist),
+  );
 }

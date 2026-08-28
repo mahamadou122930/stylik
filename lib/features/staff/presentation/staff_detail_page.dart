@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -26,14 +27,13 @@ class StaffDetailPage extends ConsumerWidget {
     return AppScreen(
       title: 'Fiche employé',
       action: AppIconButton(
-        icon: Icons.edit_outlined,
+        icon: LucideIcons.pencil,
         onTap: () async {
           final profile = member.valueOrNull;
           if (profile == null) return;
-          await Navigator.of(context).pushNamed(
-            StaffFormPage.routeName,
-            arguments: profile,
-          );
+          await Navigator.of(
+            context,
+          ).pushNamed(StaffFormPage.routeName, arguments: profile);
           ref.invalidate(staffDetailProvider(profileId));
           ref.invalidate(teamProvider);
           ref.invalidate(stylistsProvider);
@@ -48,7 +48,7 @@ class StaffDetailPage extends ConsumerWidget {
         data: (data) => data == null
             ? const AppEmptyState(
                 title: 'Membre introuvable',
-                icon: Icons.badge_outlined,
+                icon: LucideIcons.idCard,
               )
             : _StaffBody(member: data),
       ),
@@ -64,12 +64,15 @@ class _StaffBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(staffStatsProvider(member.id)).valueOrNull;
-    final timeOff = (ref.watch(timeOffProvider).valueOrNull ?? const <TimeOff>[])
-        .where((request) =>
-            request.profileId == member.id &&
-            request.status == TimeOffStatus.approved &&
-            request.endDate.isAfter(DateTime.now()))
-        .toList();
+    final timeOff =
+        (ref.watch(timeOffProvider).valueOrNull ?? const <TimeOff>[])
+            .where(
+              (request) =>
+                  request.profileId == member.id &&
+                  request.status == TimeOffStatus.approved &&
+                  request.endDate.isAfter(DateTime.now()),
+            )
+            .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,8 +140,10 @@ class _StaffBody extends ConsumerWidget {
             children: [
               for (final speciality in member.specialties)
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 13,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.tintBlue,
                     borderRadius: BorderRadius.circular(11),
@@ -252,22 +257,21 @@ class _StaffBody extends ConsumerWidget {
               strong: true,
               padding: const EdgeInsets.symmetric(vertical: 12),
               leading: const AppIconTile(
-                icon: Icons.schedule_rounded,
+                icon: LucideIcons.clock,
                 size: 36,
                 radius: 11,
               ),
               trailing: const AppChevron(),
-              onTap: () => Navigator.of(context).pushNamed(
-                StaffSchedulePage.routeName,
-                arguments: member,
-              ),
+              onTap: () => Navigator.of(
+                context,
+              ).pushNamed(StaffSchedulePage.routeName, arguments: member),
             ),
             AppListRow(
               label: 'Solde congés',
               strong: true,
               padding: const EdgeInsets.symmetric(vertical: 12),
               leading: const AppIconTile(
-                icon: Icons.beach_access_rounded,
+                icon: LucideIcons.palmtree,
                 size: 36,
                 radius: 11,
               ),
@@ -285,7 +289,7 @@ class _StaffBody extends ConsumerWidget {
               strong: true,
               padding: const EdgeInsets.symmetric(vertical: 12),
               leading: const AppIconTile(
-                icon: Icons.event_rounded,
+                icon: LucideIcons.calendar,
                 color: AppColors.amber,
                 background: AppColors.tintAmber,
                 size: 36,

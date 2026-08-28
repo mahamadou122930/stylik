@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
@@ -70,40 +71,49 @@ class AppScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       bottomNavigationBar: bottomNavigationBar,
       floatingActionButton: floatingActionButton,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            topBar ??
-                AppTopBar(
-                  title: title,
-                  subtitle: subtitle,
-                  showBack: showBack,
-                  large: largeTitle,
-                  action: action,
-                  subtitleFirst: subtitleFirst,
+      // Le contenu reste dans une colonne centrée : sur un large écran, les
+      // grilles réglées en ratio pour un téléphone donnaient des cartes hautes
+      // de plusieurs centaines de pixels.
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppSizes.maxContentWidth),
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                topBar ??
+                    AppTopBar(
+                      title: title,
+                      subtitle: subtitle,
+                      showBack: showBack,
+                      large: largeTitle,
+                      action: action,
+                      subtitleFirst: subtitleFirst,
+                    ),
+                ?header,
+                Expanded(
+                  child: scrollable
+                      ? SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: body,
+                        )
+                      : body,
                 ),
-            ?header,
-            Expanded(
-              child: scrollable
-                  ? SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      child: body,
-                    )
-                  : body,
+                if (footer != null)
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      AppSizes.screenPadding,
+                      12,
+                      AppSizes.screenPadding,
+                      MediaQuery.paddingOf(context).bottom + 22,
+                    ),
+                    child: footer,
+                  ),
+              ],
             ),
-            if (footer != null)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  AppSizes.screenPadding,
-                  12,
-                  AppSizes.screenPadding,
-                  MediaQuery.paddingOf(context).bottom + 22,
-                ),
-                child: footer,
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -144,7 +154,7 @@ class AppTopBar extends StatelessWidget {
       child: Row(
         children: [
           if (showBack && Navigator.of(context).canPop()) ...[
-            const AppIconButton(icon: Icons.arrow_back_ios_new_rounded),
+            const AppIconButton(icon: LucideIcons.chevronLeft),
             const SizedBox(width: 12),
           ],
           Expanded(
@@ -186,11 +196,7 @@ class AppTopBar extends StatelessWidget {
 /// En-tête d'un parcours en plusieurs étapes : retour, jauge de progression et
 /// compteur « 1/2 » (écrans d'inscription de la maquette).
 class AppStepHeader extends StatelessWidget {
-  const AppStepHeader({
-    super.key,
-    required this.step,
-    required this.stepCount,
-  });
+  const AppStepHeader({super.key, required this.step, required this.stepCount});
 
   /// Étape courante, à partir de 1.
   final int step;
@@ -208,12 +214,10 @@ class AppStepHeader extends StatelessWidget {
       child: Row(
         children: [
           if (Navigator.of(context).canPop()) ...[
-            const AppIconButton(icon: Icons.arrow_back_ios_new_rounded),
+            const AppIconButton(icon: LucideIcons.chevronLeft),
             const SizedBox(width: 12),
           ],
-          Expanded(
-            child: AppProgressBar(value: step / stepCount, height: 5),
-          ),
+          Expanded(child: AppProgressBar(value: step / stepCount, height: 5)),
           const SizedBox(width: 12),
           Text(
             '$step/$stepCount',
@@ -267,8 +271,8 @@ class AppIconButton extends StatelessWidget {
     final foreground = !enabled
         ? AppColors.textFaint
         : filled
-            ? Colors.white
-            : (color ?? AppColors.textPrimary);
+        ? Colors.white
+        : (color ?? AppColors.textPrimary);
 
     return Material(
       color: background,

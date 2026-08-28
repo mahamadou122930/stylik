@@ -110,8 +110,9 @@ class SettingsRepository {
           'status': 'active',
           'features': plan.features,
           'payment_label': paymentLabel,
-          'next_charge_at':
-              cycle.nextChargeFrom(DateTime.now()).toIso8601String(),
+          'next_charge_at': cycle
+              .nextChargeFrom(DateTime.now())
+              .toIso8601String(),
         }, onConflict: 'salon_id')
         .select()
         .single();

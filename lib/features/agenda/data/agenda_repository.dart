@@ -53,7 +53,8 @@ class AgendaRepository {
 
       var list = cached.map((row) => Appointment.fromMap(row)).where((app) {
         final st = app.startTime.toLocal();
-        final matchesDay = st.year == day.year && st.month == day.month && st.day == day.day;
+        final matchesDay =
+            st.year == day.year && st.month == day.month && st.day == day.day;
         final matchesStylist = stylistId == null || app.stylistId == stylistId;
         return matchesDay && matchesStylist;
       }).toList();
@@ -270,7 +271,10 @@ class AgendaRepository {
     );
 
     try {
-      await _client.from(SupabaseTables.appointments).delete().eq('id', appointmentId);
+      await _client
+          .from(SupabaseTables.appointments)
+          .delete()
+          .eq('id', appointmentId);
     } catch (_) {
       await _localDb.enqueueMutation(
         action: 'DELETE',

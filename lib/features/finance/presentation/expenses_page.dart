@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -25,7 +26,7 @@ class ExpensesPage extends ConsumerWidget {
     return AppScreen(
       title: 'Dépenses',
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         filled: true,
         onTap: () => Navigator.of(context).pushNamed(ExpenseFormPage.routeName),
       ),
@@ -75,7 +76,7 @@ class ExpensesPage extends ConsumerWidget {
                     message:
                         'Enregistrez loyer, réappro. et salaires pour '
                         'suivre le résultat net.',
-                    icon: Icons.receipt_long_outlined,
+                    icon: LucideIcons.receiptText,
                   )
                 : AppListCard(
                     children: [
@@ -99,32 +100,32 @@ class _ExpenseRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color, background) = switch (expense.category) {
       ExpenseCategory.rent => (
-        Icons.home_work_rounded,
+        LucideIcons.store,
         AppColors.blue,
         AppColors.tintBlue,
       ),
       ExpenseCategory.supplies => (
-        Icons.inventory_2_rounded,
+        LucideIcons.package,
         AppColors.amber,
         AppColors.tintAmber,
       ),
       ExpenseCategory.utilities => (
-        Icons.bolt_rounded,
+        LucideIcons.zap,
         AppColors.violet,
         AppColors.tintViolet,
       ),
       ExpenseCategory.payroll => (
-        Icons.person_rounded,
+        LucideIcons.user,
         AppColors.primary,
         AppColors.tintGreen,
       ),
       ExpenseCategory.marketing => (
-        Icons.campaign_rounded,
+        LucideIcons.megaphone,
         AppColors.violet,
         AppColors.tintViolet,
       ),
       ExpenseCategory.other => (
-        Icons.more_horiz_rounded,
+        LucideIcons.ellipsis,
         AppColors.textBody,
         AppColors.surfaceMuted,
       ),

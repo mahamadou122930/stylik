@@ -47,8 +47,25 @@ class SyncItem {
 }
 
 /// Service sécurisé de gestion de la base SQLite locale pour le mode Offline-First.
+///
+/// **Sur le Web**, `sqflite` n'a pas d'implémentation : `getDatabasesPath()` y
+/// échoue. Plutôt que de laisser chaque appel retenter l'ouverture et échouer,
+/// le service bascule sur un stockage en mémoire — mêmes opérations, même
+/// sémantique, mais le contenu disparaît au rechargement de la page. C'est un
+/// compromis assumé : un navigateur est presque toujours en ligne, et le cache
+/// local sert surtout au terrain sans réseau.
 class LocalDbService {
   static Database? _db;
+
+  /// Cache et file de synchro en mémoire, utilisés à la place de SQLite sur le
+  /// Web. Statiques pour être partagés par toutes les instances du service,
+  /// comme l'est la base sur mobile.
+  static final Map<String, Map<String, dynamic>> _memoryCache = {};
+  static final List<Map<String, Object?>> _memoryQueue = [];
+  static int _memoryQueueId = 0;
+
+  /// Clé de cache : la table et l'identifiant, comme la clé primaire SQLite.
+  static String _key(String tableName, String id) => '$tableName::$id';
 
   Future<Database> get database async {
     if (_db != null && _db!.isOpen) return _db!;
@@ -91,7 +108,9 @@ class LocalDbService {
         onUpgrade: (db, oldVersion, newVersion) async {
           if (oldVersion < 2) {
             try {
-              await db.execute('ALTER TABLE sync_queue ADD COLUMN retry_count INTEGER DEFAULT 0');
+              await db.execute(
+                'ALTER TABLE sync_queue ADD COLUMN retry_count INTEGER DEFAULT 0',
+              );
             } catch (_) {}
           }
         },
@@ -109,6 +128,18 @@ class LocalDbService {
     required String salonId,
     required List<Map<String, dynamic>> records,
   }) async {
+    if (kIsWeb) {
+      for (final record in records) {
+        final id = record['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+        _memoryCache[_key(tableName, id)] = {
+          'salon_id': salonId,
+          'data': record,
+        };
+      }
+      return;
+    }
+
     try {
       final db = await database;
       final batch = db.batch();
@@ -118,21 +149,19 @@ class LocalDbService {
         final id = record['id']?.toString() ?? '';
         if (id.isEmpty) continue;
 
-        batch.insert(
-          'cached_records',
-          {
-            'table_name': tableName,
-            'id': id,
-            'salon_id': salonId,
-            'data': jsonEncode(record),
-            'updated_at': now,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        batch.insert('cached_records', {
+          'table_name': tableName,
+          'id': id,
+          'salon_id': salonId,
+          'data': jsonEncode(record),
+          'updated_at': now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await batch.commit(noResult: true);
     } catch (e) {
-      debugPrint('Erreur lors de la mise en cache des enregistrements ($tableName): $e');
+      debugPrint(
+        'Erreur lors de la mise en cache des enregistrements ($tableName): $e',
+      );
     }
   }
 
@@ -152,6 +181,11 @@ class LocalDbService {
     required String tableName,
     required String recordId,
   }) async {
+    if (kIsWeb) {
+      _memoryCache.remove(_key(tableName, recordId));
+      return;
+    }
+
     try {
       final db = await database;
       await db.delete(
@@ -160,7 +194,9 @@ class LocalDbService {
         whereArgs: [tableName, recordId],
       );
     } catch (e) {
-      debugPrint('Erreur de suppression du cache local ($tableName, $recordId): $e');
+      debugPrint(
+        'Erreur de suppression du cache local ($tableName, $recordId): $e',
+      );
     }
   }
 
@@ -168,6 +204,15 @@ class LocalDbService {
     required String tableName,
     required String salonId,
   }) async {
+    if (kIsWeb) {
+      return [
+        for (final entry in _memoryCache.entries)
+          if (entry.key.startsWith('$tableName::') &&
+              entry.value['salon_id'] == salonId)
+            entry.value['data'] as Map<String, dynamic>,
+      ];
+    }
+
     try {
       final db = await database;
       final rows = await db.query(
@@ -196,6 +241,11 @@ class LocalDbService {
     required String tableName,
     required String recordId,
   }) async {
+    if (kIsWeb) {
+      final entry = _memoryCache[_key(tableName, recordId)];
+      return entry?['data'] as Map<String, dynamic>?;
+    }
+
     try {
       final db = await database;
       final rows = await db.query(
@@ -208,7 +258,9 @@ class LocalDbService {
       if (rows.isEmpty) return null;
       return jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('Erreur de lecture de l\'élément $recordId dans le cache local: $e');
+      debugPrint(
+        'Erreur de lecture de l\'élément $recordId dans le cache local: $e',
+      );
       return null;
     }
   }
@@ -221,6 +273,19 @@ class LocalDbService {
     required String recordId,
     required Map<String, dynamic> payload,
   }) async {
+    if (kIsWeb) {
+      _memoryQueue.add({
+        'id': ++_memoryQueueId,
+        'action': action,
+        'table_name': tableName,
+        'record_id': recordId,
+        'payload': jsonEncode(payload),
+        'created_at': DateTime.now().toIso8601String(),
+        'retry_count': 0,
+      });
+      return;
+    }
+
     try {
       final db = await database;
       await db.insert('sync_queue', {
@@ -237,6 +302,10 @@ class LocalDbService {
   }
 
   Future<List<SyncItem>> getPendingSyncItems() async {
+    if (kIsWeb) {
+      return [for (final row in _memoryQueue) SyncItem.fromMap(row)];
+    }
+
     try {
       final db = await database;
       final rows = await db.query('sync_queue', orderBy: 'id ASC');
@@ -256,6 +325,8 @@ class LocalDbService {
   }
 
   Future<int> getPendingCount() async {
+    if (kIsWeb) return _memoryQueue.length;
+
     try {
       final db = await database;
       final count = Sqflite.firstIntValue(
@@ -268,6 +339,15 @@ class LocalDbService {
   }
 
   Future<void> incrementRetry(int syncId) async {
+    if (kIsWeb) {
+      for (final row in _memoryQueue) {
+        if (row['id'] == syncId) {
+          row['retry_count'] = ((row['retry_count'] as int?) ?? 0) + 1;
+        }
+      }
+      return;
+    }
+
     try {
       final db = await database;
       await db.rawUpdate(
@@ -275,11 +355,18 @@ class LocalDbService {
         [syncId],
       );
     } catch (e) {
-      debugPrint('Erreur d\'incrémentation du nombre de retries pour $syncId: $e');
+      debugPrint(
+        'Erreur d\'incrémentation du nombre de retries pour $syncId: $e',
+      );
     }
   }
 
   Future<void> removeSyncItem(int syncId) async {
+    if (kIsWeb) {
+      _memoryQueue.removeWhere((row) => row['id'] == syncId);
+      return;
+    }
+
     try {
       final db = await database;
       await db.delete('sync_queue', where: 'id = ?', whereArgs: [syncId]);

@@ -53,12 +53,12 @@ class AppointmentService {
       );
 
   Map<String, dynamic> toMap() => {
-        'service_id': serviceId,
-        'name': name,
-        'price_fcfa': priceFcfa,
-        'duration_minutes': durationMinutes,
-        'stylist_name': stylistName,
-      };
+    'service_id': serviceId,
+    'name': name,
+    'price_fcfa': priceFcfa,
+    'duration_minutes': durationMinutes,
+    'stylist_name': stylistName,
+  };
 }
 
 /// Rendez-vous — table `appointments`.
@@ -117,42 +117,42 @@ class Appointment {
   }
 
   factory Appointment.fromMap(Map<String, dynamic> map) => Appointment(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        clientId: map['client_id'] as String?,
-        stylistId: map['stylist_id'] as String,
-        startTime: DateTime.parse(map['start_time'] as String).toLocal(),
-        endTime: DateTime.parse(map['end_time'] as String).toLocal(),
-        status: AppointmentStatus.fromValue(map['status'] as String?),
-        totalPriceFcfa: (map['total_price_fcfa'] as num?)?.toInt() ?? 0,
-        services: (map['service_items'] as List?)
-                ?.map((e) =>
-                    AppointmentService.fromMap(e as Map<String, dynamic>))
-                .toList() ??
-            const [],
-        notes: map['notes'] as String?,
-        clientName: _joined(map['clients'], 'full_name'),
-        stylistName: _joined(map['profiles'], 'full_name'),
-        clientVisitCount: map['clients'] is Map<String, dynamic>
-            ? ((map['clients'] as Map<String, dynamic>)['visit_count'] as num?)
-                    ?.toInt() ??
-                0
-            : 0,
-        clientPhone: _joined(map['clients'], 'phone'),
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    clientId: map['client_id'] as String?,
+    stylistId: map['stylist_id'] as String,
+    startTime: DateTime.parse(map['start_time'] as String).toLocal(),
+    endTime: DateTime.parse(map['end_time'] as String).toLocal(),
+    status: AppointmentStatus.fromValue(map['status'] as String?),
+    totalPriceFcfa: (map['total_price_fcfa'] as num?)?.toInt() ?? 0,
+    services:
+        (map['service_items'] as List?)
+            ?.map((e) => AppointmentService.fromMap(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
+    notes: map['notes'] as String?,
+    clientName: _joined(map['clients'], 'full_name'),
+    stylistName: _joined(map['profiles'], 'full_name'),
+    clientVisitCount: map['clients'] is Map<String, dynamic>
+        ? ((map['clients'] as Map<String, dynamic>)['visit_count'] as num?)
+                  ?.toInt() ??
+              0
+        : 0,
+    clientPhone: _joined(map['clients'], 'phone'),
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'client_id': clientId,
-        'stylist_id': stylistId,
-        'start_time': startTime.toUtc().toIso8601String(),
-        'end_time': endTime.toUtc().toIso8601String(),
-        'status': status.value,
-        'total_price_fcfa': totalPriceFcfa,
-        'service_items': services.map((service) => service.toMap()).toList(),
-        'service_ids': serviceIds,
-        'notes': notes,
-      };
+    'salon_id': salonId,
+    'client_id': clientId,
+    'stylist_id': stylistId,
+    'start_time': startTime.toUtc().toIso8601String(),
+    'end_time': endTime.toUtc().toIso8601String(),
+    'status': status.value,
+    'total_price_fcfa': totalPriceFcfa,
+    'service_items': services.map((service) => service.toMap()).toList(),
+    'service_ids': serviceIds,
+    'notes': notes,
+  };
 
   static String? _joined(Object? relation, String field) {
     if (relation is Map<String, dynamic>) return relation[field] as String?;

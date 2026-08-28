@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -48,8 +49,7 @@ class RoleSelector extends StatelessWidget {
             radius: 18,
             shadow: false,
             color: AppColors.surface,
-            borderColor:
-                selected == role ? AppColors.accent : AppColors.border,
+            borderColor: selected == role ? AppColors.accent : AppColors.border,
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
@@ -81,15 +81,16 @@ class RoleSelector extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                        selected == role ? AppColors.accent : Colors.transparent,
+                    color: selected == role
+                        ? AppColors.accent
+                        : Colors.transparent,
                     border: selected == role
                         ? null
                         : Border.all(color: AppColors.borderStrong, width: 2),
                   ),
                   child: selected == role
                       ? const Icon(
-                          Icons.check_rounded,
+                          LucideIcons.check,
                           size: 14,
                           color: Colors.white,
                         )
@@ -106,21 +107,17 @@ class RoleSelector extends StatelessWidget {
 
   Widget _buildIconTile(UserRole role) {
     final (background, color, iconData) = switch (role) {
-      UserRole.gerant => (
-          AppColors.primary,
-          Colors.white,
-          Icons.workspace_premium_rounded
-        ),
+      UserRole.gerant => (AppColors.primary, Colors.white, LucideIcons.award),
       UserRole.coiffeur => (
-          AppColors.tintBlue,
-          AppColors.blue,
-          Icons.content_cut_rounded
-        ),
+        AppColors.tintBlue,
+        AppColors.blue,
+        LucideIcons.scissors,
+      ),
       UserRole.receptionniste => (
-          AppColors.tintAmber,
-          AppColors.amber,
-          Icons.calendar_today_rounded
-        ),
+        AppColors.tintAmber,
+        AppColors.amber,
+        LucideIcons.calendar,
+      ),
     };
 
     return Container(
@@ -135,10 +132,10 @@ class RoleSelector extends StatelessWidget {
   }
 
   String _descriptionFor(UserRole role) => switch (role) {
-        UserRole.gerant => 'Accès complet : finance, staff, réglages',
-        UserRole.coiffeur => 'Son planning, ses clients, ses commissions',
-        UserRole.receptionniste => 'Agenda, clients et caisse',
-      };
+    UserRole.gerant => 'Accès complet : finance, staff, réglages',
+    UserRole.coiffeur => 'Son planning, ses clients, ses commissions',
+    UserRole.receptionniste => 'Agenda, clients et caisse',
+  };
 }
 
 /// 1.4 — Sélection du rôle, étape 2/2 : dernier écran avant l'entrée dans
@@ -166,9 +163,9 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
 
     if (!success) {
       final error = ref.read(authControllerProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(authErrorMessage(error))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(authErrorMessage(error))));
       return;
     }
 
@@ -178,7 +175,9 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Salon créé. Confirmez votre email pour vous connecter.'),
+          content: Text(
+            'Salon créé. Confirmez votre email pour vous connecter.',
+          ),
         ),
       );
       navigator.popUntil((route) => route.isFirst);

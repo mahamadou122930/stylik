@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -38,7 +39,7 @@ class MyCommissionPage extends ConsumerWidget {
       title: 'Mes commissions',
       footer: AppButton(
         label: 'Demander un versement',
-        icon: Icons.payments_outlined,
+        icon: LucideIcons.banknote,
         // Rien à demander tant que rien n'est acquis, ou qu'une demande est
         // déjà chez le gérant.
         onPressed: balance.available <= 0
@@ -77,7 +78,7 @@ class MyCommissionPage extends ConsumerWidget {
                     compact: true,
                     title: 'Aucune demande',
                     message: 'Vos demandes de versement apparaîtront ici.',
-                    icon: Icons.payments_outlined,
+                    icon: LucideIcons.banknote,
                   )
                 : AppListCard(
                     children: [
@@ -230,7 +231,7 @@ class _RequestPayoutSheetState extends State<_RequestPayoutSheet> {
             const SizedBox(height: 16),
             AppButton(
               label: 'Envoyer la demande',
-              icon: Icons.send_rounded,
+              icon: LucideIcons.send,
               onPressed: () {
                 final inputAmount =
                     int.tryParse(_amountController.text.trim()) ?? 0;
@@ -428,7 +429,7 @@ class _PayoutRow extends StatelessWidget {
       strong: true,
       padding: const EdgeInsets.symmetric(vertical: 12),
       leading: AppIconTile(
-        icon: method?.icon ?? Icons.payments_outlined,
+        icon: method?.icon ?? LucideIcons.banknote,
         color: AppColors.primary,
         background: AppColors.tintGreen,
       ),

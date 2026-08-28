@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -95,7 +96,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                   style: AppTypography.manrope(14, FontWeight.w600),
                 ),
                 trailing: gender == _gender
-                    ? const Icon(Icons.check_rounded, color: AppColors.accent)
+                    ? const Icon(LucideIcons.check, color: AppColors.accent)
                     : null,
                 onTap: () => Navigator.pop(context, gender),
               ),
@@ -144,7 +145,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(
-                            Icons.person_outline_rounded,
+                            LucideIcons.user,
                             size: 24,
                             color: AppColors.primary,
                           ),

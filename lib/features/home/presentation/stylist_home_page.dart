@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -92,7 +93,7 @@ class StylistHomePage extends ConsumerWidget {
                   compact: true,
                   title: 'Journée libre',
                   message: 'Aucun rendez-vous prévu aujourd\'hui.',
-                  icon: Icons.event_available_outlined,
+                  icon: LucideIcons.calendarCheck,
                 )
               : AppListCard(
                   children: [
@@ -110,7 +111,7 @@ class StylistHomePage extends ConsumerWidget {
           child: Row(
             children: [
               const AppIconTile(
-                icon: Icons.savings_rounded,
+                icon: LucideIcons.piggyBank,
                 size: 44,
                 radius: 13,
               ),
@@ -334,7 +335,8 @@ class _PlanningRow extends StatelessWidget {
 
     return AppListRow(
       label: appointment.clientName ?? 'Client de passage',
-      subtitle: '${appointment.summary} · '
+      subtitle:
+          '${appointment.summary} · '
           '${Formatters.fcfa(appointment.totalPriceFcfa)}',
       strong: true,
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -367,10 +369,9 @@ class _PlanningRow extends StatelessWidget {
         ),
       ),
       trailing: const AppChevron(),
-      onTap: () => Navigator.of(context).pushNamed(
-        AppointmentDetailPage.routeName,
-        arguments: appointment.id,
-      ),
+      onTap: () => Navigator.of(
+        context,
+      ).pushNamed(AppointmentDetailPage.routeName, arguments: appointment.id),
     );
   }
 }

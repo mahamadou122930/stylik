@@ -37,8 +37,9 @@ class _PackageFormPageState extends ConsumerState<PackageFormPage> {
     final p = widget.package;
     _nameController = TextEditingController(text: p?.name ?? '');
     _descriptionController = TextEditingController(text: p?.description ?? '');
-    _priceController =
-        TextEditingController(text: p != null ? '${p.priceFcfa}' : '');
+    _priceController = TextEditingController(
+      text: p != null ? '${p.priceFcfa}' : '',
+    );
   }
 
   @override
@@ -64,7 +65,9 @@ class _PackageFormPageState extends ConsumerState<PackageFormPage> {
     if (_selectedServiceIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez sélectionner au moins un service dans le forfait.'),
+          content: Text(
+            'Veuillez sélectionner au moins un service dans le forfait.',
+          ),
         ),
       );
       return;
@@ -104,9 +107,9 @@ class _PackageFormPageState extends ConsumerState<PackageFormPage> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur d\'enregistrement: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur d\'enregistrement: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -120,7 +123,8 @@ class _PackageFormPageState extends ConsumerState<PackageFormPage> {
 
     final originalPrice = _calculateOriginalPrice(allServices);
     final enteredPrice = int.tryParse(_priceController.text.trim()) ?? 0;
-    final discount = (originalPrice > 0 && enteredPrice > 0 && originalPrice > enteredPrice)
+    final discount =
+        (originalPrice > 0 && enteredPrice > 0 && originalPrice > enteredPrice)
         ? (((originalPrice - enteredPrice) / originalPrice) * 100).round()
         : null;
 
@@ -223,7 +227,9 @@ class _PackageFormPageState extends ConsumerState<PackageFormPage> {
                         style: AppTypography.manrope(12, FontWeight.w500),
                       ),
                       activeColor: AppColors.primary,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                      ),
                     ),
                 ],
               ),

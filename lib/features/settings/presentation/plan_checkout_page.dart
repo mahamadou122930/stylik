@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -40,7 +41,9 @@ class _PlanCheckoutPageState extends ConsumerState<PlanCheckoutPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      await ref.read(settingsRepositoryProvider).changePlan(
+      await ref
+          .read(settingsRepositoryProvider)
+          .changePlan(
             salonId: salonId,
             plan: widget.plan,
             cycle: cycle,
@@ -209,9 +212,7 @@ class _ComparisonTable extends StatelessWidget {
               decoration: BoxDecoration(
                 border: capability == PlanCapability.values.last
                     ? null
-                    : const Border(
-                        bottom: BorderSide(color: AppColors.border),
-                      ),
+                    : const Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -250,7 +251,7 @@ class _CapabilityMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Icon(
-      included ? Icons.check_rounded : Icons.close_rounded,
+      included ? LucideIcons.check : LucideIcons.x,
       size: 17,
       color: included ? AppColors.accent : AppColors.borderStrong,
     );
@@ -298,16 +299,17 @@ class _PriceRecap extends StatelessWidget {
                         ? cycle.fullYearPrice(plan.pricePerMonthFcfa)
                         : plan.pricePerMonthFcfa,
                   ),
-                  style: AppTypography.sora(
-                    13,
-                    FontWeight.w600,
-                    color: AppColors.textBody,
-                  ).copyWith(
-                    decoration: annual ? TextDecoration.lineThrough : null,
-                    color: AppColors.textBody.withValues(
-                      alpha: annual ? 0.55 : 1,
-                    ),
-                  ),
+                  style:
+                      AppTypography.sora(
+                        13,
+                        FontWeight.w600,
+                        color: AppColors.textBody,
+                      ).copyWith(
+                        decoration: annual ? TextDecoration.lineThrough : null,
+                        color: AppColors.textBody.withValues(
+                          alpha: annual ? 0.55 : 1,
+                        ),
+                      ),
                 ),
               ],
             ),

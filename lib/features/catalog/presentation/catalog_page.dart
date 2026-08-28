@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -36,7 +37,7 @@ class CatalogPage extends ConsumerWidget {
       showBack: false,
       action: canEdit
           ? AppIconButton(
-              icon: Icons.add_rounded,
+              icon: LucideIcons.plus,
               filled: true,
               onTap: () =>
                   Navigator.of(context).pushNamed(ServiceEditPage.routeName),
@@ -49,9 +50,9 @@ class CatalogPage extends ConsumerWidget {
               child: AppFilterChips(
                 items: categories,
                 selectedIndex: ref.watch(selectedCategoryIndexProvider),
-                onChanged: (index) => ref
-                    .read(selectedCategoryIndexProvider.notifier)
-                    .state = index,
+                onChanged: (index) =>
+                    ref.read(selectedCategoryIndexProvider.notifier).state =
+                        index,
               ),
             ),
       child: services.when(
@@ -66,12 +67,13 @@ class CatalogPage extends ConsumerWidget {
                 message: canEdit
                     ? 'Ajoutez vos prestations et vos forfaits.'
                     : 'Votre gérant n\'a pas encore renseigné les '
-                        'prestations du salon.',
-                icon: Icons.content_cut_rounded,
+                          'prestations du salon.',
+                icon: LucideIcons.scissors,
                 actionLabel: canEdit ? 'Ajouter une prestation' : null,
                 onAction: canEdit
-                    ? () => Navigator.of(context)
-                        .pushNamed(ServiceEditPage.routeName)
+                    ? () => Navigator.of(
+                        context,
+                      ).pushNamed(ServiceEditPage.routeName)
                     : null,
               )
             : Column(
@@ -94,9 +96,9 @@ class CatalogPage extends ConsumerWidget {
                             service: service,
                             onTap: canEdit
                                 ? () => Navigator.of(context).pushNamed(
-                                      ServiceEditPage.routeName,
-                                      arguments: service,
-                                    )
+                                    ServiceEditPage.routeName,
+                                    arguments: service,
+                                  )
                                 : null,
                           ),
                       ],
@@ -112,12 +114,11 @@ class CatalogPage extends ConsumerWidget {
                             : '${packages.length} forfait(s) actif(s)',
                         strong: true,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        leading: const AppIconTile(
-                          icon: Icons.auto_awesome_rounded,
-                        ),
+                        leading: const AppIconTile(icon: LucideIcons.sparkles),
                         trailing: const AppChevron(),
-                        onTap: () => Navigator.of(context)
-                            .pushNamed(PackagesPage.routeName),
+                        onTap: () => Navigator.of(
+                          context,
+                        ).pushNamed(PackagesPage.routeName),
                       ),
                     ],
                   ),
@@ -164,7 +165,7 @@ class ServiceRow extends StatelessWidget {
             // doit pas avoir l'air cliquable.
             const SizedBox(width: 2),
             const Icon(
-              Icons.chevron_right_rounded,
+              LucideIcons.chevronRight,
               size: 20,
               color: AppColors.dashLine,
             ),

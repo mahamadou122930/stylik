@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -22,7 +23,8 @@ class WalkInQueuePage extends ConsumerWidget {
     WidgetRef ref,
     WalkInEntry entry,
   ) async {
-    final stylists = ref.read(stylistsProvider).valueOrNull ?? const <Profile>[];
+    final stylists =
+        ref.read(stylistsProvider).valueOrNull ?? const <Profile>[];
     final selected = await showModalBottomSheet<Profile>(
       context: context,
       builder: (context) => SafeArea(
@@ -51,7 +53,9 @@ class WalkInQueuePage extends ConsumerWidget {
     );
     if (selected == null) return;
 
-    await ref.read(agendaRepositoryProvider).updateQueueEntry(
+    await ref
+        .read(agendaRepositoryProvider)
+        .updateQueueEntry(
           entryId: entry.id,
           status: WalkInStatus.assigned,
           assignedStylistId: selected.id,
@@ -69,7 +73,7 @@ class WalkInQueuePage extends ConsumerWidget {
     return AppScreen(
       title: 'Liste d\'attente',
       action: AppIconButton(
-        icon: Icons.person_add_alt_rounded,
+        icon: LucideIcons.userPlus,
         filled: true,
         onTap: () => WalkInFormDialog.show(context),
       ),
@@ -103,7 +107,7 @@ class WalkInQueuePage extends ConsumerWidget {
             ? const AppEmptyState(
                 title: 'File vide',
                 message: 'Aucun client en attente pour le moment.',
-                icon: Icons.groups_outlined,
+                icon: LucideIcons.users,
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -196,8 +200,9 @@ class _WalkInCard extends StatelessWidget {
               AppBadge(
                 label: '$minutes min',
                 color: minutes >= 20 ? AppColors.amber : AppColors.primary,
-                background:
-                    minutes >= 20 ? AppColors.tintAmber : AppColors.tintGreen,
+                background: minutes >= 20
+                    ? AppColors.tintAmber
+                    : AppColors.tintGreen,
                 dense: true,
               ),
             ],
@@ -214,10 +219,7 @@ class _WalkInCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                AppIconButton(
-                  icon: Icons.close_rounded,
-                  onTap: onRemove,
-                ),
+                AppIconButton(icon: LucideIcons.x, onTap: onRemove),
               ],
             ),
           ] else ...[

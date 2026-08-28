@@ -11,11 +11,8 @@ enum CampaignChannel {
   final String value;
   final String label;
 
-  static CampaignChannel fromValue(String? value) =>
-      CampaignChannel.values.firstWhere(
-        (channel) => channel.value == value,
-        orElse: () => sms,
-      );
+  static CampaignChannel fromValue(String? value) => CampaignChannel.values
+      .firstWhere((channel) => channel.value == value, orElse: () => sms);
 }
 
 /// Palier du programme de fidélité.
@@ -81,21 +78,21 @@ class LoyaltyReward {
   bool isUnlockedAt(int points) => points >= pointsCost;
 
   factory LoyaltyReward.fromMap(Map<String, dynamic> map) => LoyaltyReward(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        name: (map['name'] as String?) ?? '',
-        pointsCost: (map['points_cost'] as num?)?.toInt() ?? 0,
-        description: map['description'] as String?,
-        isActive: (map['is_active'] as bool?) ?? true,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    name: (map['name'] as String?) ?? '',
+    pointsCost: (map['points_cost'] as num?)?.toInt() ?? 0,
+    description: map['description'] as String?,
+    isActive: (map['is_active'] as bool?) ?? true,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'name': name,
-        'points_cost': pointsCost,
-        'description': description,
-        'is_active': isActive,
-      };
+    'salon_id': salonId,
+    'name': name,
+    'points_cost': pointsCost,
+    'description': description,
+    'is_active': isActive,
+  };
 }
 
 /// Promotion / offre commerciale — table `promotions`.
@@ -128,8 +125,7 @@ class Promotion {
   /// Promotion déclenchée automatiquement (anniversaire cliente…).
   final bool isAutomatic;
 
-  bool get isScheduled =>
-      startsAt != null && startsAt!.isAfter(DateTime.now());
+  bool get isScheduled => startsAt != null && startsAt!.isAfter(DateTime.now());
 
   String get periodLabel {
     if (isScheduled) return 'Démarre le ${Formatters.dayMonth(startsAt!)}';
@@ -138,31 +134,31 @@ class Promotion {
   }
 
   factory Promotion.fromMap(Map<String, dynamic> map) => Promotion(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        name: (map['name'] as String?) ?? '',
-        description: (map['description'] as String?) ?? '',
-        isActive: (map['is_active'] as bool?) ?? false,
-        startsAt: map['starts_at'] == null
-            ? null
-            : DateTime.parse(map['starts_at'] as String).toLocal(),
-        endsAt: map['ends_at'] == null
-            ? null
-            : DateTime.parse(map['ends_at'] as String).toLocal(),
-        usageCount: (map['usage_count'] as num?)?.toInt() ?? 0,
-        revenueFcfa: (map['revenue_fcfa'] as num?)?.toInt() ?? 0,
-        isAutomatic: (map['is_automatic'] as bool?) ?? false,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    name: (map['name'] as String?) ?? '',
+    description: (map['description'] as String?) ?? '',
+    isActive: (map['is_active'] as bool?) ?? false,
+    startsAt: map['starts_at'] == null
+        ? null
+        : DateTime.parse(map['starts_at'] as String).toLocal(),
+    endsAt: map['ends_at'] == null
+        ? null
+        : DateTime.parse(map['ends_at'] as String).toLocal(),
+    usageCount: (map['usage_count'] as num?)?.toInt() ?? 0,
+    revenueFcfa: (map['revenue_fcfa'] as num?)?.toInt() ?? 0,
+    isAutomatic: (map['is_automatic'] as bool?) ?? false,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'name': name,
-        'description': description,
-        'is_active': isActive,
-        'starts_at': startsAt?.toUtc().toIso8601String(),
-        'ends_at': endsAt?.toUtc().toIso8601String(),
-        'is_automatic': isAutomatic,
-      };
+    'salon_id': salonId,
+    'name': name,
+    'description': description,
+    'is_active': isActive,
+    'starts_at': startsAt?.toUtc().toIso8601String(),
+    'ends_at': endsAt?.toUtc().toIso8601String(),
+    'is_automatic': isAutomatic,
+  };
 }
 
 /// Rappel automatique — table `reminder_rules`.
@@ -188,14 +184,14 @@ class ReminderRule {
   final String? messageTemplate;
 
   factory ReminderRule.fromMap(Map<String, dynamic> map) => ReminderRule(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        name: (map['name'] as String?) ?? '',
-        channel: CampaignChannel.fromValue(map['channel'] as String?),
-        isEnabled: (map['is_enabled'] as bool?) ?? false,
-        description: map['description'] as String?,
-        messageTemplate: map['message_template'] as String?,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    name: (map['name'] as String?) ?? '',
+    channel: CampaignChannel.fromValue(map['channel'] as String?),
+    isEnabled: (map['is_enabled'] as bool?) ?? false,
+    description: map['description'] as String?,
+    messageTemplate: map['message_template'] as String?,
+  );
 }
 
 /// Statistiques d'envoi des rappels (vue `reminder_stats`).
@@ -207,13 +203,15 @@ class ReminderStats {
   /// Taux de présence, entre 0 et 1.
   final double showUpRate;
 
-  static const ReminderStats empty =
-      ReminderStats(sentThisMonth: 0, showUpRate: 0);
+  static const ReminderStats empty = ReminderStats(
+    sentThisMonth: 0,
+    showUpRate: 0,
+  );
 
   factory ReminderStats.fromMap(Map<String, dynamic> map) => ReminderStats(
-        sentThisMonth: (map['sent_this_month'] as num?)?.toInt() ?? 0,
-        showUpRate: (map['show_up_rate'] as num?)?.toDouble() ?? 0,
-      );
+    sentThisMonth: (map['sent_this_month'] as num?)?.toInt() ?? 0,
+    showUpRate: (map['show_up_rate'] as num?)?.toDouble() ?? 0,
+  );
 }
 
 /// Campagne marketing ponctuelle — table `campaigns`.
@@ -242,28 +240,28 @@ class LoyaltyCampaign {
   final int sentCount;
 
   factory LoyaltyCampaign.fromMap(Map<String, dynamic> map) => LoyaltyCampaign(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        name: (map['name'] as String?) ?? '',
-        channel: CampaignChannel.fromValue(map['channel'] as String?),
-        message: (map['message'] as String?) ?? '',
-        targetTags:
-            (map['target_tags'] as List?)?.map((e) => e.toString()).toList() ??
-                const [],
-        scheduledAt: map['scheduled_at'] == null
-            ? null
-            : DateTime.parse(map['scheduled_at'] as String).toLocal(),
-        sentCount: (map['sent_count'] as num?)?.toInt() ?? 0,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    name: (map['name'] as String?) ?? '',
+    channel: CampaignChannel.fromValue(map['channel'] as String?),
+    message: (map['message'] as String?) ?? '',
+    targetTags:
+        (map['target_tags'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
+    scheduledAt: map['scheduled_at'] == null
+        ? null
+        : DateTime.parse(map['scheduled_at'] as String).toLocal(),
+    sentCount: (map['sent_count'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'name': name,
-        'channel': channel.value,
-        'message': message,
-        'target_tags': targetTags,
-        'scheduled_at': scheduledAt?.toUtc().toIso8601String(),
-      };
+    'salon_id': salonId,
+    'name': name,
+    'channel': channel.value,
+    'message': message,
+    'target_tags': targetTags,
+    'scheduled_at': scheduledAt?.toUtc().toIso8601String(),
+  };
 }
 
 /// Règle de conversion des points de fidélité.

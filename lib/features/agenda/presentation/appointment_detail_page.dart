@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -58,7 +59,7 @@ class AppointmentDetailPage extends ConsumerWidget {
     return AppScreen(
       title: 'Rendez-vous',
       action: AppIconButton(
-        icon: Icons.edit_outlined,
+        icon: LucideIcons.pencil,
         onTap: () {
           // TODO(agenda): édition du rendez-vous.
         },
@@ -68,7 +69,7 @@ class AppointmentDetailPage extends ConsumerWidget {
           : Row(
               children: [
                 AppIconButton(
-                  icon: Icons.edit_outlined,
+                  icon: LucideIcons.pencil,
                   onTap: () {
                     // TODO(agenda): reprogrammer le rendez-vous.
                   },
@@ -87,12 +88,13 @@ class AppointmentDetailPage extends ConsumerWidget {
         loading: () => const AppLoader(),
         error: (error, _) => AppErrorState(
           message: '$error',
-          onRetry: () => ref.invalidate(appointmentDetailProvider(appointmentId)),
+          onRetry: () =>
+              ref.invalidate(appointmentDetailProvider(appointmentId)),
         ),
         data: (data) => data == null
             ? const AppEmptyState(
                 title: 'Rendez-vous introuvable',
-                icon: Icons.event_busy_outlined,
+                icon: LucideIcons.calendarX,
               )
             : _AppointmentBody(appointment: data),
       ),
@@ -204,7 +206,7 @@ class _AppointmentBody extends StatelessWidget {
               ),
               if (appointment.clientPhone != null)
                 const AppIconTile(
-                  icon: Icons.phone_outlined,
+                  icon: LucideIcons.phone,
                   size: 38,
                   radius: 11,
                 ),
@@ -216,7 +218,7 @@ class _AppointmentBody extends StatelessWidget {
           const AppEmptyState(
             compact: true,
             title: 'Aucune prestation',
-            icon: Icons.content_cut_rounded,
+            icon: LucideIcons.scissors,
           )
         else
           AppListCard(

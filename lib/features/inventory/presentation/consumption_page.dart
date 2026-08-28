@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -82,7 +83,7 @@ class ConsumptionPage extends ConsumerWidget {
                   'Aucune fiche produit n\'est marquée « Consommé en '
                   'soin ». Ouvrez un produit depuis Stock et changez sa '
                   'destination : le bouton « Ouvrir » apparaîtra ici.',
-              icon: Icons.science_outlined,
+              icon: LucideIcons.flaskConical,
             )
           else ...[
             Padding(
@@ -142,7 +143,7 @@ class ConsumptionPage extends ConsumerWidget {
                     title: 'Aucune consommation',
                     message:
                         'Les produits utilisés en cabine apparaîtront ici.',
-                    icon: Icons.science_outlined,
+                    icon: LucideIcons.flaskConical,
                   )
                 : AppListCard(
                     children: [

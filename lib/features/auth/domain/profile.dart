@@ -60,37 +60,37 @@ class Profile {
       'avatar_url, phone, email, is_active, leave_balance_days';
 
   factory Profile.fromMap(Map<String, dynamic> map) => Profile(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        fullName: (map['full_name'] as String?) ?? '',
-        role: UserRole.fromValue(map['role'] as String?),
-        specialties:
-            (map['specialties'] as List?)?.map((e) => e.toString()).toList() ??
-                const [],
-        commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0,
-        avatarUrl: map['avatar_url'] as String?,
-        phone: map['phone'] as String?,
-        email: map['email'] as String?,
-        userId: map['user_id'] as String?,
-        isActive: (map['is_active'] as bool?) ?? true,
-        leaveBalanceDays: (map['leave_balance_days'] as num?)?.toInt() ?? 0,
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    fullName: (map['full_name'] as String?) ?? '',
+    role: UserRole.fromValue(map['role'] as String?),
+    specialties:
+        (map['specialties'] as List?)?.map((e) => e.toString()).toList() ??
+        const [],
+    commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0,
+    avatarUrl: map['avatar_url'] as String?,
+    phone: map['phone'] as String?,
+    email: map['email'] as String?,
+    userId: map['user_id'] as String?,
+    isActive: (map['is_active'] as bool?) ?? true,
+    leaveBalanceDays: (map['leave_balance_days'] as num?)?.toInt() ?? 0,
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'salon_id': salonId,
-        'full_name': fullName,
-        'role': role.value,
-        'specialties': specialties,
-        'commission_rate': commissionRate,
-        'avatar_url': avatarUrl,
-        'phone': phone,
-        'email': email,
-        'is_active': isActive,
-        'leave_balance_days': leaveBalanceDays,
-        // `user_id` est volontairement absent : il n'est écrit que par le
-        // déclencheur `handle_new_user`, au rattachement du compte.
-      };
+    'id': id,
+    'salon_id': salonId,
+    'full_name': fullName,
+    'role': role.value,
+    'specialties': specialties,
+    'commission_rate': commissionRate,
+    'avatar_url': avatarUrl,
+    'phone': phone,
+    'email': email,
+    'is_active': isActive,
+    'leave_balance_days': leaveBalanceDays,
+    // `user_id` est volontairement absent : il n'est écrit que par le
+    // déclencheur `handle_new_user`, au rattachement du compte.
+  };
 
   Profile copyWith({
     String? fullName,
@@ -102,19 +102,18 @@ class Profile {
     String? email,
     bool? isActive,
     int? leaveBalanceDays,
-  }) =>
-      Profile(
-        id: id,
-        salonId: salonId,
-        fullName: fullName ?? this.fullName,
-        role: role ?? this.role,
-        specialties: specialties ?? this.specialties,
-        commissionRate: commissionRate ?? this.commissionRate,
-        avatarUrl: avatarUrl ?? this.avatarUrl,
-        phone: phone ?? this.phone,
-        email: email ?? this.email,
-        userId: userId,
-        isActive: isActive ?? this.isActive,
-        leaveBalanceDays: leaveBalanceDays ?? this.leaveBalanceDays,
-      );
+  }) => Profile(
+    id: id,
+    salonId: salonId,
+    fullName: fullName ?? this.fullName,
+    role: role ?? this.role,
+    specialties: specialties ?? this.specialties,
+    commissionRate: commissionRate ?? this.commissionRate,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+    phone: phone ?? this.phone,
+    email: email ?? this.email,
+    userId: userId,
+    isActive: isActive ?? this.isActive,
+    leaveBalanceDays: leaveBalanceDays ?? this.leaveBalanceDays,
+  );
 }

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 
 /// Moyen par lequel le salon règle une commission.
 enum PayoutMethod {
-  orangeMoney('orange_money', 'Orange Money', Icons.smartphone_rounded),
-  moovMoney('moov_money', 'Moov Money', Icons.smartphone_rounded),
-  wave('wave', 'Wave', Icons.smartphone_rounded),
-  cash('cash', 'Espèces', Icons.payments_outlined),
-  transfer('transfer', 'Virement', Icons.mail_outline_rounded);
+  orangeMoney('orange_money', 'Orange Money', LucideIcons.smartphone),
+  moovMoney('moov_money', 'Moov Money', LucideIcons.smartphone),
+  wave('wave', 'Wave', LucideIcons.smartphone),
+  cash('cash', 'Espèces', LucideIcons.banknote),
+  transfer('transfer', 'Virement', LucideIcons.mail);
 
   const PayoutMethod(this.value, this.label, this.icon);
 
@@ -41,9 +42,9 @@ enum PayoutStatus {
   };
 
   IconData get icon => switch (this) {
-    pending => Icons.schedule_rounded,
-    paid => Icons.check_rounded,
-    rejected => Icons.close_rounded,
+    pending => LucideIcons.clock,
+    paid => LucideIcons.check,
+    rejected => LucideIcons.x,
   };
 }
 

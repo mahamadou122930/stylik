@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
@@ -64,7 +65,7 @@ class PayoutRequestsPage extends ConsumerWidget {
     return AppScreen(
       title: 'Demandes de versement',
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         onTap: () => _openNewRequestSheet(context, ref),
       ),
       child: Column(
@@ -119,7 +120,7 @@ class PayoutRequestsPage extends ConsumerWidget {
                     title: 'Aucune demande traitée',
                     message:
                         'Les demandes validées ou refusées s\'afficheront ici.',
-                    icon: Icons.history_rounded,
+                    icon: LucideIcons.history,
                   )
                 : AppListCard(
                     children: [
@@ -449,7 +450,7 @@ class _PendingActionCard extends StatelessWidget {
               Expanded(
                 child: AppButton(
                   label: 'Valider & payer',
-                  icon: Icons.check_rounded,
+                  icon: LucideIcons.check,
                   onPressed: onApprove,
                 ),
               ),
@@ -468,7 +469,7 @@ class _PendingActionCard extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: const Icon(
-                    Icons.close_rounded,
+                    LucideIcons.x,
                     color: AppColors.expense,
                     size: 20,
                   ),
@@ -505,7 +506,7 @@ class _ProcessedRow extends StatelessWidget {
       strong: true,
       padding: const EdgeInsets.symmetric(vertical: 12),
       leading: AppIconTile(
-        icon: isPaid ? Icons.check_rounded : Icons.close_rounded,
+        icon: isPaid ? LucideIcons.check : LucideIcons.x,
         color: isPaid ? AppColors.primary : AppColors.expense,
         background: isPaid ? AppColors.tintGreen : AppColors.tintExpense,
         size: 38,
@@ -605,7 +606,7 @@ class _SettleSheetState extends State<_SettleSheet> {
             const SizedBox(height: 20),
             AppButton(
               label: 'Valider & régler',
-              icon: Icons.check_rounded,
+              icon: LucideIcons.check,
               onPressed: () => Navigator.pop(context, (
                 method: _method,
                 ref: _refController.text.trim(),
@@ -715,7 +716,7 @@ class _CreateProxyRequestSheetState extends State<_CreateProxyRequestSheet> {
             const SizedBox(height: 20),
             AppButton(
               label: 'Déposer la demande',
-              icon: Icons.send_rounded,
+              icon: LucideIcons.send,
               onPressed: () {
                 if (_selectedStylist == null) return;
                 final amount = int.tryParse(_amountController.text.trim()) ?? 0;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -29,14 +30,14 @@ class MorePage extends ConsumerWidget {
       const _MoreEntry(
         label: 'Services',
         description: 'Catalogue et forfaits',
-        icon: Icons.content_cut_rounded,
+        icon: LucideIcons.scissors,
         route: CatalogPage.routeName,
       ),
       if (role.canManageInventory)
         const _MoreEntry(
           label: 'Stock',
           description: 'Inventaire et réceptions',
-          icon: Icons.inventory_2_rounded,
+          icon: LucideIcons.package,
           color: AppColors.amber,
           background: AppColors.tintAmber,
           route: InventoryPage.routeName,
@@ -45,7 +46,7 @@ class MorePage extends ConsumerWidget {
         const _MoreEntry(
           label: 'Personnel',
           description: 'Équipe, horaires, congés',
-          icon: Icons.groups_rounded,
+          icon: LucideIcons.users,
           color: AppColors.blue,
           background: AppColors.tintBlue,
           route: StaffPage.routeName,
@@ -56,7 +57,7 @@ class MorePage extends ConsumerWidget {
         const _MoreEntry(
           label: 'Mes congés',
           description: 'Solde, demandes, historique',
-          icon: Icons.beach_access_rounded,
+          icon: LucideIcons.palmtree,
           color: AppColors.blue,
           background: AppColors.tintBlue,
           route: TimeOffHistoryPage.routeName,
@@ -65,7 +66,7 @@ class MorePage extends ConsumerWidget {
         const _MoreEntry(
           label: 'Finance',
           description: 'CA, rapports, export',
-          icon: Icons.bar_chart_rounded,
+          icon: LucideIcons.chartColumn,
           route: FinancePage.routeName,
         ),
       // Proposé à tous, gérant compris : il coiffe aussi et touche sa
@@ -75,13 +76,13 @@ class MorePage extends ConsumerWidget {
         const _MoreEntry(
           label: 'Mes commissions',
           description: 'Ce que je gagne',
-          icon: Icons.savings_rounded,
+          icon: LucideIcons.piggyBank,
           route: MyCommissionPage.routeName,
         ),
       const _MoreEntry(
         label: 'Fidélité',
         description: 'Points, promotions, rappels',
-        icon: Icons.card_giftcard_rounded,
+        icon: LucideIcons.gift,
         color: AppColors.violet,
         background: AppColors.tintViolet,
         route: LoyaltyPage.routeName,
@@ -89,7 +90,7 @@ class MorePage extends ConsumerWidget {
       const _MoreEntry(
         label: 'Paramètres',
         description: 'Salon, rôles, abonnement',
-        icon: Icons.settings_rounded,
+        icon: LucideIcons.settings,
         route: SettingsPage.routeName,
       ),
     ];

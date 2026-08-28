@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -25,24 +26,25 @@ class TimeOffHistoryPage extends ConsumerWidget {
     final history = ref.watch(myTimeOffHistoryProvider);
 
     final all = requests.valueOrNull ?? const <TimeOff>[];
-    final pending = all
-        .where((request) => request.status == TimeOffStatus.pending)
-        .toList()
-      ..sort((a, b) => a.startDate.compareTo(b.startDate));
+    final pending =
+        all.where((request) => request.status == TimeOffStatus.pending).toList()
+          ..sort((a, b) => a.startDate.compareTo(b.startDate));
 
     // Ce qui est validé mais pas encore décompté du calendrier : utile pour
     // savoir ce qu'il reste réellement à poser.
     final approvedDays = history
-        .where((request) =>
-            request.status == TimeOffStatus.approved &&
-            request.type == TimeOffType.vacation)
+        .where(
+          (request) =>
+              request.status == TimeOffStatus.approved &&
+              request.type == TimeOffType.vacation,
+        )
         .fold<int>(0, (sum, request) => sum + request.dayCount);
 
     return AppScreen(
       title: 'Mes congés',
       footer: AppButton(
         label: 'Demander un congé',
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         onPressed: () =>
             Navigator.of(context).pushNamed(TimeOffRequestPage.routeName),
       ),
@@ -85,7 +87,7 @@ class TimeOffHistoryPage extends ConsumerWidget {
                 compact: true,
                 title: 'Aucun congé passé',
                 message: 'Vos demandes tranchées apparaîtront ici.',
-                icon: Icons.beach_access_outlined,
+                icon: LucideIcons.palmtree,
               )
             else
               AppListCard(
@@ -119,8 +121,9 @@ class _BalanceCard extends StatelessWidget {
 
     return AppCard(
       color: isOverdrawn ? AppColors.tintAmber : AppColors.tintGreenSoft,
-      borderColor:
-          isOverdrawn ? AppColors.amberBorder : AppColors.tintGreenBorder,
+      borderColor: isOverdrawn
+          ? AppColors.amberBorder
+          : AppColors.tintGreenBorder,
       shadow: false,
       radius: 18,
       padding: const EdgeInsets.all(18),
@@ -175,14 +178,15 @@ class TimeOffHistoryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, icon) = switch (request.status) {
-      TimeOffStatus.approved => (AppColors.primary, Icons.check_rounded),
-      TimeOffStatus.rejected => (AppColors.expense, Icons.close_rounded),
-      TimeOffStatus.pending => (AppColors.amber, Icons.schedule_rounded),
+      TimeOffStatus.approved => (AppColors.primary, LucideIcons.check),
+      TimeOffStatus.rejected => (AppColors.expense, LucideIcons.x),
+      TimeOffStatus.pending => (AppColors.amber, LucideIcons.clock),
     };
 
     return AppListRow(
       label: title,
-      subtitle: '${request.status.label} · ${request.type.label}'
+      subtitle:
+          '${request.status.label} · ${request.type.label}'
           '${request.note == null ? '' : ' · ${request.note}'}',
       strong: true,
       padding: const EdgeInsets.symmetric(vertical: 12),

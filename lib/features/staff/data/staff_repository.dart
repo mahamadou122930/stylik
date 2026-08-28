@@ -32,8 +32,9 @@ class StaffRepository {
   Future<List<Profile>> fetchStylists(String salonId) async {
     final team = await fetchTeam(salonId);
     return team
-        .where((member) =>
-            member.isActive && member.role != UserRole.receptionniste)
+        .where(
+          (member) => member.isActive && member.role != UserRole.receptionniste,
+        )
         .toList();
   }
 

@@ -4,6 +4,7 @@ import '../../../core/services/providers.dart';
 import '../../../core/utils/formatters.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../catalog/domain/salon_service.dart';
+import '../../finance/presentation/finance_providers.dart';
 import '../../inventory/domain/product.dart';
 import '../../inventory/presentation/inventory_providers.dart';
 import '../data/pos_repository.dart';
@@ -227,6 +228,10 @@ final checkoutControllerProvider = Provider<Future<SalonTransaction?> Function()
     ref.read(resumedTicketIdProvider.notifier).state = null;
     ref.invalidate(todayTransactionsProvider);
     ref.invalidate(pendingTicketsProvider);
+    // Une vente déplace le chiffre d'affaires, les commissions et tous les
+    // rapports : sans ceci ils restaient sur leur dernier calcul jusqu'au
+    // redémarrage de l'application.
+    invalidateSalesDerived(ref);
     return transaction;
   };
 });
@@ -275,6 +280,9 @@ final holdTicketControllerProvider =
         ref.read(resumedTicketIdProvider.notifier).state = null;
         ref.invalidate(pendingTicketsProvider);
         ref.invalidate(todayTransactionsProvider);
+        // Un ticket mis de côté entre dans « En attente » et sort de
+        // l'encaissé : la synthèse doit être relue.
+        invalidateSalesDerived(ref);
         return transaction;
       };
     });
@@ -304,6 +312,7 @@ final cancelPendingControllerProvider =
 
         ref.invalidate(pendingTicketsProvider);
         ref.invalidate(todayTransactionsProvider);
+        invalidateSalesDerived(ref);
       };
     });
 
@@ -317,6 +326,7 @@ final refundControllerProvider =
               transactionId: transaction.id,
               amountFcfa: amountFcfa,
               reason: reason,
+              ticketTotalFcfa: transaction.totalAmountFcfa,
             );
 
         // Le produit rendu retourne en rayon. Un remboursement partiel ne dit pas
@@ -332,6 +342,7 @@ final refundControllerProvider =
         }
 
         ref.invalidate(todayTransactionsProvider);
+        invalidateSalesDerived(ref);
       };
     });
 
@@ -382,13 +393,10 @@ final todayTransactionsProvider = FutureProvider<List<SalonTransaction>>((
 final todayCashTotalProvider = Provider<int>((ref) {
   final transactions =
       ref.watch(todayTransactionsProvider).valueOrNull ?? const [];
-  return transactions
-      // Le total de caisse est ce qu'il y a dans le tiroir : un ticket en
-      // attente ou annulé n'y a rien mis.
-      .where(
-        (transaction) =>
-            transaction.status == TransactionStatus.paid ||
-            transaction.status == TransactionStatus.refunded,
-      )
-      .fold(0, (sum, transaction) => sum + transaction.signedAmountFcfa);
+  // Le total de caisse est ce qu'il y a dans le tiroir : un ticket en attente,
+  // annulé ou remboursé n'y a rien laissé.
+  return transactions.fold(
+    0,
+    (sum, transaction) => sum + transaction.cashImpactFcfa,
+  );
 });

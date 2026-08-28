@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -86,7 +87,7 @@ class FinanceYearChips extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.calendar_today_outlined,
+                    LucideIcons.calendar,
                     size: 13,
                     color: selected ? AppColors.primary : AppColors.textFaint,
                   ),
@@ -128,7 +129,7 @@ class FinanceAnchorNavigator extends ConsumerWidget {
 
     return Row(
       children: [
-        AppIconButton(icon: Icons.chevron_left_rounded, onTap: () => shift(-1)),
+        AppIconButton(icon: LucideIcons.chevronLeft, onTap: () => shift(-1)),
         Expanded(
           child: GestureDetector(
             // Revenir au présent en un geste, sans remonter cran par cran.
@@ -158,7 +159,7 @@ class FinanceAnchorNavigator extends ConsumerWidget {
           ),
         ),
         AppIconButton(
-          icon: Icons.chevron_right_rounded,
+          icon: LucideIcons.chevronRight,
           enabled: !isCurrent,
           onTap: () => shift(1),
         ),

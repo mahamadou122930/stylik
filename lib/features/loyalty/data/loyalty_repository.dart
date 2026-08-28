@@ -24,8 +24,7 @@ class LoyaltyRepository {
   Future<void> redeemReward({
     required String clientId,
     required LoyaltyReward reward,
-  }) =>
-      addPoints(clientId: clientId, points: -reward.pointsCost);
+  }) => addPoints(clientId: clientId, points: -reward.pointsCost);
 
   /// Meilleurs clients par points cumulés.
   Future<List<Client>> fetchTopClients({
@@ -76,11 +75,10 @@ class LoyaltyRepository {
   Future<void> setPromotionActive({
     required String promotionId,
     required bool isActive,
-  }) =>
-      _client
-          .from(SupabaseTables.promotions)
-          .update({'is_active': isActive})
-          .eq('id', promotionId);
+  }) => _client
+      .from(SupabaseTables.promotions)
+      .update({'is_active': isActive})
+      .eq('id', promotionId);
 
   // --- Rappels automatiques ----------------------------------------------
 
@@ -97,11 +95,10 @@ class LoyaltyRepository {
   Future<void> setReminderEnabled({
     required String ruleId,
     required bool isEnabled,
-  }) =>
-      _client
-          .from(SupabaseTables.reminderRules)
-          .update({'is_enabled': isEnabled})
-          .eq('id', ruleId);
+  }) => _client
+      .from(SupabaseTables.reminderRules)
+      .update({'is_enabled': isEnabled})
+      .eq('id', ruleId);
 
   /// Statistiques d'envoi du mois (fonction `reminder_stats`).
   Future<ReminderStats> fetchReminderStats(String salonId) async {
@@ -119,8 +116,10 @@ class LoyaltyRepository {
     required String salonId,
     required List<String> tags,
   }) async {
-    var query =
-        _client.from(SupabaseTables.clients).select().eq('salon_id', salonId);
+    var query = _client
+        .from(SupabaseTables.clients)
+        .select()
+        .eq('salon_id', salonId);
 
     if (tags.isNotEmpty) query = query.overlaps('tags', tags);
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
@@ -21,8 +22,8 @@ class AppIconTile extends StatelessWidget {
     required this.icon,
     this.size = AppSizes.iconTileSize,
     this.radius = AppSizes.radiusMd,
-  })  : color = AppColors.textBody,
-        background = AppColors.surfaceMuted;
+  }) : color = AppColors.textBody,
+       background = AppColors.surfaceMuted;
 
   final IconData icon;
   final Color color;
@@ -56,8 +57,8 @@ class AppBadge extends StatelessWidget {
 
   /// Puce sur fond sombre / coloré (texte blanc translucide).
   const AppBadge.onDark({super.key, required this.label, this.dense = false})
-      : color = Colors.white,
-        background = AppColors.overlayLight;
+    : color = Colors.white,
+      background = AppColors.overlayLight;
 
   final String label;
   final Color color;
@@ -75,10 +76,7 @@ class AppBadge extends StatelessWidget {
         color: background ?? color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppSizes.radiusPill),
       ),
-      child: Text(
-        label,
-        style: AppTypography.badge.copyWith(color: color),
-      ),
+      child: Text(label, style: AppTypography.badge.copyWith(color: color)),
     );
   }
 }
@@ -435,10 +433,7 @@ class DashedBorderPainter extends CustomPainter {
 
     final path = Path()
       ..addRRect(
-        RRect.fromRectAndRadius(
-          Offset.zero & size,
-          Radius.circular(radius),
-        ),
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
       );
 
     for (final metric in path.computeMetrics()) {
@@ -464,10 +459,10 @@ class DashedDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        height: 1,
-        width: double.infinity,
-        child: CustomPaint(painter: _DashedLinePainter(color)),
-      );
+    height: 1,
+    width: double.infinity,
+    child: CustomPaint(painter: _DashedLinePainter(color)),
+  );
 }
 
 class _DashedLinePainter extends CustomPainter {
@@ -519,7 +514,7 @@ class AppStepper extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _StepButton(
-            icon: Icons.remove_rounded,
+            icon: LucideIcons.minus,
             enabled: value > minValue,
             onTap: () => onChanged(value - 1),
           ),
@@ -532,7 +527,7 @@ class AppStepper extends StatelessWidget {
             ),
           ),
           _StepButton(
-            icon: Icons.add_rounded,
+            icon: LucideIcons.plus,
             filled: true,
             onTap: () => onChanged(value + 1),
           ),
@@ -592,8 +587,8 @@ class AppChevron extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Icon(
-        Icons.chevron_right_rounded,
-        size: 20,
-        color: color ?? AppColors.textFaint,
-      );
+    LucideIcons.chevronRight,
+    size: 20,
+    color: color ?? AppColors.textFaint,
+  );
 }

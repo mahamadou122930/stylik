@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -42,13 +43,13 @@ class ClientDetailPage extends ConsumerWidget {
     return AppScreen(
       title: 'Fiche client',
       action: AppIconButton(
-        icon: Icons.edit_outlined,
+        icon: LucideIcons.pencil,
         onTap: () => Navigator.of(context).pushNamed(ClientFormPage.routeName),
       ),
       footer: Row(
         children: [
           AppIconButton(
-            icon: Icons.mail_outline_rounded,
+            icon: LucideIcons.mail,
             onTap: () {
               final c = client.valueOrNull;
               final name = c?.fullName ?? 'Client';
@@ -64,7 +65,7 @@ class ClientDetailPage extends ConsumerWidget {
           Expanded(
             child: AppButton(
               label: 'Prendre RDV',
-              icon: Icons.add_rounded,
+              icon: LucideIcons.plus,
               onPressed: () => Navigator.of(
                 context,
               ).pushNamed(AppointmentFormPage.routeName),
@@ -81,7 +82,7 @@ class ClientDetailPage extends ConsumerWidget {
         data: (data) => data == null
             ? const AppEmptyState(
                 title: 'Client introuvable',
-                icon: Icons.person_off_outlined,
+                icon: LucideIcons.userX,
               )
             : _ClientBody(
                 client: data,
@@ -226,7 +227,7 @@ class _ClientBody extends ConsumerWidget {
               Row(
                 children: [
                   const AppIconTile(
-                    icon: Icons.stars_rounded,
+                    icon: LucideIcons.star,
                     color: AppColors.primary,
                     background: Colors.white,
                     size: 42,
@@ -308,7 +309,7 @@ class _ClientBody extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
-                  Icons.warning_amber_rounded,
+                  LucideIcons.triangleAlert,
                   size: 18,
                   color: AppColors.dangerDeep,
                 ),
@@ -386,7 +387,7 @@ class _ClientBody extends ConsumerWidget {
                   title: 'Aucun achat ni rendez-vous',
                   message:
                       'Les ventes en caisse et les RDV du client apparaîtront ici.',
-                  icon: Icons.history_rounded,
+                  icon: LucideIcons.history,
                 )
               : AppListCard(
                   children: [
@@ -413,9 +414,7 @@ class _VisitRow extends StatelessWidget {
       child: Row(
         children: [
           AppIconTile(
-            icon: isTx
-                ? Icons.receipt_long_rounded
-                : Icons.calendar_today_rounded,
+            icon: isTx ? LucideIcons.receiptText : LucideIcons.calendar,
             color: isTx ? AppColors.primary : AppColors.blue,
             background: isTx ? AppColors.tintGreen : AppColors.tintBlue,
             size: 34,

@@ -28,7 +28,8 @@ final authStateChangesProvider = StreamProvider<AuthState>(
 /// Session courante (null si déconnecté).
 final currentSessionProvider = Provider<Session?>((ref) {
   final authState = ref.watch(authStateChangesProvider).valueOrNull;
-  return authState?.session ?? ref.watch(supabaseClientProvider).auth.currentSession;
+  return authState?.session ??
+      ref.watch(supabaseClientProvider).auth.currentSession;
 });
 
 /// Identifiant de l'utilisateur connecté (null si déconnecté).

@@ -51,38 +51,39 @@ class SalonService {
   }
 
   factory SalonService.fromMap(Map<String, dynamic> map) => SalonService(
-        id: map['id'] as String,
-        salonId: map['salon_id'] as String,
-        name: (map['name'] as String?) ?? '',
-        category: (map['category'] as String?) ?? 'Autre',
-        durationMinutes: (map['duration_minutes'] as num?)?.toInt() ?? 30,
-        priceFcfa: (map['price_fcfa'] as num?)?.toInt() ?? 0,
-        commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0,
-        isPackage: (map['is_package'] as bool?) ?? false,
-        includedServiceIds: (map['included_service_ids'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            const [],
-        isActive: (map['is_active'] as bool?) ?? true,
-        description: map['description'] as String?,
-        isBookableOnline: (map['is_bookable_online'] as bool?) ?? true,
-        originalPriceFcfa: (map['original_price_fcfa'] as num?)?.toInt(),
-      );
+    id: map['id'] as String,
+    salonId: map['salon_id'] as String,
+    name: (map['name'] as String?) ?? '',
+    category: (map['category'] as String?) ?? 'Autre',
+    durationMinutes: (map['duration_minutes'] as num?)?.toInt() ?? 30,
+    priceFcfa: (map['price_fcfa'] as num?)?.toInt() ?? 0,
+    commissionRate: (map['commission_rate'] as num?)?.toDouble() ?? 0,
+    isPackage: (map['is_package'] as bool?) ?? false,
+    includedServiceIds:
+        (map['included_service_ids'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [],
+    isActive: (map['is_active'] as bool?) ?? true,
+    description: map['description'] as String?,
+    isBookableOnline: (map['is_bookable_online'] as bool?) ?? true,
+    originalPriceFcfa: (map['original_price_fcfa'] as num?)?.toInt(),
+  );
 
   Map<String, dynamic> toMap() => {
-        'salon_id': salonId,
-        'name': name,
-        'category': category,
-        'duration_minutes': durationMinutes,
-        'price_fcfa': priceFcfa,
-        'commission_rate': commissionRate,
-        'is_package': isPackage,
-        'included_service_ids': includedServiceIds,
-        'is_active': isActive,
-        'description': description,
-        'is_bookable_online': isBookableOnline,
-        'original_price_fcfa': originalPriceFcfa,
-      };
+    'salon_id': salonId,
+    'name': name,
+    'category': category,
+    'duration_minutes': durationMinutes,
+    'price_fcfa': priceFcfa,
+    'commission_rate': commissionRate,
+    'is_package': isPackage,
+    'included_service_ids': includedServiceIds,
+    'is_active': isActive,
+    'description': description,
+    'is_bookable_online': isBookableOnline,
+    'original_price_fcfa': originalPriceFcfa,
+  };
 
   SalonService copyWith({
     String? name,
@@ -96,20 +97,19 @@ class SalonService {
     String? description,
     bool? isBookableOnline,
     int? originalPriceFcfa,
-  }) =>
-      SalonService(
-        id: id,
-        salonId: salonId,
-        name: name ?? this.name,
-        category: category ?? this.category,
-        durationMinutes: durationMinutes ?? this.durationMinutes,
-        priceFcfa: priceFcfa ?? this.priceFcfa,
-        commissionRate: commissionRate ?? this.commissionRate,
-        isPackage: isPackage ?? this.isPackage,
-        includedServiceIds: includedServiceIds ?? this.includedServiceIds,
-        isActive: isActive ?? this.isActive,
-        description: description ?? this.description,
-        isBookableOnline: isBookableOnline ?? this.isBookableOnline,
-        originalPriceFcfa: originalPriceFcfa ?? this.originalPriceFcfa,
-      );
+  }) => SalonService(
+    id: id,
+    salonId: salonId,
+    name: name ?? this.name,
+    category: category ?? this.category,
+    durationMinutes: durationMinutes ?? this.durationMinutes,
+    priceFcfa: priceFcfa ?? this.priceFcfa,
+    commissionRate: commissionRate ?? this.commissionRate,
+    isPackage: isPackage ?? this.isPackage,
+    includedServiceIds: includedServiceIds ?? this.includedServiceIds,
+    isActive: isActive ?? this.isActive,
+    description: description ?? this.description,
+    isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+    originalPriceFcfa: originalPriceFcfa ?? this.originalPriceFcfa,
+  );
 }

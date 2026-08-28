@@ -215,6 +215,7 @@ class SalonTransaction {
     this.clientName,
     this.clientPhone,
     this.invoiceSeq,
+    this.refundedAmountFcfa = 0,
   });
 
   final String id;
@@ -237,6 +238,13 @@ class SalonTransaction {
   /// Rang de la facture dans son salon et son année, posé par la base au
   /// règlement. `null` sur un brouillon, ou avant la migration.
   final int? invoiceSeq;
+
+  /// Somme déjà rendue à la cliente sur ce ticket.
+  ///
+  /// Un remboursement intégral y inscrit le montant du ticket ; un
+  /// remboursement partiel, la seule part rendue. Le ticket reste alors
+  /// « payé », car la vente a bien eu lieu pour le reste.
+  final int refundedAmountFcfa;
 
   /// Numéro affiché sur le ticket (« #2024-0847 »).
   String get reference =>
@@ -263,8 +271,38 @@ class SalonTransaction {
 
   bool get isRefund => status == TransactionStatus.refunded;
 
-  /// Montant signé : négatif pour un remboursement.
-  int get signedAmountFcfa => isRefund ? -totalAmountFcfa : totalAmountFcfa;
+  /// Ce que le ticket a laissé dans le tiroir.
+  ///
+  /// Un ticket remboursé vaut **zéro**, et non l'opposé de son montant : le
+  /// remboursement met à jour la ligne existante au lieu d'en créer une
+  /// seconde. Compter `-montant` sur cette même ligne retirait donc la vente
+  /// deux fois — celle qu'elle n'apporte plus, et celle qu'elle soustrait :
+  /// un ticket de 10 000 F remboursé faisait chuter la journée de 20 000 F.
+  ///
+  /// Un brouillon en attente et un ticket annulé valent zéro aussi : ni l'un
+  /// ni l'autre n'a encaissé quoi que ce soit.
+  ///
+  /// C'est le même parti pris que la synthèse financière, qui écarte
+  /// entièrement les tickets remboursés et annulés de son chiffre d'affaires.
+  int get cashImpactFcfa => status == TransactionStatus.paid
+      ? (totalAmountFcfa - refundedAmountFcfa).clamp(0, totalAmountFcfa)
+      : 0;
+
+  /// Part du ticket effectivement conservée, entre 0 et 1.
+  ///
+  /// Sert à réduire la commission d'un remboursement partiel : l'écran de
+  /// remboursement ne demande pas *quelle* prestation est rendue, seulement
+  /// combien. Au prorata est donc la seule règle défendable.
+  double get keptRatio {
+    if (totalAmountFcfa <= 0) return 0;
+    if (status != TransactionStatus.paid) return 0;
+    return (totalAmountFcfa - refundedAmountFcfa).clamp(0, totalAmountFcfa) /
+        totalAmountFcfa;
+  }
+
+  /// `true` si une part seulement a été rendue.
+  bool get isPartiallyRefunded =>
+      status == TransactionStatus.paid && refundedAmountFcfa > 0;
 
   factory SalonTransaction.fromMap(Map<String, dynamic> map) =>
       SalonTransaction(
@@ -280,6 +318,7 @@ class SalonTransaction {
           map['payment_method'] as String?,
         ),
         status: TransactionStatus.fromValue(map['status'] as String?),
+        refundedAmountFcfa: (map['refunded_amount_fcfa'] as num?)?.toInt() ?? 0,
         lines:
             (map['lines'] as List?)
                 ?.map((e) => TicketLine.fromMap(e as Map<String, dynamic>))

@@ -38,8 +38,9 @@ class InviteCodeCard extends ConsumerWidget {
                     26,
                     FontWeight.w800,
                     letterSpacing: 6,
-                    color:
-                        code == null ? AppColors.textFaint : AppColors.textPrimary,
+                    color: code == null
+                        ? AppColors.textFaint
+                        : AppColors.textPrimary,
                   ),
                 ),
               ),

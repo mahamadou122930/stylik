@@ -177,7 +177,14 @@ class FinanceRepository {
       );
       if (index < 0) continue;
 
-      revenue[index] += (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+      // Part conservée après un éventuel remboursement partiel : elle
+      // s'applique au chiffre d'affaires comme aux commissions de la tranche.
+      final total = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+      final refunded = (row['refunded_amount_fcfa'] as num?)?.toInt() ?? 0;
+      final kept = (total - refunded).clamp(0, total);
+      final keptRatio = total <= 0 ? 0.0 : kept / total;
+
+      revenue[index] += kept;
 
       final rawLines = row['lines'];
       final lines = rawLines is String
@@ -199,7 +206,8 @@ class FinanceRepository {
 
         final unit = (line['unit_price_fcfa'] ?? line['unitPriceFcfa']) as num?;
         final qty = (line['quantity'] as num?)?.toInt() ?? 1;
-        commission[index] += (unit?.toInt() ?? 0) * qty * rate / 100;
+        commission[index] +=
+            (unit?.toInt() ?? 0) * qty * rate / 100 * keptRatio;
       }
     }
 
@@ -263,9 +271,15 @@ class FinanceRepository {
       final bucketTotals = List<int>.filled(bucketCount, 0);
 
       for (final row in rows) {
-        final amount = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
         final status = row['status'] as String?;
         if (status == 'cancelled' || status == 'refunded') continue;
+
+        // Un remboursement partiel laisse le ticket payé : seule la part
+        // rendue sort du chiffre d'affaires. Écarter la ligne entière retirait
+        // 5 000 F pour 1 000 F rendus.
+        final total = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+        final refunded = (row['refunded_amount_fcfa'] as num?)?.toInt() ?? 0;
+        final amount = (total - refunded).clamp(0, total);
 
         revenue += amount;
         if (status == 'paid') {
@@ -289,13 +303,14 @@ class FinanceRepository {
         }
       }
 
-      final previousRevenue = previousRows.fold<int>(
-        0,
-        (sum, row) =>
-            (row['status'] == 'cancelled' || row['status'] == 'refunded')
-            ? sum
-            : sum + ((row['total_amount_fcfa'] as num?)?.toInt() ?? 0),
-      );
+      final previousRevenue = previousRows.fold<int>(0, (sum, row) {
+        if (row['status'] == 'cancelled' || row['status'] == 'refunded') {
+          return sum;
+        }
+        final total = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+        final refunded = (row['refunded_amount_fcfa'] as num?)?.toInt() ?? 0;
+        return sum + (total - refunded).clamp(0, total);
+      });
 
       return FinanceSummary(
         from: from,
@@ -387,6 +402,16 @@ class FinanceRepository {
             ? 'c:$clientId'
             : 't:${row['id']}';
 
+        // Part du ticket réellement conservée. Un remboursement partiel laisse
+        // le ticket payé : la commission doit suivre la somme gardée.
+        final ticketTotal = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+        final ticketRefunded =
+            (row['refunded_amount_fcfa'] as num?)?.toInt() ?? 0;
+        final keptRatio = ticketTotal <= 0
+            ? 0.0
+            : (ticketTotal - ticketRefunded).clamp(0, ticketTotal) /
+                  ticketTotal;
+
         for (final line in lines) {
           if (line is! Map<String, dynamic>) continue;
           if ((line['is_product'] ?? line['isProduct'] as bool?) ?? false) {
@@ -430,7 +455,12 @@ class FinanceRepository {
             },
           );
 
-          entry['revenue_fcfa'] = (entry['revenue_fcfa'] as int) + amount;
+          // Le remboursement ne dit pas *quelle* prestation est rendue, mais
+          // seulement combien : la part conservée s'applique donc au prorata.
+          // Sans cela, un coiffeur gardait toute sa commission sur une
+          // prestation partiellement remboursée.
+          entry['revenue_fcfa'] =
+              (entry['revenue_fcfa'] as int) + (amount * keptRatio).round();
           entry['service_count'] = (entry['service_count'] as int) + qty;
           (entry['clients'] as Set<String>).add(servedKey);
         }

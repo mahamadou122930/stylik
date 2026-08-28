@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 
 /// Famille de moyen de paiement, telle que présentée en caisse.
 enum PaymentFamily {
-  cash('Espèces', Icons.payments_outlined),
-  mobileMoney('Mobile money', Icons.smartphone_outlined),
-  card('Carte bancaire', Icons.credit_card_rounded);
+  cash('Espèces', LucideIcons.banknote),
+  mobileMoney('Mobile money', LucideIcons.smartphone),
+  card('Carte bancaire', LucideIcons.creditCard);
 
   const PaymentFamily(this.label, this.icon);
 

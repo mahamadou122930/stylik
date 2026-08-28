@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -152,7 +153,7 @@ class _RefundPageState extends ConsumerState<RefundPage> {
           ],
           const SizedBox(height: 7),
           AppCallout(
-            icon: Icons.info_outline_rounded,
+            icon: LucideIcons.info,
             color: AppColors.dangerDeep,
             background: AppColors.tintExpense,
             borderColor: AppColors.dangerBorder,
@@ -199,7 +200,7 @@ class _ReasonOption extends StatelessWidget {
                   : Border.all(color: AppColors.borderStrong, width: 2),
             ),
             child: selected
-                ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
+                ? const Icon(LucideIcons.check, size: 13, color: Colors.white)
                 : null,
           ),
           const SizedBox(width: 11),

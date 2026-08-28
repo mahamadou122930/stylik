@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -26,7 +27,7 @@ class ClientsPage extends ConsumerWidget {
       largeTitle: true,
       showBack: false,
       action: AppIconButton(
-        icon: Icons.add_rounded,
+        icon: LucideIcons.plus,
         filled: true,
         onTap: () => Navigator.of(context).pushNamed(ClientFormPage.routeName),
       ),
@@ -48,7 +49,7 @@ class ClientsPage extends ConsumerWidget {
             ? AppEmptyState(
                 title: 'Aucun client',
                 message: 'Créez une première fiche client.',
-                icon: Icons.people_outline_rounded,
+                icon: LucideIcons.users,
                 actionLabel: 'Nouveau client',
                 onAction: () =>
                     Navigator.of(context).pushNamed(ClientFormPage.routeName),

@@ -69,7 +69,7 @@ void main() {
     expect(week[2].totalFcfa, 8000);
   });
 
-  test('un remboursement se déduit du jour', () async {
+  test('un ticket remboursé compte pour zéro, pas en négatif', () async {
     final monday = startOfWeek(DateTime.now()).add(const Duration(hours: 10));
 
     final container = containerWith([
@@ -78,7 +78,10 @@ void main() {
     ]);
     await container.read(twoWeekTransactionsProvider.future);
 
-    expect(container.read(weekRevenueProvider)[0].totalFcfa, 25000);
+    // Le remboursement porte sur CE ticket de 5 000 F : il est entré puis
+    // ressorti. La barre du lundi vaut donc les 30 000 F restants, et non
+    // 25 000 — ce qui retirait la vente une seconde fois.
+    expect(container.read(weekRevenueProvider)[0].totalFcfa, 30000);
   });
 
   test('la tendance compare au même jour la semaine passée', () async {
@@ -124,8 +127,9 @@ void main() {
 
     final basket = container.read(averageTicketProvider);
     expect(basket.saleCount, 2);
-    // (30 000 + 10 000 − 4 000) / 2
-    expect(basket.valueFcfa, 18000);
+    // (30 000 + 10 000) / 2 : la vente de 4 000 F a été annulée, elle ne
+    // rabaisse pas la moyenne des deux ventes qui tiennent.
+    expect(basket.valueFcfa, 20000);
   });
 
   test('sans vente, le panier moyen reste vide plutôt qu\'à zéro', () async {
