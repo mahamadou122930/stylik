@@ -271,4 +271,78 @@ void main() {
       expect(find.textContaining("aujourd'hui"), findsWidgets);
     });
   });
+
+  group('reste dû', () {
+    void usePhone(WidgetTester tester) {
+      tester.view.physicalSize = const Size(1080, 2220);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+    }
+
+    StylistCommission earning(int commission) => StylistCommission(
+      stylistId: 'a',
+      stylistName: 'Awa Traoré',
+      revenueFcfa: 2920000,
+      commissionFcfa: commission,
+      serviceCount: 118,
+      clientCount: 118,
+      commissionRate: 35,
+    );
+
+    Future<void> pump(WidgetTester tester, {required int paid}) async {
+      usePhone(tester);
+      final now = DateTime.now();
+      await tester.pumpWidget(
+        host(
+          team: [member('a', 'Awa Traoré')],
+          commissions: [earning(1022000)],
+          payouts: paid == 0
+              ? const []
+              : [settled('a', paid, DateTime(now.year, now.month, 5))],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('le versement est déduit de la commission', (tester) async {
+      await pump(tester, paid: 700000);
+
+      // 1 022 000 − 700 000. C'est ce que le gérant doit encore sortir de sa
+      // caisse : la commission brute ne le lui dit pas.
+      expect(find.text('Reste dû'), findsOneWidget);
+      expect(find.text(Formatters.fcfa(322000)), findsOneWidget);
+      expect(find.text(Formatters.fcfa(700000)), findsOneWidget);
+      // La commission brute n'est plus affichée telle quelle.
+      expect(find.text(Formatters.fcfa(1022000)), findsNothing);
+    });
+
+    testWidgets('sans versement, le reste vaut toute la commission', (
+      tester,
+    ) async {
+      await pump(tester, paid: 0);
+
+      expect(find.text(Formatters.fcfa(1022000)), findsOneWidget);
+    });
+
+    testWidgets('une commission entièrement réglée tombe à zéro', (
+      tester,
+    ) async {
+      await pump(tester, paid: 1022000);
+
+      // Deux fois le même montant : le reste à zéro et le versé au total.
+      expect(find.text(Formatters.fcfa(0)), findsOneWidget);
+      expect(find.text(Formatters.fcfa(1022000)), findsOneWidget);
+    });
+
+    testWidgets('un versement supérieur ne rend pas le reste négatif', (
+      tester,
+    ) async {
+      // Une avance, ou le règlement du mois précédent passé ce mois-ci.
+      await pump(tester, paid: 1500000);
+
+      expect(find.text(Formatters.fcfa(0)), findsOneWidget);
+      // Le versé reste affiché en entier : l'écart se lit encore.
+      expect(find.text(Formatters.fcfa(1500000)), findsOneWidget);
+    });
+  });
 }

@@ -335,6 +335,41 @@ final myMonthCommissionProvider = FutureProvider<StylistCommission?>((
   return null;
 });
 
+/// Commissions cumulées de toute l'équipe, depuis le premier exercice.
+///
+/// Le solde réclamable n'est pas mensuel : une commission de juillet jamais
+/// réglée reste due en août. Bornée au mois courant, la fenêtre la faisait
+/// disparaître le 1er du mois — et laissait à l'inverse rattraper deux fois le
+/// même dû à cheval sur un changement de mois.
+final cumulativeCommissionsProvider = FutureProvider<List<StylistCommission>>((
+  ref,
+) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  if (salonId == null) return const [];
+
+  final now = DateTime.now();
+  return ref
+      .watch(financeRepositoryProvider)
+      .fetchCommissions(
+        salonId: salonId,
+        from: DateTime(financeFirstYear),
+        // Fin du mois courant : les ventes du jour comptent.
+        to: DateTime(now.year, now.month + 1),
+      );
+});
+
+/// Commission cumulée d'un membre, tous mois confondus.
+final cumulativeCommissionForProvider = Provider.family<int, String>((
+  ref,
+  profileId,
+) {
+  final rows = ref.watch(cumulativeCommissionsProvider).valueOrNull ?? const [];
+  for (final row in rows) {
+    if (row.stylistId == profileId) return row.commissionFcfa;
+  }
+  return 0;
+});
+
 /// Demandes de versement du membre connecté, la plus récente d'abord.
 final myPayoutsProvider = FutureProvider<List<PayoutRequest>>((ref) async {
   final salonId = ref.watch(currentSalonIdProvider);
@@ -346,33 +381,23 @@ final myPayoutsProvider = FutureProvider<List<PayoutRequest>>((ref) async {
       .fetchPayouts(salonId: salonId, profileId: profile.id);
 });
 
-/// Total déjà versé sur le mois en cours.
-///
-/// Daté du règlement et non de la demande : une demande de fin juillet réglée
-/// le 2 août pèse sur août, comme dans un livre de paie.
-final paidThisMonthProvider = Provider<int>((ref) {
-  final payouts = ref.watch(myPayoutsProvider).valueOrNull ?? const [];
-  final now = DateTime.now();
-
-  return payouts
-      .where(
-        (payout) =>
-            payout.isSettled &&
-            payout.paidAt != null &&
-            payout.paidAt!.year == now.year &&
-            payout.paidAt!.month == now.month,
-      )
-      .fold(0, (sum, payout) => sum + payout.amountFcfa);
-});
-
 /// Reste dû sur le mois : commission acquise moins ce qui a déjà été versé,
 /// moins ce qui est déjà demandé et attend le gérant.
 final payoutBalanceProvider =
     Provider<({int earned, int paid, int pending, int available})>((ref) {
-      final earned =
-          ref.watch(myMonthCommissionProvider).valueOrNull?.commissionFcfa ?? 0;
-      final paid = ref.watch(paidThisMonthProvider);
-      final pending = (ref.watch(myPayoutsProvider).valueOrNull ?? const [])
+      final profile = ref.watch(currentProfileProvider).valueOrNull;
+      // Cumulatif des deux côtés : tout ce qui a été gagné, moins tout ce qui
+      // a été versé. Comparer une commission du mois à des versements du mois
+      // effaçait le dû des mois précédents.
+      final earned = profile == null
+          ? 0
+          : ref.watch(cumulativeCommissionForProvider(profile.id));
+
+      final payouts = ref.watch(myPayoutsProvider).valueOrNull ?? const [];
+      final paid = payouts
+          .where((payout) => payout.isSettled)
+          .fold(0, (sum, payout) => sum + payout.amountFcfa);
+      final pending = payouts
           .where((payout) => payout.status == PayoutStatus.pending)
           .fold(0, (sum, payout) => sum + payout.amountFcfa);
 
@@ -380,8 +405,8 @@ final payoutBalanceProvider =
         earned: earned,
         paid: paid,
         pending: pending,
-        // Jamais négatif : une avance dépassant la commission du mois ne doit pas
-        // afficher un « à recevoir » en rouge côté employé.
+        // Jamais négatif : une avance ne doit pas afficher un « à recevoir »
+        // en rouge côté employé.
         available: (earned - paid - pending).clamp(0, earned),
       );
     });
@@ -428,25 +453,24 @@ final stylistPayoutsProvider =
           .fetchPayouts(salonId: salonId, profileId: profileId);
     });
 
-/// Solde et cumul des versements d'un coiffeur spécifique sur le mois.
+/// Solde cumulé d'un coiffeur : ce qui lui reste réellement dû.
 final stylistPayoutBalanceProvider =
     Provider.family<
       ({int earned, int paid, int pending, int available}),
-      ({String profileId, int earned})
-    >((ref, arg) {
+      String
+    >((ref, profileId) {
       final payouts =
-          ref.watch(stylistPayoutsProvider(arg.profileId)).valueOrNull ??
-          const [];
-      final now = DateTime.now();
+          ref.watch(stylistPayoutsProvider(profileId)).valueOrNull ?? const [];
+
+      // Cumulatif, comme la borne appliquée par `request_payout` : un
+      // versement de juillet doit continuer d'amputer le dû en août, sinon le
+      // même travail serait payé deux fois. Le solde ne se déduit donc pas de
+      // la commission d'une période — c'est pourquoi la famille ne prend plus
+      // que l'identifiant du membre.
+      final earned = ref.watch(cumulativeCommissionForProvider(profileId));
 
       final paid = payouts
-          .where(
-            (payout) =>
-                payout.isSettled &&
-                payout.paidAt != null &&
-                payout.paidAt!.year == now.year &&
-                payout.paidAt!.month == now.month,
-          )
+          .where((payout) => payout.isSettled)
           .fold(0, (sum, payout) => sum + payout.amountFcfa);
 
       final pending = payouts
@@ -454,10 +478,10 @@ final stylistPayoutBalanceProvider =
           .fold(0, (sum, payout) => sum + payout.amountFcfa);
 
       return (
-        earned: arg.earned,
+        earned: earned,
         paid: paid,
         pending: pending,
-        available: (arg.earned - paid - pending).clamp(0, arg.earned),
+        available: (earned - paid - pending).clamp(0, earned),
       );
     });
 
@@ -788,6 +812,7 @@ final List<ProviderOrFamily> salesDerivedProviders = [
   commissionsProvider,
   monthCommissionsProvider,
   myMonthCommissionProvider,
+  cumulativeCommissionsProvider,
   servicePerformanceProvider,
   financeBucketsProvider,
   exportSummaryProvider,

@@ -107,6 +107,18 @@ class _StylistCard extends StatelessWidget {
   /// Déjà versé sur la période affichée.
   final int paidFcfa;
 
+  /// Ce qu'il reste à régler au coiffeur.
+  ///
+  /// C'est le chiffre que le gérant vient chercher : la commission brute ne
+  /// lui dit pas ce qu'il doit sortir de sa caisse aujourd'hui. Un versement
+  /// dépassant la commission de la période — une avance, ou le règlement du
+  /// mois précédent — ramène le reste à zéro plutôt qu'en négatif ; la
+  /// colonne « Versé » reste là pour montrer l'écart.
+  int get remainingFcfa => (commission.commissionFcfa - paidFcfa).clamp(
+    0,
+    commission.commissionFcfa,
+  );
+
   @override
   Widget build(BuildContext context) {
     return AppCard(
@@ -176,12 +188,12 @@ class _StylistCard extends StatelessWidget {
                 color: null,
               ),
               (
-                value: Formatters.fcfa(commission.commissionFcfa),
-                label: 'Commission',
+                value: Formatters.fcfa(remainingFcfa),
+                label: 'Reste dû',
                 color: AppColors.primary,
               ),
-              // Ce qui a réellement quitté la caisse. La différence avec la
-              // commission est le reste dû, que le gérant vient chercher ici.
+              // Ce qui a réellement quitté la caisse. Additionné au reste dû,
+              // il redonne la commission brute de la période.
               (value: Formatters.fcfa(paidFcfa), label: 'Versé', color: null),
             ],
           ),

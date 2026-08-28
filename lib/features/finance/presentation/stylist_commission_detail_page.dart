@@ -33,11 +33,10 @@ class StylistCommissionDetailPage extends ConsumerWidget {
             (b.paidAt ?? b.requestedAt).compareTo(a.paidAt ?? a.requestedAt),
       );
 
+    // Solde cumulé, et non la commission de la période affichée : c'est cette
+    // borne-là que `request_payout` applique côté base.
     final balance = ref.watch(
-      stylistPayoutBalanceProvider((
-        profileId: commission.stylistId,
-        earned: commission.commissionFcfa,
-      )),
+      stylistPayoutBalanceProvider(commission.stylistId),
     );
 
     // Initiales ou prénom pour le titre
