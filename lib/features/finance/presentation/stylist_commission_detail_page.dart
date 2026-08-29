@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/error_messages.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/finance_summary.dart';
@@ -53,7 +54,10 @@ class StylistCommissionDetailPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Banner(
-            dueAmount: commission.commissionFcfa,
+            // Le dû **cumulé**, comme le versé et le reste juste à côté :
+            // afficher la commission du seul mois affiché à côté d'un versé
+            // de tous les temps donnait « 450 F dû » sous « 6 750 F versés ».
+            dueAmount: balance.earned,
             paidAmount: balance.paid,
             remainingAmount: balance.available,
           ),
@@ -215,12 +219,18 @@ class StylistCommissionDetailPage extends ConsumerWidget {
         );
 
     if (!context.mounted) return;
+
+    // La raison du refus vient de la base — droits insuffisants, montant
+    // supérieur au dû — et c'est elle qui permet d'agir. « Impossible
+    // d'enregistrer » seul laissait le gérant sans rien à corriger.
+    final error = ref.read(payoutRequestControllerProvider).error;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           ok
               ? 'Versement enregistré pour ${commission.stylistName}.'
-              : 'Impossible d\'enregistrer le versement.',
+              : 'Versement refusé : ${ErrorMessages.humanize(error)}',
         ),
       ),
     );
@@ -241,8 +251,6 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-
     return AppCard(
       color: AppColors.primary,
       borderColor: AppColors.primary,
@@ -253,7 +261,11 @@ class _Banner extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Commission due · ${Formatters.monthName(now)}',
+            // Cumulé, et non « · août » : les trois montants de cette carte
+            // couvrent tout l'historique du membre. Nommer un mois ici
+            // laissait croire que le versé et le reste ne parlaient que de
+            // celui-ci.
+            "Commission due · depuis l'ouverture",
             style: AppTypography.manrope(
               12.5,
               FontWeight.w600,

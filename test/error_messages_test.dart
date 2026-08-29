@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:stylik/core/utils/error_messages.dart';
 import 'package:stylik/core/widgets/widgets.dart';
 
@@ -80,6 +81,61 @@ void main() {
 
       expect(find.text('Une erreur est survenue'), findsOneWidget);
       expect(find.text('Montant supérieur au disponible'), findsOneWidget);
+    });
+  });
+
+  group('refus de la base', () {
+    test('une fonction absente parle de mise à jour, pas de schema cache', () {
+      // Ce que voyait le gérant : « PostgrestException(message: Could not find
+      // the function public.record_payout(...) in the schema cache,
+      // code: PGRST202, details: Searched for the function... ».
+      const error = PostgrestException(
+        message:
+            'Could not find the function public.record_payout in the '
+            'schema cache',
+        code: 'PGRST202',
+      );
+
+      expect(
+        ErrorMessages.humanize(error),
+        'Action indisponible : la base de données doit être mise à jour.',
+      );
+    });
+
+    test('un refus de policy se dit en droits', () {
+      const error = PostgrestException(
+        message:
+            'new row violates row-level security policy for table '
+            '"payout_requests"',
+        code: '42501',
+      );
+
+      expect(
+        ErrorMessages.humanize(error),
+        "Vous n'avez pas les droits pour cette action.",
+      );
+    });
+
+    test('le message de nos fonctions SQL est conservé tel quel', () {
+      // Nos RPC lèvent leurs exceptions en français : c'est la phrase la plus
+      // utile de toute la chaîne, elle doit arriver intacte.
+      const error = PostgrestException(
+        message: 'Montant supérieur au dû restant (1050 F)',
+        code: '23514',
+      );
+
+      expect(
+        ErrorMessages.humanize(error),
+        'Montant supérieur au dû restant (1050 F)',
+      );
+    });
+
+    test('une coupure réseau prime sur le reste', () {
+      const error = PostgrestException(
+        message: 'ClientException with SocketException: Failed host lookup',
+      );
+
+      expect(ErrorMessages.humanize(error), ErrorMessages.offlineMessage);
     });
   });
 }

@@ -18,10 +18,14 @@ void main() {
   group('libellé de la dernière visite', () {
     test('une visite du jour se nomme, elle ne se chiffre pas', () {
       // « 0 j » se lisait comme un compteur en panne.
-      expect(
-        client(lastVisit: ago(const Duration(hours: 2))).lastVisitLabel,
-        'Aujourd\'hui',
-      );
+      //
+      // Minuit du jour même, et non « il y a deux heures » : entre 00 h et
+      // 02 h, deux heures en arrière tombent la veille, et le test échouait
+      // une nuit sur deux sans que le code soit en cause.
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      expect(client(lastVisit: today).lastVisitLabel, 'Aujourd\'hui');
     });
 
     test('la veille est comptée en jour calendaire', () {

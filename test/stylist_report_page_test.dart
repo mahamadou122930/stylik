@@ -83,7 +83,13 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Mahamadou Santara'), findsOneWidget);
-    expect(find.text(Formatters.fcfa(900)), findsOneWidget);
+    // Sans versement, la commission brute et le reste dû portent le même
+    // montant : deux occurrences, pas une.
+    expect(find.text(Formatters.fcfa(900)), findsNWidgets(2));
+    expect(find.text('Commission'), findsWidgets);
+    // Le chiffre d'affaires du coiffeur n'est plus affiché.
+    expect(find.text(Formatters.fcfa(3000)), findsNothing);
+    expect(find.text('CA généré'), findsNothing);
 
     // Celui qui n'a rien encaissé reste visible, à zéro.
     expect(find.text('Bakary Keïta'), findsOneWidget);
@@ -161,7 +167,7 @@ void main() {
       expect(find.text('Versé'), findsOneWidget);
       expect(find.text(Formatters.fcfa(700000)), findsOneWidget);
       // Les gros montants se réduisent au lieu de déborder de leur colonne.
-      expect(find.text(Formatters.fcfa(2920000)), findsOneWidget);
+      expect(find.text(Formatters.fcfa(1022000)), findsOneWidget);
     });
 
     testWidgets('sans versement, la colonne affiche zéro', (tester) async {
@@ -312,8 +318,8 @@ void main() {
       expect(find.text('Reste dû'), findsOneWidget);
       expect(find.text(Formatters.fcfa(322000)), findsOneWidget);
       expect(find.text(Formatters.fcfa(700000)), findsOneWidget);
-      // La commission brute n'est plus affichée telle quelle.
-      expect(find.text(Formatters.fcfa(1022000)), findsNothing);
+      // Les trois colonnes se recoupent : 1 022 000 = 322 000 + 700 000.
+      expect(find.text(Formatters.fcfa(1022000)), findsOneWidget);
     });
 
     testWidgets('sans versement, le reste vaut toute la commission', (
@@ -321,7 +327,8 @@ void main() {
     ) async {
       await pump(tester, paid: 0);
 
-      expect(find.text(Formatters.fcfa(1022000)), findsOneWidget);
+      // Commission brute et reste dû : le même montant, deux fois.
+      expect(find.text(Formatters.fcfa(1022000)), findsNWidgets(2));
     });
 
     testWidgets('une commission entièrement réglée tombe à zéro', (
@@ -329,9 +336,9 @@ void main() {
     ) async {
       await pump(tester, paid: 1022000);
 
-      // Deux fois le même montant : le reste à zéro et le versé au total.
       expect(find.text(Formatters.fcfa(0)), findsOneWidget);
-      expect(find.text(Formatters.fcfa(1022000)), findsOneWidget);
+      // La commission brute et le versé, égaux : le reste dû tombe à zéro.
+      expect(find.text(Formatters.fcfa(1022000)), findsNWidgets(2));
     });
 
     testWidgets('un versement supérieur ne rend pas le reste négatif', (

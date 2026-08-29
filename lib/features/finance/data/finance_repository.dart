@@ -99,6 +99,16 @@ class FinanceRepository {
   }
 
   /// Enregistre un versement direct à un coiffeur (gérant).
+  ///
+  /// Passe par `record_payout` et non par un INSERT : la policy « Payout
+  /// requests go through the RPC » ferme l'insertion directe à tout le monde
+  /// — `WITH CHECK (false)` — pour que personne ne s'attribue la somme de son
+  /// choix. L'INSERT que faisait cette méthode échouait donc en 42501, et
+  /// l'écran affichait « Impossible d'enregistrer le versement » sans dire
+  /// pourquoi.
+  ///
+  /// Aucun repli : il n'existe pas de chemin direct, et en inventer un
+  /// reviendrait à rouvrir la faille que la policy referme.
   Future<PayoutRequest> createDirectPayout({
     required String salonId,
     required String profileId,
@@ -107,20 +117,16 @@ class FinanceRepository {
     String? reference,
     String? note,
   }) async {
-    final data = await _client
-        .from(SupabaseTables.payoutRequests)
-        .insert({
-          'salon_id': salonId,
-          'profile_id': profileId,
-          'amount_fcfa': amountFcfa,
-          'status': PayoutStatus.paid.value,
-          'method': method.value,
-          'reference': reference,
-          'note': note,
-          'paid_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .select('*, profiles(full_name)')
-        .single();
+    final data = await _client.rpc<Map<String, dynamic>>(
+      'record_payout',
+      params: {
+        'p_profile_id': profileId,
+        'p_amount_fcfa': amountFcfa,
+        'p_method': method.value,
+        'p_reference': reference,
+        'p_note': note,
+      },
+    );
     return PayoutRequest.fromMap(data);
   }
 

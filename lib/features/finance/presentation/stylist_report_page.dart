@@ -49,7 +49,7 @@ class StylistReportPage extends ConsumerWidget {
             child: Text(
               // La période nommée — « Août » — plutôt que l'échelle
               // — « Mois » — qui n'indique pas laquelle on regarde.
-              '${period.titleFor(anchor)} · CA généré et commission due',
+              '${period.titleFor(anchor)} · commission due et versements',
               style: AppTypography.manrope(
                 12.5,
                 FontWeight.w600,
@@ -182,9 +182,14 @@ class _StylistCard extends StatelessWidget {
           const SizedBox(height: 14),
           AppSplitMetrics(
             entries: [
+              // La commission brute, et non le chiffre d'affaires généré : le
+              // gérant vient ici pour ce qu'il doit à son équipe, pas pour ce
+              // que son équipe a fait entrer. Les trois colonnes se lisent
+              // alors d'un bloc — brut, reste, versé — et se recoupent :
+              // commission = reste dû + versé.
               (
-                value: Formatters.fcfa(commission.revenueFcfa),
-                label: 'CA généré',
+                value: Formatters.fcfa(commission.commissionFcfa),
+                label: 'Commission',
                 color: null,
               ),
               (
