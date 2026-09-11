@@ -25,7 +25,6 @@ class ClientsPage extends ConsumerWidget {
     return AppScreen(
       title: 'Clients',
       largeTitle: true,
-      showBack: false,
       action: AppIconButton(
         icon: LucideIcons.plus,
         filled: true,

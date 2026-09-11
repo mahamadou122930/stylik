@@ -43,7 +43,6 @@ class InventoryPage extends ConsumerWidget {
     return AppScreen(
       title: 'Inventaire',
       largeTitle: true,
-      showBack: false,
       action: AppIconButton(
         icon: LucideIcons.plus,
         filled: true,

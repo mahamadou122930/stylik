@@ -223,6 +223,106 @@ class FinanceRepository {
     ];
   }
 
+  /// Activité d'**un** membre, découpée par tranche.
+  ///
+  /// Alimente l'écran de demande de versement, qui liste les journées et leur
+  /// commission. Une lecture des transactions et une des profils, quelle que
+  /// soit la longueur de la liste : interroger jour par jour coûterait autant
+  /// d'allers-retours que de lignes affichées.
+  ///
+  /// Mêmes règles que `fetchCommissions` — seuls les tickets payés comptent,
+  /// les produits vendus ne donnent pas de commission, et un remboursement
+  /// partiel réduit la part conservée au prorata.
+  Future<List<({int revenueFcfa, int commissionFcfa, int serviceCount})>>
+  fetchStylistBuckets({
+    required String salonId,
+    required String profileId,
+    required List<({DateTime from, DateTime to})> buckets,
+  }) async {
+    if (buckets.isEmpty) return const [];
+
+    final rows = await _fetchTransactions(
+      salonId: salonId,
+      from: buckets.first.from,
+      to: buckets.last.to,
+    );
+
+    // Le taux du membre, et lui seul : c'est sa commission qu'on calcule.
+    var rate = 0.0;
+    try {
+      final profile = await _client
+          .from(SupabaseTables.profiles)
+          .select('commission_rate')
+          .eq('id', profileId)
+          .maybeSingle();
+      rate = (profile?['commission_rate'] as num?)?.toDouble() ?? 0;
+    } catch (_) {
+      // Sans le taux, le chiffre d'affaires reste juste ; seule la commission
+      // tombe à zéro. Mieux vaut une colonne vide qu'un montant inventé.
+    }
+
+    final revenue = List<int>.filled(buckets.length, 0);
+    final services = List<int>.filled(buckets.length, 0);
+
+    for (final row in rows) {
+      if (row['status'] != 'paid') continue;
+
+      final createdAtStr = row['created_at'] as String?;
+      if (createdAtStr == null) continue;
+      final createdAt = DateTime.parse(createdAtStr).toLocal();
+
+      final index = buckets.indexWhere(
+        (b) => !createdAt.isBefore(b.from) && createdAt.isBefore(b.to),
+      );
+      if (index < 0) continue;
+
+      final total = (row['total_amount_fcfa'] as num?)?.toInt() ?? 0;
+      final refunded = (row['refunded_amount_fcfa'] as num?)?.toInt() ?? 0;
+      final keptRatio = total <= 0
+          ? 0.0
+          : (total - refunded).clamp(0, total) / total;
+
+      final rawLines = row['lines'];
+      final lines = rawLines is String
+          ? ((jsonDecode(rawLines) as List?) ?? const [])
+          : (rawLines is List ? rawLines : const []);
+
+      for (final line in lines) {
+        if (line is! Map<String, dynamic>) continue;
+        if (((line['is_product'] ?? line['isProduct']) as bool?) ?? false) {
+          continue;
+        }
+
+        // À défaut de coiffeur sur la ligne, c'est l'encaisseur qui l'a faite :
+        // même repli que le rapport par coiffeur, pour que les deux écrans
+        // attribuent les prestations au même membre.
+        final stylistId =
+            (line['stylist_id'] as String?) ??
+            (line['stylistId'] as String?) ??
+            (row['cashier_id'] as String?);
+        if (stylistId != profileId) continue;
+
+        final unit =
+            ((line['unit_price_fcfa'] ?? line['unitPriceFcfa']) as num?)
+                ?.toInt() ??
+            0;
+        final qty = (line['quantity'] as num?)?.toInt() ?? 1;
+
+        revenue[index] += (unit * qty * keptRatio).round();
+        services[index] += qty;
+      }
+    }
+
+    return [
+      for (var i = 0; i < buckets.length; i++)
+        (
+          revenueFcfa: revenue[i],
+          commissionFcfa: (revenue[i] * rate / 100).round(),
+          serviceCount: services[i],
+        ),
+    ];
+  }
+
   /// Synthèse du CA sur une période.
   Future<FinanceSummary> fetchSummary({
     required String salonId,

@@ -132,7 +132,6 @@ class FinancePage extends ConsumerWidget {
 
     return AppScreen(
       title: 'Chiffre d\'affaires',
-      showBack: false,
       header: const FinancePeriodHeader(),
       child: summary.when(
         loading: () => const AppLoader(),

@@ -185,7 +185,7 @@ final financeAnchorProvider = StateProvider<DateTime>((ref) {
 /// Constante plutôt que dérivée de la date de création du salon : la table
 /// `salons` ne l'expose pas dans le modèle. Le jour où elle le fera, c'est
 /// cette valeur qu'il faudra remplacer.
-const int financeFirstYear = 2025;
+const int financeFirstYear = 2026;
 
 /// Années proposées dans le sélecteur, de la plus récente à la plus ancienne.
 final financeYearsProvider = Provider<List<int>>((ref) {
@@ -485,6 +485,80 @@ final stylistPayoutBalanceProvider =
       );
     });
 
+/// Élément journalier de commission pour l'écran de demande de versement C3.
+class DailyCommissionItem {
+  const DailyCommissionItem({
+    required this.date,
+    required this.label,
+    required this.serviceCount,
+    required this.revenueFcfa,
+    required this.commissionFcfa,
+    required this.isCurrentDay,
+  });
+
+  final DateTime date;
+  final String label;
+  final int serviceCount;
+  final int revenueFcfa;
+  final int commissionFcfa;
+  final bool isCurrentDay;
+}
+
+/// Nombre de journées listées sur l'écran de demande de versement (30 jours pour couvrir le mois).
+const int payoutHistoryDays = 30;
+
+/// Commissions journalières réelles d'un coiffeur donné (vue coiffeur ou gérant).
+final stylistDailyCommissionsProvider =
+    FutureProvider.family<List<DailyCommissionItem>, String>((
+      ref,
+      profileId,
+    ) async {
+      final salonId = ref.watch(currentSalonIdProvider);
+      if (salonId == null) return const [];
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      // De la plus ancienne à aujourd'hui, pour que la liste se lise dans le sens
+      // du temps.
+      final buckets = [
+        for (var i = payoutHistoryDays - 1; i >= 0; i--)
+          (
+            from: today.subtract(Duration(days: i)),
+            to: today.subtract(Duration(days: i - 1)),
+          ),
+      ];
+
+      final totals = await ref
+          .watch(financeRepositoryProvider)
+          .fetchStylistBuckets(
+            salonId: salonId,
+            profileId: profileId,
+            buckets: buckets,
+          );
+
+      return [
+        for (var i = 0; i < buckets.length; i++)
+          DailyCommissionItem(
+            date: buckets[i].from,
+            label: Formatters.weekdayDayMonth(buckets[i].from),
+            serviceCount: totals[i].serviceCount,
+            revenueFcfa: totals[i].revenueFcfa,
+            commissionFcfa: totals[i].commissionFcfa,
+            isCurrentDay: buckets[i].from == today,
+          ),
+      ];
+    });
+
+/// Commissions journalières réelles du membre connecté.
+final myDailyCommissionsProvider = FutureProvider<List<DailyCommissionItem>>((
+  ref,
+) async {
+  final profile = ref.watch(currentProfileProvider).valueOrNull;
+  if (profile == null) return const [];
+  return ref.watch(stylistDailyCommissionsProvider(profile.id).future);
+});
+
 /// Dépose ou gère une demande de versement.
 final payoutRequestControllerProvider =
     StateNotifierProvider<PayoutRequestController, AsyncValue<void>>(
@@ -510,7 +584,7 @@ class PayoutRequestController extends StateNotifier<AsyncValue<void>> {
             profileId: profileId,
             note: note,
           );
-      _invalidateAll();
+      _invalidateAll(profileId);
       state = const AsyncData(null);
       return true;
     } catch (error, stack) {
@@ -579,7 +653,7 @@ class PayoutRequestController extends StateNotifier<AsyncValue<void>> {
             reference: reference,
             note: note,
           );
-      _invalidateAll();
+      _invalidateAll(profileId);
       state = const AsyncData(null);
       return true;
     } catch (error, stack) {
@@ -588,9 +662,22 @@ class PayoutRequestController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  void _invalidateAll() {
+  void _invalidateAll([String? profileId]) {
     _ref.invalidate(myPayoutsProvider);
     _ref.invalidate(allPayoutsProvider);
+    _ref.invalidate(paidByStylistProvider);
+    _ref.invalidate(financeSummaryProvider);
+    _ref.invalidate(commissionsProvider);
+    _ref.invalidate(cumulativeCommissionsProvider);
+    _ref.invalidate(stylistPayoutsProvider);
+    _ref.invalidate(stylistPayoutBalanceProvider);
+    _ref.invalidate(stylistDailyCommissionsProvider);
+    _ref.invalidate(myDailyCommissionsProvider);
+    if (profileId != null) {
+      _ref.invalidate(stylistPayoutsProvider(profileId));
+      _ref.invalidate(stylistPayoutBalanceProvider(profileId));
+      _ref.invalidate(stylistDailyCommissionsProvider(profileId));
+    }
   }
 }
 
@@ -813,6 +900,7 @@ final List<ProviderOrFamily> salesDerivedProviders = [
   monthCommissionsProvider,
   myMonthCommissionProvider,
   cumulativeCommissionsProvider,
+  myDailyCommissionsProvider,
   servicePerformanceProvider,
   financeBucketsProvider,
   exportSummaryProvider,

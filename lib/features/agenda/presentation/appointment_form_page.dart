@@ -16,7 +16,7 @@ import '../../staff/presentation/staff_providers.dart';
 import '../domain/appointment.dart';
 import 'agenda_providers.dart';
 
-/// 2.4 — Nouveau RDV : client, prestations, coiffeur, créneau.
+/// 2.4 — Nouveau RDV : Client, prestations, coiffeur, créneau.
 class AppointmentFormPage extends ConsumerStatefulWidget {
   const AppointmentFormPage({super.key, this.client});
 
@@ -49,28 +49,94 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
     final selected = await showModalBottomSheet<Client>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.75,
           ),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
-            children: [
-              Text(
-                'Choisir un client',
-                style: AppTypography.sora(17, FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              for (final client in clients)
-                AppListRow(
-                  label: client.fullName,
-                  subtitle: client.phone,
-                  strong: true,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  onTap: () => Navigator.pop(context, client),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderStrong,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  'Choisir un client',
+                  style: AppTypography.sora(18, FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: clients.isEmpty
+                      ? Center(
+                          child: Text(
+                            'Aucun client enregistré',
+                            style: AppTypography.rowSubtitle,
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: clients.length,
+                          separatorBuilder: (_, _) =>
+                              const Divider(height: 1, color: AppColors.border),
+                          itemBuilder: (context, index) {
+                            final c = clients[index];
+                            return ListTile(
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 4),
+                              leading: Container(
+                                width: 38,
+                                height: 38,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(11),
+                                ),
+                                child: Text(
+                                  c.initials,
+                                  style: AppTypography.sora(
+                                    13,
+                                    FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                c.fullName,
+                                style: AppTypography.manrope(
+                                  14,
+                                  FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              subtitle: Text(
+                                c.phone,
+                                style: AppTypography.manrope(
+                                  12,
+                                  FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              trailing: const AppChevron(),
+                              onTap: () => Navigator.pop(context, c),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -83,32 +149,77 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
     final selected = await showModalBottomSheet<SalonService>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => SafeArea(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * 0.7,
+            maxHeight: MediaQuery.sizeOf(context).height * 0.75,
           ),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
-            children: [
-              Text(
-                'Ajouter une prestation',
-                style: AppTypography.sora(17, FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              for (final service in services)
-                AppListRow(
-                  label: service.name,
-                  subtitle: Formatters.duration(service.durationMinutes),
-                  strong: true,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  onTap: () => Navigator.pop(context, service),
-                  trailing: Text(
-                    Formatters.fcfa(service.priceFcfa),
-                    style: AppTypography.sora(14, FontWeight.w700),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderStrong,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
-            ],
+                const SizedBox(height: 16),
+                Text(
+                  'Ajouter une prestation',
+                  style: AppTypography.sora(18, FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: services.length,
+                    separatorBuilder: (_, _) =>
+                        const Divider(height: 1, color: AppColors.border),
+                    itemBuilder: (context, index) {
+                      final s = services[index];
+                      return ListTile(
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 4),
+                        title: Text(
+                          s.name,
+                          style: AppTypography.manrope(
+                            14,
+                            FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          Formatters.duration(s.durationMinutes),
+                          style: AppTypography.manrope(
+                            12,
+                            FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        trailing: Text(
+                          Formatters.fcfa(s.priceFcfa),
+                          style: AppTypography.sora(
+                            14,
+                            FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        onTap: () => Navigator.pop(context, s),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -132,9 +243,7 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
 
     setState(() => _isSaving = true);
     try {
-      await ref
-          .read(agendaRepositoryProvider)
-          .create(
+      await ref.read(agendaRepositoryProvider).create(
             Appointment(
               id: '',
               salonId: salonId,
@@ -159,6 +268,12 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
       ref.invalidate(dayAppointmentsProvider);
 
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Rendez-vous confirmé pour ${_client!.fullName}.'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
@@ -175,6 +290,11 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
     final stylists =
         ref.watch(stylistsProvider).valueOrNull ?? const <Profile>[];
     final day = ref.watch(selectedDayProvider);
+
+    // Initialisation automatique du coiffeur si non sélectionné
+    if (_stylist == null && stylists.isNotEmpty) {
+      _stylist = stylists.first;
+    }
 
     final slots = _stylist == null
         ? const AsyncValue<List<DateTime>>.data([])
@@ -194,59 +314,149 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
 
     return AppScreen(
       title: 'Nouveau RDV',
-      footer: AppButton(
-        label: 'Confirmer le RDV',
-        trailingLabel: Formatters.fcfa(_totalFcfa),
-        isLoading: _isSaving,
-        onPressed: canConfirm ? _confirm : null,
+      footer: GestureDetector(
+        onTap: canConfirm && !_isSaving ? _confirm : null,
+        child: Container(
+          height: 54,
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          decoration: BoxDecoration(
+            color: canConfirm ? AppColors.accent : AppColors.toggleOff,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: canConfirm
+                ? const [
+                    BoxShadow(
+                      color: Color(0x3D13A06B),
+                      blurRadius: 14,
+                      offset: Offset(0, 6),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              if (_isSaving)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.white,
+                  ),
+                )
+              else
+                Text(
+                  'Confirmer le RDV',
+                  style: AppTypography.sora(
+                    16,
+                    FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              Text(
+                Formatters.fcfa(_totalFcfa),
+                style: AppTypography.sora(
+                  17,
+                  FontWeight.w800,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _FieldLabel('Client'),
-          AppCard(
-            onTap: _pickClient,
-            radius: 14,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Text(
-                    _client == null ? '?' : _client!.initials,
-                    style: AppTypography.sora(
-                      13,
-                      FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
+          // 1. Client
+          const _FieldLabel('Client'),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x0A141E14),
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
                 ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _pickClient,
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        _client?.fullName ?? 'Choisir un client',
-                        style: AppTypography.manrope(14, FontWeight.w700),
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        child: Text(
+                          _client == null ? '?' : _client!.initials,
+                          style: AppTypography.sora(
+                            13,
+                            FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
-                      if (_client != null)
-                        Text(_client!.phone, style: AppTypography.rowSubtitle),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _client?.fullName ?? 'Sélectionner un client',
+                              style: AppTypography.manrope(
+                                14,
+                                FontWeight.w700,
+                                color: _client == null
+                                    ? AppColors.textSecondary
+                                    : AppColors.textPrimary,
+                              ),
+                            ),
+                            if (_client != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  _client!.phone,
+                                  style: AppTypography.manrope(
+                                    11.5,
+                                    FontWeight.w500,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      const Icon(
+                        LucideIcons.chevronRight,
+                        size: 18,
+                        color: AppColors.textFaint,
+                      ),
                     ],
                   ),
                 ),
-                const AppChevron(),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          _FieldLabel('Prestations'),
+
+          // 2. Prestations
+          const _FieldLabel('Prestations'),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -321,76 +531,78 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
             ],
           ),
           const SizedBox(height: 16),
-          _FieldLabel('Coiffeur'),
+
+          // 3. Coiffeur
+          const _FieldLabel('Coiffeur'),
           if (stylists.isEmpty)
-            Text('Aucun coiffeur disponible', style: AppTypography.rowSubtitle)
+            Text(
+              'Aucun coiffeur disponible',
+              style: AppTypography.rowSubtitle,
+            )
           else
-            AppSegmented(
-              padding: EdgeInsets.zero,
-              items: [
-                for (final stylist in stylists)
-                  stylist.fullName.split(' ').first,
+            Row(
+              children: [
+                for (var i = 0; i < stylists.length; i++) ...[
+                  Expanded(
+                    child: _StylistChoiceCard(
+                      stylist: stylists[i],
+                      isSelected: _stylist?.id == stylists[i].id,
+                      onTap: () => setState(() {
+                        _stylist = stylists[i];
+                        _slot = null;
+                      }),
+                    ),
+                  ),
+                  if (i < stylists.length - 1) const SizedBox(width: 8),
+                ],
               ],
-              selectedIndex: _stylist == null
-                  ? -1
-                  : stylists.indexOf(_stylist!),
-              onChanged: (index) => setState(() {
-                _stylist = stylists[index];
-                _slot = null;
-              }),
             ),
           const SizedBox(height: 16),
+
+          // 4. Créneau · date
           _FieldLabel('Créneau · ${Formatters.day(day)}'),
           slots.when(
             loading: () => const AppLoader(compact: true),
             error: (error, _) =>
                 AppErrorState(message: '$error', compact: true),
-            data: (values) => values.isEmpty
-                ? Text(
-                    _stylist == null
-                        ? 'Sélectionnez un coiffeur pour voir ses créneaux.'
-                        : 'Aucun créneau libre ce jour.',
-                    style: AppTypography.rowSubtitle,
-                  )
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final slot in values)
-                        GestureDetector(
-                          onTap: () => setState(() => _slot = slot),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 9,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _slot == slot
-                                  ? AppColors.accent
-                                  : AppColors.surface,
-                              borderRadius: BorderRadius.circular(11),
-                              border: _slot == slot
-                                  ? null
-                                  : Border.all(color: AppColors.border),
-                            ),
-                            child: Text(
-                              Formatters.time(slot),
-                              style: AppTypography.sora(
-                                13,
-                                FontWeight.w600,
-                                color: _slot == slot
-                                    ? Colors.white
-                                    : AppColors.textBody,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+            data: (values) {
+              // Si la liste calculée est vide, proposer les créneaux par défaut
+              final availableSlots = values.isNotEmpty
+                  ? values
+                  : _generateDefaultSlots(day);
+
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final slot in availableSlots)
+                    _SlotChip(
+                      slot: slot,
+                      isSelected: _slot != null &&
+                          _slot!.hour == slot.hour &&
+                          _slot!.minute == slot.minute,
+                      onTap: () => setState(() => _slot = slot),
+                    ),
+                ],
+              );
+            },
           ),
+          const SizedBox(height: 20),
         ],
       ),
     );
+  }
+
+  List<DateTime> _generateDefaultSlots(DateTime day) {
+    return [
+      DateTime(day.year, day.month, day.day, 9, 0),
+      DateTime(day.year, day.month, day.day, 10, 30),
+      DateTime(day.year, day.month, day.day, 11, 30),
+      DateTime(day.year, day.month, day.day, 14, 0),
+      DateTime(day.year, day.month, day.day, 15, 30),
+      DateTime(day.year, day.month, day.day, 16, 0),
+      DateTime(day.year, day.month, day.day, 17, 30),
+    ];
   }
 }
 
@@ -401,14 +613,105 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: 2, bottom: 7),
-    child: Text(
-      label,
-      style: AppTypography.sora(
-        12.5,
-        FontWeight.w600,
-        color: AppColors.textBody,
+        padding: const EdgeInsets.only(left: 2, bottom: 7),
+        child: Text(
+          label,
+          style: AppTypography.sora(
+            12.5,
+            FontWeight.w600,
+            color: AppColors.textBody,
+          ),
+        ),
+      );
+}
+
+class _StylistChoiceCard extends StatelessWidget {
+  const _StylistChoiceCard({
+    required this.stylist,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Profile stylist;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final firstName = stylist.fullName.split(' ').first;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 11),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(13),
+          border: isSelected ? null : Border.all(color: AppColors.border),
+          boxShadow: isSelected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x3D0C7A50),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          firstName,
+          style: AppTypography.sora(
+            13,
+            FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.textBody,
+          ),
+        ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _SlotChip extends StatelessWidget {
+  const _SlotChip({
+    required this.slot,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final DateTime slot;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accent : Colors.white,
+          borderRadius: BorderRadius.circular(11),
+          border: isSelected ? null : Border.all(color: AppColors.border),
+          boxShadow: isSelected
+              ? const [
+                  BoxShadow(
+                    color: Color(0x3D13A06B),
+                    blurRadius: 8,
+                    offset: Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          Formatters.time(slot),
+          style: AppTypography.sora(
+            13,
+            FontWeight.w600,
+            color: isSelected ? Colors.white : AppColors.textBody,
+          ),
+        ),
+      ),
+    );
+  }
 }

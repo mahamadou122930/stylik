@@ -40,6 +40,7 @@ import 'features/finance/presentation/export_page.dart';
 import 'features/finance/presentation/finance_page.dart';
 import 'features/finance/presentation/my_commission_page.dart';
 import 'features/finance/presentation/net_result_page.dart';
+import 'features/finance/presentation/payout_request_page.dart';
 import 'features/finance/presentation/payout_requests_page.dart';
 import 'features/finance/presentation/service_report_page.dart';
 import 'features/finance/presentation/stylist_commission_detail_page.dart';
@@ -196,6 +197,7 @@ class StylikApp extends ConsumerWidget {
     FinancePage.routeName: const FinancePage(),
     StylistReportPage.routeName: const StylistReportPage(),
     MyCommissionPage.routeName: const MyCommissionPage(),
+    PayoutRequestPage.routeName: const PayoutRequestPage(),
     NetResultPage.routeName: const NetResultPage(),
     PayoutRequestsPage.routeName: const PayoutRequestsPage(),
     ServiceReportPage.routeName: const ServiceReportPage(),
@@ -337,6 +339,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (_index == index) {
       _navigatorKey(index).currentState?.popUntil((route) => route.isFirst);
     } else {
+      final role = ref.read(currentRoleProvider) ?? UserRole.coiffeur;
+      final tabs = _tabsFor(role);
+      final moreIndex = tabs.indexOf(_moreTab);
+
+      // Si l'utilisateur quitte l'onglet Menu ou y revient,
+      // on réinitialise l'onglet Menu à sa racine (état par défaut du menu).
+      if (moreIndex >= 0 && (_index == moreIndex || index == moreIndex)) {
+        _navigatorKey(moreIndex).currentState?.popUntil((route) => route.isFirst);
+      }
+
       if (!_visitedIndices.contains(index)) {
         setState(() {
           _visitedIndices.add(index);

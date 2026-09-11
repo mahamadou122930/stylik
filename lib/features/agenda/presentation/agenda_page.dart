@@ -48,7 +48,10 @@ class AgendaPage extends ConsumerWidget {
     // que sa propre journée, et jamais la liste de ses collègues.
     final profile = ref.watch(currentProfileProvider).valueOrNull;
     if (profile != null && !profile.role.canViewFullAgenda) {
-      return StylistAgendaPage(stylist: profile, showBack: false);
+      return StylistAgendaPage(
+        stylist: profile,
+        showBack: Navigator.of(context).canPop(),
+      );
     }
 
     final day = ref.watch(selectedDayProvider);
@@ -75,6 +78,10 @@ class AgendaPage extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(18, 6, 18, 10),
               child: Row(
                 children: [
+                  if (Navigator.of(context).canPop()) ...[
+                    const AppIconButton(icon: LucideIcons.chevronLeft),
+                    const SizedBox(width: 8),
+                  ],
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

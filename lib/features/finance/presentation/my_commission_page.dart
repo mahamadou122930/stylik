@@ -9,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/payout.dart';
 import 'finance_providers.dart';
+import 'payout_request_page.dart';
 
 /// C2 — Mes commissions : ce qui est acquis, ce qui a été versé, ce qui reste.
 ///
@@ -44,7 +45,8 @@ class MyCommissionPage extends ConsumerWidget {
         // déjà chez le gérant.
         onPressed: balance.available <= 0
             ? null
-            : () => _openRequestSheet(context, ref, balance.available),
+            : () =>
+                  Navigator.of(context).pushNamed(PayoutRequestPage.routeName),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -121,129 +123,6 @@ class MyCommissionPage extends ConsumerWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Future<void> _openRequestSheet(
-    BuildContext context,
-    WidgetRef ref,
-    int availableAmount,
-  ) async {
-    final result = await showModalBottomSheet<({int amount, String? note})>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      builder: (sheetContext) => _RequestPayoutSheet(amount: availableAmount),
-    );
-
-    if (result == null) return;
-
-    final ok = await ref
-        .read(payoutRequestControllerProvider.notifier)
-        .submit(amountFcfa: result.amount, note: result.note);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? 'Demande envoyée à votre gérant.'
-              : 'Envoi impossible : '
-                    '${ref.read(payoutRequestControllerProvider).error}',
-        ),
-      ),
-    );
-  }
-}
-
-class _RequestPayoutSheet extends StatefulWidget {
-  const _RequestPayoutSheet({required this.amount});
-
-  final int amount;
-
-  @override
-  State<_RequestPayoutSheet> createState() => _RequestPayoutSheetState();
-}
-
-class _RequestPayoutSheetState extends State<_RequestPayoutSheet> {
-  late final TextEditingController _amountController;
-  late final TextEditingController _noteController;
-
-  @override
-  void initState() {
-    super.initState();
-    _amountController = TextEditingController(text: '${widget.amount}');
-    _noteController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        20,
-        20,
-        MediaQuery.viewInsetsOf(context).bottom + 20,
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Demander un versement',
-              style: AppTypography.sora(18, FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Saisissez le montant souhaité (disponible : ${Formatters.fcfa(widget.amount)}).',
-              style: AppTypography.manrope(
-                12.5,
-                FontWeight.w500,
-                color: AppColors.textSecondary,
-                height: 1.45,
-              ),
-            ),
-            const SizedBox(height: 16),
-            AppInput.amount(
-              controller: _amountController,
-              label: 'Montant demandé (FCFA)',
-              hint: '0',
-            ),
-            const SizedBox(height: 14),
-            AppInput(
-              controller: _noteController,
-              label: 'Message / Note (optionnel)',
-              hint: 'Par Orange Money si possible',
-              maxLines: 2,
-            ),
-            const SizedBox(height: 16),
-            AppButton(
-              label: 'Envoyer la demande',
-              icon: LucideIcons.send,
-              onPressed: () {
-                final inputAmount =
-                    int.tryParse(_amountController.text.trim()) ?? 0;
-                final validAmount = inputAmount.clamp(1, widget.amount);
-                final note = _noteController.text.trim();
-                Navigator.of(
-                  context,
-                ).pop((amount: validAmount, note: note.isEmpty ? null : note));
-              },
-            ),
-          ],
-        ),
       ),
     );
   }

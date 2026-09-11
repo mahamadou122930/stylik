@@ -56,6 +56,12 @@ abstract final class AppColors {
   /// Piste d'interrupteur à l'état inactif.
   static const Color toggleOff = Color(0xFFE1E8DC);
 
+  /// Bordure de la barre de navigation flottante.
+  static const Color navBorder = Color(0xFFEAEFE6);
+
+  /// Icônes inactives de la barre de navigation.
+  static const Color navInactive = Color(0xFF8A968C);
+
   // --- Teintes ------------------------------------------------------------
   /// Pastille verte (icônes, puces « Échanger »).
   static const Color tintGreen = Color(0xFFE2F3EA);

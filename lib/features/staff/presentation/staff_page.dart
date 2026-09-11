@@ -32,7 +32,6 @@ class StaffPage extends ConsumerWidget {
     return AppScreen(
       title: 'Personnel',
       largeTitle: true,
-      showBack: false,
       action: AppIconButton(
         icon: LucideIcons.plus,
         filled: true,

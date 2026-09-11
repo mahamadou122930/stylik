@@ -31,7 +31,6 @@ class SettingsPage extends ConsumerWidget {
 
     return AppScreen(
       title: 'Paramètres',
-      showBack: false,
       largeTitle: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

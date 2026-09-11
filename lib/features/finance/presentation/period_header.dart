@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/widgets/widgets.dart';
 import 'finance_providers.dart';
@@ -38,79 +39,15 @@ class FinancePeriodHeader extends ConsumerWidget {
             );
           },
         ),
-        // Le mois et l'année se lisent dans un exercice : le sélecteur évite
-        // de reculer douze fois pour atteindre l'an dernier.
-        if (period.hasYearPicker) ...[
-          const SizedBox(height: 10),
-          const FinanceYearChips(),
-        ],
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         const FinanceAnchorNavigator(),
       ],
     );
   }
 }
 
-/// Choix de l'année, pour les échelles Mois et Année.
-class FinanceYearChips extends ConsumerWidget {
-  const FinanceYearChips({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final years = ref.watch(financeYearsProvider);
-    final anchor = ref.watch(financeAnchorProvider);
-
-    return SizedBox(
-      height: 34,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: years.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final year = years[index];
-          final selected = year == anchor.year;
-
-          return GestureDetector(
-            onTap: () => ref.read(financeAnchorProvider.notifier).state =
-                DateTime(year, anchor.month, 1),
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: selected ? AppColors.tintGreen : AppColors.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: selected ? AppColors.primary : AppColors.border,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    LucideIcons.calendar,
-                    size: 13,
-                    color: selected ? AppColors.primary : AppColors.textFaint,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Année $year',
-                    style: AppTypography.manrope(
-                      12.5,
-                      FontWeight.w600,
-                      color: selected ? AppColors.primary : AppColors.textBody,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Recul et avance d'une période, avec le libellé de la fenêtre au milieu.
+/// Recul et avance d'une période, avec le libellé de la fenêtre au milieu
+/// et le menu déroulant de choix d'année à l'angle pour les échelles pertinentes.
 class FinanceAnchorNavigator extends ConsumerWidget {
   const FinanceAnchorNavigator({super.key});
 
@@ -122,7 +59,12 @@ class FinanceAnchorNavigator extends ConsumerWidget {
 
     // On ne dépasse pas la période en cours : il n'y a pas de chiffre
     // d'affaires à venir.
-    final isCurrent = period.rangeFor(anchor).from == period.rangeFor(now).from;
+    final isCurrent =
+        period
+            .rangeFor(anchor)
+            .from
+            .isAtSameMomentAs(period.rangeFor(now).from) ||
+        period.rangeFor(anchor).from.isAfter(period.rangeFor(now).from);
 
     void shift(int steps) => ref.read(financeAnchorProvider.notifier).state =
         period.shift(anchor, steps);
@@ -143,6 +85,8 @@ class FinanceAnchorNavigator extends ConsumerWidget {
                 Text(
                   period.titleFor(anchor),
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.sora(13.5, FontWeight.w700),
                 ),
                 if (!isCurrent)
@@ -163,7 +107,122 @@ class FinanceAnchorNavigator extends ConsumerWidget {
           enabled: !isCurrent,
           onTap: () => shift(1),
         ),
+        if (period.hasYearPicker) ...[
+          const SizedBox(width: 8),
+          const FinanceYearDropdown(),
+        ],
       ],
     );
   }
 }
+
+/// Menu déroulant de choix d'année, positionné à l'angle du navigateur.
+class FinanceYearDropdown extends ConsumerWidget {
+  const FinanceYearDropdown({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final years = ref.watch(financeYearsProvider);
+    final anchor = ref.watch(financeAnchorProvider);
+
+    return PopupMenuButton<int>(
+      initialValue: anchor.year,
+      tooltip: 'Changer d\'année',
+      elevation: 4,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      color: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 6),
+      onSelected: (year) {
+        final now = DateTime.now();
+        var targetMonth = anchor.month;
+        if (year == now.year && targetMonth > now.month) {
+          targetMonth = now.month;
+        }
+        ref.read(financeAnchorProvider.notifier).state = DateTime(
+          year,
+          targetMonth,
+          anchor.day.clamp(1, 28),
+        );
+      },
+      itemBuilder: (context) => [
+        for (final year in years)
+          PopupMenuItem<int>(
+            value: year,
+            height: 42,
+            child: Row(
+              children: [
+                Icon(
+                  LucideIcons.calendar,
+                  size: 14,
+                  color: year == anchor.year
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Année $year',
+                  style: AppTypography.manrope(
+                    13,
+                    year == anchor.year ? FontWeight.w700 : FontWeight.w500,
+                    color: year == anchor.year
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                if (year == anchor.year)
+                  const Icon(
+                    LucideIcons.check,
+                    size: 15,
+                    color: AppColors.primary,
+                  ),
+              ],
+            ),
+          ),
+      ],
+      child: Container(
+        height: AppSizes.iconButtonSize,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              LucideIcons.calendar,
+              size: 13,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              '${anchor.year}',
+              style: AppTypography.manrope(
+                12.5,
+                FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Icon(
+              LucideIcons.chevronDown,
+              size: 13,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Alias rétrocompatible.
+typedef FinanceYearChips = FinanceYearDropdown;

@@ -112,7 +112,6 @@ class PosPage extends ConsumerWidget {
 
     return AppScreen(
       title: 'Encaissement',
-      showBack: false,
       action: AppIconButton(
         icon: LucideIcons.receiptText,
         onTap: () =>

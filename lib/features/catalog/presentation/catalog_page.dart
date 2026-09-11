@@ -34,7 +34,6 @@ class CatalogPage extends ConsumerWidget {
     return AppScreen(
       title: 'Services',
       largeTitle: true,
-      showBack: false,
       action: canEdit
           ? AppIconButton(
               icon: LucideIcons.plus,

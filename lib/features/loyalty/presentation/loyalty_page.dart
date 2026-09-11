@@ -26,7 +26,6 @@ class LoyaltyPage extends ConsumerWidget {
 
     return AppScreen(
       title: 'Fidélité',
-      showBack: false,
       action: AppIconButton(
         icon: LucideIcons.megaphone,
         filled: true,

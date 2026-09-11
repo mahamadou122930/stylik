@@ -14,6 +14,7 @@ import '../../auth/domain/profile.dart';
 import '../../finance/domain/finance_summary.dart';
 import '../../finance/presentation/finance_providers.dart';
 import '../../finance/presentation/my_commission_page.dart';
+import '../../finance/presentation/payout_request_page.dart';
 import 'home_providers.dart';
 
 /// Accueil du coiffeur — sa journée et sa rémunération.
@@ -103,38 +104,48 @@ class StylistHomePage extends ConsumerWidget {
                 ),
         ),
         const SizedBox(height: 14),
-        AppCard(
-          onTap: () =>
-              Navigator.of(context).pushNamed(MyCommissionPage.routeName),
-          radius: 14,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          child: Row(
-            children: [
-              const AppIconTile(
-                icon: LucideIcons.piggyBank,
-                size: 44,
-                radius: 13,
+        Builder(
+          builder: (context) {
+            final balance = ref.watch(payoutBalanceProvider);
+            return AppCard(
+              onTap: () => Navigator.of(context).pushNamed(
+                balance.available > 0
+                    ? PayoutRequestPage.routeName
+                    : MyCommissionPage.routeName,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Le détail de mes commissions',
-                      style: AppTypography.sora(14.5, FontWeight.w700),
+              radius: 16,
+              padding: const EdgeInsets.all(15),
+              child: Row(
+                children: [
+                  const AppIconTile(
+                    icon: LucideIcons.banknote,
+                    color: AppColors.primary,
+                    background: AppColors.tintGreen,
+                    size: 40,
+                    radius: 12,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Demander un versement',
+                          style: AppTypography.sora(14, FontWeight.w700),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${Formatters.fcfa(balance.available)} disponibles',
+                          style: AppTypography.rowSubtitle,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Par jour, semaine ou mois',
-                      style: AppTypography.rowSubtitle,
-                    ),
-                  ],
-                ),
+                  ),
+                  const AppChevron(),
+                ],
               ),
-              const AppChevron(),
-            ],
-          ),
+            );
+          },
         ),
       ],
     );

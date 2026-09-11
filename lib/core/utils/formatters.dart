@@ -74,44 +74,63 @@ abstract final class Formatters {
   /// `12500` → `"12 500"` (sans devise).
   static String amount(num value) => _amount.format(value);
 
+  /// Met en majuscule la première lettre d'une chaîne (ex: `"août"` → `"Août"`).
+  static String capitalize(String text) {
+    if (text.isEmpty) return text;
+    return '${text[0].toUpperCase()}${text.substring(1)}';
+  }
+
+  /// Met en majuscule la première lettre de chaque mot (ex: `"4 août 2026"` → `"4 Août 2026"`).
+  static String capitalizeWords(String text) {
+    if (text.isEmpty) return text;
+    return text.split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return '${word[0].toUpperCase()}${word.substring(1)}';
+    }).join(' ');
+  }
+
   static String time(DateTime date) => _time.format(date.toLocal());
 
-  static String day(DateTime date) => _day.format(date.toLocal());
+  static String day(DateTime date) =>
+      capitalizeWords(_day.format(date.toLocal()));
 
-  /// `2026-08-04` → `"lun"` — bandeau de semaine du planning individuel.
+  /// `2026-08-04` → `"Lun"` — bandeau de semaine du planning individuel.
   static String weekdayShort(DateTime date) =>
-      _weekdayShort.format(date.toLocal()).replaceAll('.', '');
+      capitalize(_weekdayShort.format(date.toLocal()).replaceAll('.', ''));
 
   static String dayShort(DateTime date) => _dayShort.format(date.toLocal());
 
-  /// `2026-09-01` → `"1 sept."` — format compact des cartes.
-  static String dayMonth(DateTime date) => _dayMonth.format(date.toLocal());
+  /// `2026-09-01` → `"1 Sept."` — format compact des cartes.
+  static String dayMonth(DateTime date) =>
+      capitalizeWords(_dayMonth.format(date.toLocal()));
 
-  /// `2026-09-01` → `"lun. 1 sept."`.
+  /// `2026-09-01` → `"Lun. 1 Sept."`.
   static String weekdayDayMonth(DateTime date) =>
-      _weekdayDayMonth.format(date.toLocal());
+      capitalizeWords(_weekdayDayMonth.format(date.toLocal()));
 
   static String dayTime(DateTime date) => _dayTime.format(date.toLocal());
 
-  /// `2026-08-13` → `"août"` — période de paie affichée au coiffeur.
-  static String monthName(DateTime date) => _month.format(date.toLocal());
+  /// `2026-08-13` → `"Août"` — période de paie affichée au coiffeur.
+  static String monthName(DateTime date) =>
+      capitalize(_month.format(date.toLocal()));
 
-  /// `2026-08-13` → `"août"`, `2026-01-13` → `"janv."` — colonnes d'un
+  /// `2026-08-13` → `"Août"`, `2026-01-13` → `"Janv."` — colonnes d'un
   /// histogramme annuel.
   ///
   /// Format dédié plutôt qu'une troncature de [monthName] : « mai » ne fait
   /// que trois lettres, et un `substring` fixe y levait une `RangeError`.
-  static String monthShort(DateTime date) => _monthShort.format(date.toLocal());
+  static String monthShort(DateTime date) =>
+      capitalize(_monthShort.format(date.toLocal()));
 
   /// `2026-08-13` → `"A"` — colonnes d'un histogramme à douze mois, où seule
   /// une lettre tient sous la barre.
   static String monthInitial(DateTime date) =>
       _monthInitial.format(date.toLocal()).substring(0, 1).toUpperCase();
 
-  /// `2026-08-04` → `"4 août 2026"` — date d'émission d'une facture, où
+  /// `2026-08-04` → `"4 Août 2026"` — date d'émission d'une facture, où
   /// l'année doit figurer.
   static String dayMonthYear(DateTime date) =>
-      _dayMonthYear.format(date.toLocal());
+      capitalizeWords(_dayMonthYear.format(date.toLocal()));
 
   /// `95` → `"1h35"`, `45` → `"45 min"`.
   static String duration(int minutes) {

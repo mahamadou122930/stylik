@@ -108,9 +108,9 @@ void main() {
     test('l\'année ne remonte pas avant le premier exercice', () {
       final buckets = FinancePeriod.year.chartBuckets(DateTime(2026, 8, 20));
 
-      // 2023 et 2024 ne peuvent contenir que des zéros : une colonne vide
+      // 2023 à 2025 ne peuvent contenir que des zéros : une colonne vide
       // n'apprend rien et écrase l'échelle des autres.
-      expect(buckets.map((b) => b.label), ['2025', '2026']);
+      expect(buckets.map((b) => b.label), ['2026']);
       expect(buckets.first.from, DateTime(financeFirstYear));
     });
 
@@ -125,7 +125,7 @@ void main() {
     test('la tranche courante est repérée', () {
       expect(FinancePeriod.day.highlightIndexFor(thursday), 3);
       expect(FinancePeriod.month.highlightIndexFor(DateTime(2026, 8, 20)), 7);
-      expect(FinancePeriod.year.highlightIndexFor(DateTime(2026, 8, 20)), 1);
+      expect(FinancePeriod.year.highlightIndexFor(DateTime(2026, 8, 20)), 0);
     });
 
     test('aucun libellé générique ne subsiste', () {
