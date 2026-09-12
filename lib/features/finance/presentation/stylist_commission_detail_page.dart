@@ -638,6 +638,7 @@ class _RegisterPayoutSheetState extends ConsumerState<_RegisterPayoutSheet> {
   late final TextEditingController _refController;
   late final TextEditingController _noteController;
   late final TextEditingController _searchController;
+  final ScrollController _daysScrollController = ScrollController();
   PayoutMethod _method = PayoutMethod.orangeMoney;
   final Set<String> _selectedDateKeys = {};
   DateTime? _customSelectedDate;
@@ -673,41 +674,62 @@ class _RegisterPayoutSheetState extends ConsumerState<_RegisterPayoutSheet> {
     _refController.dispose();
     _noteController.dispose();
     _searchController.dispose();
+    _daysScrollController.dispose();
     super.dispose();
   }
 
-  bool _isDaySettled({
-    required DailyCommissionItem item,
-    required int availableBalance,
-    required List<PayoutRequest> settledPayouts,
+  /// Journées déjà réglées, de la plus ancienne à la plus récente.
+  ///
+  /// Deux règles fautives coexistaient ici.
+  ///
+  /// La première comparait le **total versé depuis l'ouverture** au cumul des
+  /// seules journées affichées : 9 450 F versés dépassaient évidemment les
+  /// 1 800 F de la fenêtre, et toutes les journées passaient pour réglées —
+  /// « Solde restant dû : 0 F » juste sous une pastille annonçant « Dû :
+  /// 900 F ». Les versements anciens étaient imputés deux fois.
+  ///
+  /// La seconde cherchait le libellé du jour dans le **texte libre** de la
+  /// note d'un versement. Une note citant plusieurs journées les marquait
+  /// toutes réglées, même réglées en partie, et n'importe quelle remarque
+  /// saisie à la main pouvait déclencher la correspondance. L'état d'une
+  /// somme d'argent ne se déduit pas d'une sous-chaîne.
+  ///
+  /// La part réglée de la fenêtre se déduit de ce qui reste dû : les journées
+  /// les plus anciennes s'éteignent d'abord, et le reliquat correspond, par
+  /// construction, au solde affiché en haut de l'écran.
+  Set<String> _settledDayKeys({
     required List<DailyCommissionItem> allDays,
+    required int availableBalance,
   }) {
-    if (availableBalance <= 0) return true;
-
-    final dayLabel = item.label.toLowerCase();
-    final dayShort = Formatters.dayMonth(item.date).toLowerCase();
-    for (final p in settledPayouts) {
-      final note = (p.note ?? '').toLowerCase();
-      if (note.contains(dayLabel) || note.contains(dayShort)) {
-        return true;
-      }
-    }
-
-    final sortedDays = List<DailyCommissionItem>.from(allDays)
+    final sorted = List<DailyCommissionItem>.from(allDays)
       ..sort((a, b) => a.date.compareTo(b.date));
-    final totalPaid = settledPayouts.fold<int>(
-      0,
-      (sum, p) => sum + p.amountFcfa,
-    );
-    var cumulatedDue = 0;
-    for (final d in sortedDays) {
-      cumulatedDue += d.commissionFcfa;
-      if (d.date == item.date) {
-        return totalPaid >= cumulatedDue;
+
+    final windowTotal = sorted.fold<int>(0, (s, d) => s + d.commissionFcfa);
+    var budget = (windowTotal - availableBalance).clamp(0, windowTotal);
+
+    final settled = <String>{};
+    for (final day in sorted) {
+      if (day.commissionFcfa <= 0) continue;
+      if (budget >= day.commissionFcfa) {
+        settled.add(_dateKey(day.date));
+        budget -= day.commissionFcfa;
+      } else {
+        // Une journée partiellement couverte reste réclamable : la solder
+        // entièrement effacerait le reliquat.
+        break;
       }
     }
+    return settled;
+  }
 
-    return false;
+  /// Ce que le rappel épinglé dit à gauche du montant.
+  String _selectionSummary() {
+    if (_customSelectedDate != null) {
+      return Formatters.weekdayDayMonth(_customSelectedDate!);
+    }
+    final n = _selectedDateKeys.length;
+    if (n == 0) return 'Aucune journée cochée';
+    return '$n journée${n > 1 ? 's' : ''} cochée${n > 1 ? 's' : ''}';
   }
 
   void _onToggleDay(
@@ -817,10 +839,10 @@ class _RegisterPayoutSheetState extends ConsumerState<_RegisterPayoutSheet> {
     final dailyAsync = ref.watch(
       stylistDailyCommissionsProvider(widget.stylistId),
     );
-    final payoutsAsync = ref.watch(stylistPayoutsProvider(widget.stylistId));
-    final settledPayouts =
-        payoutsAsync.valueOrNull?.where((p) => p.isSettled).toList() ??
-        const <PayoutRequest>[];
+    // Les versements ne servent plus à décider quelle journée est réglée :
+    // `widget.maxAmount` porte déjà le solde restant, et c'est lui qui fait
+    // foi. Les recouper par le texte de leurs notes était la source du
+    // désaccord entre la pastille et la liste.
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -833,663 +855,789 @@ class _RegisterPayoutSheetState extends ConsumerState<_RegisterPayoutSheet> {
           20,
           MediaQuery.viewInsetsOf(context).bottom + 20,
         ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+        // Le corps défile, le bouton reste sous la main. Dernier enfant de la
+        // zone défilante, il sortait de l'écran dès qu'il y avait beaucoup de
+        // journées : il fallait faire défiler jusqu'en bas pour valider, sans
+        // rien qui l'indique.
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          'Enregistrer un versement',
-                          style: AppTypography.sora(18, FontWeight.w800),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Enregistrer un versement',
+                                style: AppTypography.sora(18, FontWeight.w800),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Règlement direct pour ${widget.stylistName}',
+                                style: AppTypography.manrope(
+                                  13,
+                                  FontWeight.w500,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Règlement direct pour ${widget.stylistName}',
-                          style: AppTypography.manrope(
-                            13,
-                            FontWeight.w500,
-                            color: AppColors.textSecondary,
+                        if (widget.maxAmount > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.tintGreen,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              'Dû : ${Formatters.fcfa(widget.maxAmount)}',
+                              style: AppTypography.sora(
+                                12,
+                                FontWeight.w700,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (widget.maxAmount <= 0)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.tintGreenSoft,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.tintGreenBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.checkCheck,
+                              size: 18,
+                              color: AppColors.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Toutes les commissions antérieures ont déjà été réglées (Dû restant : 0 F).',
+                                style: AppTypography.manrope(
+                                  12.5,
+                                  FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // 1. Sélection de la journée de commission
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Le titre cède la place plutôt que de pousser
+                        // « Autre date… » hors de l'écran : sur 360 px, les
+                        // deux textes débordaient de 133 px.
+                        Flexible(
+                          child: Text(
+                            'JOURNÉES AVEC COMMISSION',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.manrope(
+                              11.5,
+                              FontWeight.w700,
+                              color: AppColors.textSecondary,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: _pickCustomDate,
+                          borderRadius: BorderRadius.circular(8),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  LucideIcons.calendar,
+                                  size: 14,
+                                  color: AppColors.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Autre date…',
+                                  style: AppTypography.manrope(
+                                    12,
+                                    FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  if (widget.maxAmount > 0)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.tintGreen,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        'Dû : ${Formatters.fcfa(widget.maxAmount)}',
-                        style: AppTypography.sora(
-                          12,
-                          FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                    const SizedBox(height: 8),
 
-              if (widget.maxAmount <= 0)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.tintGreenSoft,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.tintGreenBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        LucideIcons.checkCheck,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Toutes les commissions antérieures ont déjà été réglées (Dû restant : 0 F).',
-                          style: AppTypography.manrope(
-                            12.5,
-                            FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
+                    // Si une date personnalisée a été choisie
+                    if (_customSelectedDate != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // 1. Sélection de la journée de commission
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'JOURNÉES AVEC COMMISSION',
-                    style: AppTypography.manrope(
-                      11.5,
-                      FontWeight.w700,
-                      color: AppColors.textSecondary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  InkWell(
-                    onTap: _pickCustomDate,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.calendar,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Autre date…',
-                            style: AppTypography.manrope(
-                              12,
-                              FontWeight.w600,
+                        decoration: BoxDecoration(
+                          color: AppColors.tintGreenSoft,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.tintGreenBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              LucideIcons.calendarCheck,
+                              size: 16,
                               color: AppColors.primary,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Si une date personnalisée a été choisie
-              if (_customSelectedDate != null)
-                Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.tintGreenSoft,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.tintGreenBorder),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        LucideIcons.calendarCheck,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Journée choisie : ${Formatters.weekdayDayMonth(_customSelectedDate!)}',
-                          style: AppTypography.manrope(
-                            13,
-                            FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() => _customSelectedDate = null),
-                        child: const Icon(
-                          LucideIcons.x,
-                          size: 16,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-              // Liste des journées filtrées avec commission uniquement
-              dailyAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: AppLoader(compact: true)),
-                ),
-                error: (e, s) => const SizedBox.shrink(),
-                data: (items) {
-                  // Filtrer strictement les journées où il y a une commission
-                  final commissionDays = items
-                      .where((it) => it.commissionFcfa > 0)
-                      .toList();
-
-                  if (commissionDays.isEmpty) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.background,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            LucideIcons.info,
-                            size: 16,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Aucune commission sur cette période. Utilisez « Autre date… » si besoin.',
-                              style: AppTypography.manrope(
-                                12,
-                                FontWeight.w500,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Journée choisie : ${Formatters.weekdayDayMonth(_customSelectedDate!)}',
+                                style: AppTypography.manrope(
+                                  13,
+                                  FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () =>
+                                  setState(() => _customSelectedDate = null),
+                              child: const Icon(
+                                LucideIcons.x,
+                                size: 16,
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    );
-                  }
 
-                  // Identifier les journées déjà réglées
-                  final settledKeys = <String>{};
-                  for (final it in commissionDays) {
-                    if (_isDaySettled(
-                      item: it,
-                      availableBalance: widget.maxAmount,
-                      settledPayouts: settledPayouts,
-                      allDays: commissionDays,
-                    )) {
-                      settledKeys.add(_dateKey(it.date));
-                    }
-                  }
-                  final unpaidDays = commissionDays
-                      .where((it) => !settledKeys.contains(_dateKey(it.date)))
-                      .toList();
+                    // Liste des journées filtrées avec commission uniquement
+                    dailyAsync.when(
+                      loading: () => const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Center(child: AppLoader(compact: true)),
+                      ),
+                      error: (e, s) => const SizedBox.shrink(),
+                      data: (items) {
+                        // Filtrer strictement les journées où il y a une commission
+                        final commissionDays = items
+                            .where((it) => it.commissionFcfa > 0)
+                            .toList();
 
-                  // Recherche dans les journées avec commission
-                  final query = _searchController.text.trim().toLowerCase();
-                  final filteredDays = commissionDays.where((it) {
-                    if (query.isEmpty) return true;
-                    return it.label.toLowerCase().contains(query) ||
-                        '${it.date.day}'.contains(query);
-                  }).toList();
-
-                  final totalSelected = _calculateSelectedTotal(commissionDays);
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Bouton / En-tête de la liste déroulante
-                      InkWell(
-                        onTap: () =>
-                            setState(() => _isDropdownOpen = !_isDropdownOpen),
-                        borderRadius: BorderRadius.circular(12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _selectedDateKeys.isNotEmpty
-                                ? AppColors.tintGreenSoft
-                                : AppColors.background,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: _selectedDateKeys.isNotEmpty
-                                  ? AppColors.tintGreenBorder
-                                  : AppColors.border,
+                        if (commissionDays.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                _selectedDateKeys.isNotEmpty
-                                    ? LucideIcons.calendarCheck
-                                    : unpaidDays.isEmpty
-                                    ? LucideIcons.checkCheck
-                                    : LucideIcons.calendar,
-                                size: 18,
-                                color:
-                                    _selectedDateKeys.isNotEmpty ||
-                                        unpaidDays.isEmpty
-                                    ? AppColors.primary
-                                    : AppColors.textSecondary,
+                            decoration: BoxDecoration(
+                              color: AppColors.background,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  LucideIcons.info,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Aucune commission sur cette période. Utilisez « Autre date… » si besoin.',
+                                    style: AppTypography.manrope(
+                                      12,
+                                      FontWeight.w500,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        // Identifier les journées déjà réglées.
+                        final settledKeys = _settledDayKeys(
+                          allDays: commissionDays,
+                          availableBalance: widget.maxAmount,
+                        );
+                        final unpaidDays = commissionDays
+                            .where(
+                              (it) => !settledKeys.contains(_dateKey(it.date)),
+                            )
+                            .toList();
+
+                        // Recherche dans les journées avec commission
+                        final query = _searchController.text
+                            .trim()
+                            .toLowerCase();
+                        final filteredDays = commissionDays.where((it) {
+                          if (query.isEmpty) return true;
+                          return it.label.toLowerCase().contains(query) ||
+                              '${it.date.day}'.contains(query);
+                        }).toList();
+
+                        final totalSelected = _calculateSelectedTotal(
+                          commissionDays,
+                        );
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Bouton / En-tête de la liste déroulante
+                            InkWell(
+                              onTap: () => setState(
+                                () => _isDropdownOpen = !_isDropdownOpen,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _selectedDateKeys.isNotEmpty
+                                      ? AppColors.tintGreenSoft
+                                      : AppColors.background,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _selectedDateKeys.isNotEmpty
+                                        ? AppColors.tintGreenBorder
+                                        : AppColors.border,
+                                  ),
+                                ),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      _selectedDateKeys.isEmpty
-                                          ? (unpaidDays.isEmpty
-                                                ? 'Toutes les journées sont déjà réglées'
-                                                : 'Choisir les journées (${unpaidDays.length} disponible${unpaidDays.length > 1 ? 's' : ''})')
-                                          : '${_selectedDateKeys.length} journée${_selectedDateKeys.length > 1 ? 's' : ''} cochée${_selectedDateKeys.length > 1 ? 's' : ''}',
-                                      style: AppTypography.manrope(
-                                        13.5,
-                                        FontWeight.w600,
-                                        color:
-                                            _selectedDateKeys.isNotEmpty ||
-                                                unpaidDays.isEmpty
-                                            ? AppColors.primary
-                                            : AppColors.textPrimary,
+                                    Icon(
+                                      _selectedDateKeys.isNotEmpty
+                                          ? LucideIcons.calendarCheck
+                                          : unpaidDays.isEmpty
+                                          ? LucideIcons.checkCheck
+                                          : LucideIcons.calendar,
+                                      size: 18,
+                                      color:
+                                          _selectedDateKeys.isNotEmpty ||
+                                              unpaidDays.isEmpty
+                                          ? AppColors.primary
+                                          : AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            _selectedDateKeys.isEmpty
+                                                ? (unpaidDays.isEmpty
+                                                      ? 'Toutes les journées sont déjà réglées'
+                                                      : 'Choisir les journées (${unpaidDays.length} disponible${unpaidDays.length > 1 ? 's' : ''})')
+                                                : '${_selectedDateKeys.length} journée${_selectedDateKeys.length > 1 ? 's' : ''} cochée${_selectedDateKeys.length > 1 ? 's' : ''}',
+                                            style: AppTypography.manrope(
+                                              13.5,
+                                              FontWeight.w600,
+                                              color:
+                                                  _selectedDateKeys
+                                                          .isNotEmpty ||
+                                                      unpaidDays.isEmpty
+                                                  ? AppColors.primary
+                                                  : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          if (_selectedDateKeys.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Total sélectionné : ${Formatters.fcfa(totalSelected)}',
+                                              style: AppTypography.manrope(
+                                                11.5,
+                                                FontWeight.w600,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ] else if (unpaidDays.isEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              'Solde restant dû : 0 F',
+                                              style: AppTypography.manrope(
+                                                11.5,
+                                                FontWeight.w600,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ),
-                                    if (_selectedDateKeys.isNotEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Total sélectionné : ${Formatters.fcfa(totalSelected)}',
-                                        style: AppTypography.manrope(
-                                          11.5,
-                                          FontWeight.w600,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ] else if (unpaidDays.isEmpty) ...[
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        'Solde restant dû : 0 F',
-                                        style: AppTypography.manrope(
-                                          11.5,
-                                          FontWeight.w600,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
+                                    Icon(
+                                      _isDropdownOpen
+                                          ? LucideIcons.chevronUp
+                                          : LucideIcons.chevronDown,
+                                      size: 18,
+                                      color: AppColors.textSecondary,
+                                    ),
                                   ],
                                 ),
                               ),
-                              Icon(
-                                _isDropdownOpen
-                                    ? LucideIcons.chevronUp
-                                    : LucideIcons.chevronDown,
-                                size: 18,
-                                color: AppColors.textSecondary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                            ),
 
-                      // Menu déroulant déplié
-                      if (_isDropdownOpen) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.background,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.border),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Champ de recherche compact
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  10,
-                                  10,
-                                  10,
-                                  8,
-                                ),
-                                child: Container(
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: AppColors.border),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        LucideIcons.search,
-                                        size: 14,
-                                        color: AppColors.textSecondary,
+                            // Menu déroulant déplié
+                            if (_isDropdownOpen) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: AppColors.background,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: AppColors.border),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.04,
                                       ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _searchController,
-                                          onChanged: (_) => setState(() {}),
-                                          decoration: const InputDecoration(
-                                            hintText:
-                                                'Filtrer (ex: sam, 15, sept)…',
-                                            hintStyle: TextStyle(
-                                              fontSize: 12,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                            border: InputBorder.none,
-                                            isDense: true,
-                                            contentPadding: EdgeInsets.zero,
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 12.5,
-                                          ),
-                                        ),
-                                      ),
-                                      if (_searchController.text.isNotEmpty)
-                                        GestureDetector(
-                                          onTap: () => setState(
-                                            () => _searchController.clear(),
-                                          ),
-                                          child: const Icon(
-                                            LucideIcons.x,
-                                            size: 14,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              const Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: AppColors.border,
-                              ),
-
-                              // Liste défilable avec hauteur contenue
-                              ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxHeight: 180,
-                                ),
-                                child: filteredDays.isEmpty
-                                    ? Padding(
-                                        padding: const EdgeInsets.all(14),
-                                        child: Center(
-                                          child: Text(
-                                            'Aucune journée trouvée',
-                                            style: AppTypography.manrope(
-                                              12,
-                                              FontWeight.w500,
-                                              color: AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : Scrollbar(
-                                        thumbVisibility: true,
-                                        child: ListView.separated(
-                                          shrinkWrap: true,
-                                          padding: EdgeInsets.zero,
-                                          itemCount: filteredDays.length,
-                                          separatorBuilder: (context, index) =>
-                                              const Divider(
-                                                height: 1,
-                                                thickness: 1,
-                                                color: AppColors.border,
-                                              ),
-                                          itemBuilder: (context, i) {
-                                            final item = filteredDays[i];
-                                            final isSelected = _selectedDateKeys
-                                                .contains(_dateKey(item.date));
-                                            final isSettled = settledKeys
-                                                .contains(_dateKey(item.date));
-                                            return _DaySelectionRow(
-                                              item: item,
-                                              isSelected: isSelected,
-                                              isSettled: isSettled,
-                                              onTap: isSettled
-                                                  ? null
-                                                  : () => _onToggleDay(
-                                                      item,
-                                                      commissionDays,
-                                                      settledKeys,
-                                                    ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                              ),
-                              const Divider(
-                                height: 1,
-                                thickness: 1,
-                                color: AppColors.border,
-                              ),
-
-                              // Pied avec Tout cocher et bouton Fermer
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    if (unpaidDays.isNotEmpty)
-                                      GestureDetector(
-                                        onTap: () => _toggleSelectAll(
-                                          filteredDays,
-                                          commissionDays,
-                                          settledKeys,
-                                        ),
-                                        child: Text(
-                                          unpaidDays.every(
-                                                (d) => _selectedDateKeys
-                                                    .contains(_dateKey(d.date)),
-                                              )
-                                              ? 'Tout décocher'
-                                              : 'Tout cocher',
-                                          style: AppTypography.manrope(
-                                            12,
-                                            FontWeight.w700,
-                                            color: AppColors.primary,
-                                          ),
-                                        ),
-                                      )
-                                    else
-                                      Text(
-                                        'Toutes les journées sont réglées',
-                                        style: AppTypography.manrope(
-                                          11.5,
-                                          FontWeight.w600,
-                                          color: AppColors.textSecondary,
-                                        ),
+                                    // Champ de recherche compact
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        10,
+                                        10,
+                                        10,
+                                        8,
                                       ),
-                                    InkWell(
-                                      onTap: () => setState(
-                                        () => _isDropdownOpen = false,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
+                                        height: 36,
                                         decoration: BoxDecoration(
                                           color: Colors.white,
                                           borderRadius: BorderRadius.circular(
-                                            6,
+                                            8,
                                           ),
                                           border: Border.all(
                                             color: AppColors.border,
                                           ),
                                         ),
-                                        child: Text(
-                                          'Fermer',
-                                          style: AppTypography.manrope(
-                                            11.5,
-                                            FontWeight.w700,
-                                            color: AppColors.textPrimary,
-                                          ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
                                         ),
+                                        child: Row(
+                                          children: [
+                                            const Icon(
+                                              LucideIcons.search,
+                                              size: 14,
+                                              color: AppColors.textSecondary,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: TextField(
+                                                controller: _searchController,
+                                                onChanged: (_) =>
+                                                    setState(() {}),
+                                                decoration: const InputDecoration(
+                                                  hintText:
+                                                      'Filtrer (ex: sam, 15, sept)…',
+                                                  hintStyle: TextStyle(
+                                                    fontSize: 12,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
+                                                  border: InputBorder.none,
+                                                  isDense: true,
+                                                  contentPadding:
+                                                      EdgeInsets.zero,
+                                                ),
+                                                style: const TextStyle(
+                                                  fontSize: 12.5,
+                                                ),
+                                              ),
+                                            ),
+                                            if (_searchController
+                                                .text
+                                                .isNotEmpty)
+                                              GestureDetector(
+                                                onTap: () => setState(
+                                                  () =>
+                                                      _searchController.clear(),
+                                                ),
+                                                child: const Icon(
+                                                  LucideIcons.x,
+                                                  size: 14,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color: AppColors.border,
+                                    ),
+
+                                    // Liste défilable avec hauteur contenue
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxHeight: 180,
+                                      ),
+                                      child: filteredDays.isEmpty
+                                          ? Padding(
+                                              padding: const EdgeInsets.all(14),
+                                              child: Center(
+                                                child: Text(
+                                                  'Aucune journée trouvée',
+                                                  style: AppTypography.manrope(
+                                                    12,
+                                                    FontWeight.w500,
+                                                    color:
+                                                        AppColors.textSecondary,
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          : Scrollbar(
+                                              // Une barre toujours visible
+                                              // exige son propre contrôleur :
+                                              // sans lui, déplier la liste
+                                              // lève une assertion.
+                                              controller: _daysScrollController,
+                                              thumbVisibility: true,
+                                              child: ListView.separated(
+                                                controller:
+                                                    _daysScrollController,
+                                                shrinkWrap: true,
+                                                padding: EdgeInsets.zero,
+                                                itemCount: filteredDays.length,
+                                                separatorBuilder:
+                                                    (context, index) =>
+                                                        const Divider(
+                                                          height: 1,
+                                                          thickness: 1,
+                                                          color:
+                                                              AppColors.border,
+                                                        ),
+                                                itemBuilder: (context, i) {
+                                                  final item = filteredDays[i];
+                                                  final isSelected =
+                                                      _selectedDateKeys
+                                                          .contains(
+                                                            _dateKey(item.date),
+                                                          );
+                                                  final isSettled = settledKeys
+                                                      .contains(
+                                                        _dateKey(item.date),
+                                                      );
+                                                  return _DaySelectionRow(
+                                                    item: item,
+                                                    isSelected: isSelected,
+                                                    isSettled: isSettled,
+                                                    onTap: isSettled
+                                                        ? null
+                                                        : () => _onToggleDay(
+                                                            item,
+                                                            commissionDays,
+                                                            settledKeys,
+                                                          ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                    ),
+                                    const Divider(
+                                      height: 1,
+                                      thickness: 1,
+                                      color: AppColors.border,
+                                    ),
+
+                                    // Pied avec Tout cocher et bouton Fermer
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          if (unpaidDays.isNotEmpty)
+                                            GestureDetector(
+                                              onTap: () => _toggleSelectAll(
+                                                filteredDays,
+                                                commissionDays,
+                                                settledKeys,
+                                              ),
+                                              child: Text(
+                                                unpaidDays.every(
+                                                      (d) => _selectedDateKeys
+                                                          .contains(
+                                                            _dateKey(d.date),
+                                                          ),
+                                                    )
+                                                    ? 'Tout décocher'
+                                                    : 'Tout cocher',
+                                                style: AppTypography.manrope(
+                                                  12,
+                                                  FontWeight.w700,
+                                                  color: AppColors.primary,
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Text(
+                                              'Toutes les journées sont réglées',
+                                              style: AppTypography.manrope(
+                                                11.5,
+                                                FontWeight.w600,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          InkWell(
+                                            onTap: () => setState(
+                                              () => _isDropdownOpen = false,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 10,
+                                                    vertical: 4,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color: AppColors.border,
+                                                ),
+                                              ),
+                                              child: Text(
+                                                'Fermer',
+                                                style: AppTypography.manrope(
+                                                  11.5,
+                                                  FontWeight.w700,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ],
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 2. Montant versé
+                    AppInput(
+                      controller: _amountController,
+                      label: 'Montant versé (FCFA)',
+                      keyboardType: TextInputType.number,
+                      suffix: const Text(
+                        'F',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 3. Moyen de paiement
+                    const Text(
+                      'Moyen de paiement',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final method in PayoutMethod.values)
+                          ChoiceChip(
+                            label: Text(method.label),
+                            selected: _method == method,
+                            onSelected: (val) {
+                              if (val) setState(() => _method = method);
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 4. Référence & Note
+                    AppInput(
+                      controller: _refController,
+                      label: 'Référence / N° de reçu (optionnel)',
+                      hint: 'Ex: TXN-Q7F42K',
+                    ),
+                    const SizedBox(height: 14),
+                    AppInput(
+                      controller: _noteController,
+                      label: 'Note / Remarque (optionnel)',
+                      hint: 'Ex: Commission de la journée',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // 5. Rappel du montant, épinglé avec le bouton.
+            //
+            // Le champ « Montant versé » est en milieu de formulaire : la
+            // liste des journées dépliée le poussait hors de l'écran, et le
+            // gérant validait sans voir ce qu'il allait sortir de sa caisse.
+            // Le chiffre le suit désormais jusqu'au bouton.
+            if (widget.maxAmount > 0)
+              ValueListenableBuilder<TextEditingValue>(
+                valueListenable: _amountController,
+                builder: (context, value, _) {
+                  final amount = int.tryParse(value.text.trim()) ?? 0;
+                  final isOver = amount > widget.maxAmount;
+                  final color = isOver
+                      ? AppColors.danger
+                      : amount > 0
+                      ? AppColors.primary
+                      : AppColors.textSecondary;
+
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isOver
+                          ? AppColors.tintDanger
+                          : AppColors.tintGreenSoft,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isOver
+                            ? AppColors.dangerBorder
+                            : AppColors.tintGreenBorder,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _selectionSummary(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.manrope(
+                              12.5,
+                              FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Le montant ne se réduit jamais au point d'être
+                        // illisible : c'est le chiffre que l'on vient lire.
+                        Text(
+                          isOver
+                              ? '${Formatters.fcfa(amount)} > dû'
+                              : 'À verser : ${Formatters.fcfa(amount)}',
+                          style: AppTypography.sora(
+                            13.5,
+                            FontWeight.w800,
+                            color: color,
                           ),
                         ),
                       ],
-                    ],
+                    ),
                   );
                 },
               ),
+            if (widget.maxAmount > 0) const SizedBox(height: 10),
 
-              const SizedBox(height: 16),
-
-              // 2. Montant versé
-              AppInput(
-                controller: _amountController,
-                label: 'Montant versé (FCFA)',
-                keyboardType: TextInputType.number,
-                suffix: const Text(
-                  'F',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 3. Moyen de paiement
-              const Text(
-                'Moyen de paiement',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final method in PayoutMethod.values)
-                    ChoiceChip(
-                      label: Text(method.label),
-                      selected: _method == method,
-                      onSelected: (val) {
-                        if (val) setState(() => _method = method);
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // 4. Référence & Note
-              AppInput(
-                controller: _refController,
-                label: 'Référence / N° de reçu (optionnel)',
-                hint: 'Ex: TXN-Q7F42K',
-              ),
-              const SizedBox(height: 14),
-              AppInput(
-                controller: _noteController,
-                label: 'Note / Remarque (optionnel)',
-                hint: 'Ex: Commission de la journée',
-              ),
-              const SizedBox(height: 20),
-
-              // 5. Bouton Enregistrer
-              AppButton(
-                label: widget.maxAmount <= 0
-                    ? 'Toutes les commissions sont réglées'
-                    : 'Enregistrer le versement',
-                icon: widget.maxAmount <= 0
-                    ? LucideIcons.checkCheck
-                    : LucideIcons.check,
-                onPressed: widget.maxAmount <= 0
-                    ? null
-                    : () {
-                        final amount =
-                            int.tryParse(_amountController.text.trim()) ?? 0;
-                        if (amount <= 0) return;
-                        if (amount > widget.maxAmount) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Le montant ne peut pas dépasser le dû restant (${Formatters.fcfa(widget.maxAmount)}).',
-                              ),
+            // 6. Bouton Enregistrer, épinglé sous la zone défilante.
+            AppButton(
+              label: widget.maxAmount <= 0
+                  ? 'Toutes les commissions sont réglées'
+                  : 'Enregistrer le versement',
+              icon: widget.maxAmount <= 0
+                  ? LucideIcons.checkCheck
+                  : LucideIcons.check,
+              onPressed: widget.maxAmount <= 0
+                  ? null
+                  : () {
+                      final amount =
+                          int.tryParse(_amountController.text.trim()) ?? 0;
+                      if (amount <= 0) return;
+                      if (amount > widget.maxAmount) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Le montant ne peut pas dépasser le dû restant (${Formatters.fcfa(widget.maxAmount)}).',
                             ),
-                          );
-                          return;
-                        }
-                        Navigator.pop(context, (
-                          amount: amount,
-                          method: _method,
-                          ref: _refController.text.trim().isEmpty
-                              ? null
-                              : _refController.text.trim(),
-                          note: _noteController.text.trim().isEmpty
-                              ? null
-                              : _noteController.text.trim(),
-                        ));
-                      },
-              ),
-            ],
-          ),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.pop(context, (
+                        amount: amount,
+                        method: _method,
+                        ref: _refController.text.trim().isEmpty
+                            ? null
+                            : _refController.text.trim(),
+                        note: _noteController.text.trim().isEmpty
+                            ? null
+                            : _noteController.text.trim(),
+                      ));
+                    },
+            ),
+          ],
         ),
       ),
     );

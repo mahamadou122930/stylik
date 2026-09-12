@@ -43,8 +43,12 @@ void main() {
     required List<Profile> team,
     required List<StylistCommission> commissions,
     List<PayoutRequest> payouts = const [],
+    // L'écran s'ouvre sur la journée ; un test qui parle d'un versement daté
+    // dans le mois doit donc dire explicitement qu'il regarde le mois.
+    FinancePeriod period = FinancePeriod.day,
   }) => ProviderScope(
     overrides: [
+      financePeriodProvider.overrideWith((ref) => period),
       allPayoutsProvider.overrideWith((ref) async => payouts),
       // Sans profil, le salon est inconnu et l'écran attend : c'est
       // volontaire, il ne doit pas conclure à une équipe vide.
@@ -159,6 +163,7 @@ void main() {
           team: [member('a', 'Awa Traoré')],
           commissions: [earning('a', 'Awa Traoré')],
           payouts: [settled('a', 700000, DateTime(now.year, now.month, 5))],
+          period: FinancePeriod.month,
         ),
       );
       await tester.pumpAndSettle();
@@ -177,6 +182,7 @@ void main() {
         host(
           team: [member('a', 'Awa Traoré')],
           commissions: [earning('a', 'Awa Traoré')],
+          period: FinancePeriod.month,
         ),
       );
       await tester.pumpAndSettle();
@@ -196,6 +202,7 @@ void main() {
           // Réglé l'an dernier : le compter à côté d'une commission du mois
           // ferait croire à un solde alors qu'on compare deux périodes.
           payouts: [settled('a', 700000, DateTime(2020, 3, 4))],
+          period: FinancePeriod.month,
         ),
       );
       await tester.pumpAndSettle();
@@ -224,6 +231,7 @@ void main() {
               requestedAt: now,
             ),
           ],
+          period: FinancePeriod.month,
         ),
       );
       await tester.pumpAndSettle();
@@ -258,7 +266,11 @@ void main() {
     ) async {
       usePhone(tester);
       await tester.pumpWidget(
-        host(team: [member('a', 'Awa Traoré')], commissions: const []),
+        host(
+          team: [member('a', 'Awa Traoré')],
+          commissions: const [],
+          period: FinancePeriod.month,
+        ),
       );
       await tester.pumpAndSettle();
 
@@ -274,7 +286,7 @@ void main() {
       // Les commissions et le versé suivent `financeRangeProvider` : une
       // fenêtre d'un jour suffit à prouver que les trois colonnes suivront.
       expect(range.to.difference(range.from).inHours, 24);
-      expect(find.textContaining("aujourd'hui"), findsWidgets);
+      expect(find.textContaining("Aujourd'hui"), findsWidgets);
     });
   });
 
@@ -305,6 +317,7 @@ void main() {
           payouts: paid == 0
               ? const []
               : [settled('a', paid, DateTime(now.year, now.month, 5))],
+          period: FinancePeriod.month,
         ),
       );
       await tester.pumpAndSettle();

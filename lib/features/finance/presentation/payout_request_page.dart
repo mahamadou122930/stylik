@@ -59,6 +59,7 @@ class _PayoutRequestPageState extends ConsumerState<PayoutRequestPage> {
   final Set<String> _selectedDateKeys = {};
   _PayoutTargetMethod _selectedMethod = _PayoutTargetMethod.wave;
   bool _initialized = false;
+  bool _tabChosen = false;
   bool _isSubmitting = false;
   int? _customAmount;
   int _currentTab = 0; // 0: À réclamer, 1: Déjà réglées
@@ -67,16 +68,34 @@ class _PayoutRequestPageState extends ConsumerState<PayoutRequestPage> {
   String _dateKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  /// Répartit les versements déjà faits sur les journées, de la plus ancienne
+  /// à la plus récente.
+  ///
+  /// [totalSettledOrPending] porte **tous** les versements du membre, depuis
+  /// l'ouverture. Or [items] ne couvre que les derniers jours. Dépenser le
+  /// total sur cette seule fenêtre marquait comme réglées des journées
+  /// récentes qui ne l'étaient pas : les versements anciens étaient imputés
+  /// deux fois — une fois sur les commissions d'alors, déjà hors fenêtre, et
+  /// une seconde sur celles d'aujourd'hui.
+  ///
+  /// D'où [earnedBeforeWindow] : la part du dû gagnée avant la fenêtre. Elle
+  /// absorbe d'abord les versements, et seul le reliquat se répartit sur les
+  /// journées affichées.
   List<_PayoutDayInfo> _computeDayInfos({
     required List<DailyCommissionItem> items,
     required int totalSettledOrPending,
+    required int earnedBeforeWindow,
   }) {
     // Trier du plus ancien au plus récent (FIFO)
     final sorted = List<DailyCommissionItem>.from(items)
       ..sort((a, b) => a.date.compareTo(b.date));
 
+    final windowTotal = sorted.fold<int>(0, (s, i) => s + i.commissionFcfa);
     final result = <_PayoutDayInfo>[];
-    var budget = totalSettledOrPending;
+    var budget = (totalSettledOrPending - earnedBeforeWindow).clamp(
+      0,
+      windowTotal,
+    );
 
     for (final item in sorted) {
       if (item.commissionFcfa <= 0) continue;
@@ -115,8 +134,15 @@ class _PayoutRequestPageState extends ConsumerState<PayoutRequestPage> {
     return result;
   }
 
+  /// Coche les journées réclamables, une seule fois.
+  ///
+  /// Le verrou n'est posé **que** s'il y avait quelque chose à cocher. Le
+  /// solde arrive une image après la liste — `payoutBalanceProvider` lit des
+  /// sources encore en vol — et verrouiller sur une première liste vide
+  /// laissait la ligne décochée et le bouton grisé, avec un montant pourtant
+  /// disponible affiché juste au-dessus.
   void _initSelection(List<_PayoutDayInfo> availableDays) {
-    if (_initialized) return;
+    if (_initialized || availableDays.isEmpty) return;
     _initialized = true;
 
     for (final d in availableDays) {
@@ -235,9 +261,22 @@ class _PayoutRequestPageState extends ConsumerState<PayoutRequestPage> {
             .where((p) => p.isSettled || p.status == PayoutStatus.pending)
             .fold<int>(0, (sum, p) => sum + p.amountFcfa);
 
+        // Part du dû gagnée avant la fenêtre affichée : `balance.earned` est
+        // cumulatif depuis l'ouverture, les journées ne couvrent que les
+        // derniers jours. C'est elle qui absorbe les versements anciens.
+        final windowEarned = items.fold<int>(
+          0,
+          (sum, i) => sum + i.commissionFcfa,
+        );
+        final earnedBeforeWindow = (balance.earned - windowEarned).clamp(
+          0,
+          balance.earned,
+        );
+
         final dayInfos = _computeDayInfos(
           items: items,
           totalSettledOrPending: totalSettledOrPending,
+          earnedBeforeWindow: earnedBeforeWindow,
         );
 
         final availableDays = dayInfos.where((d) => d.hasRemaining).toList();
@@ -268,11 +307,16 @@ class _PayoutRequestPageState extends ConsumerState<PayoutRequestPage> {
           );
         }
 
-        if (!_initialized) {
-          _initSelection(availableDays);
-          if (availableDays.isEmpty && settledDays.isNotEmpty) {
-            _currentTab = 1;
-          }
+        _initSelection(availableDays);
+
+        // Le choix de l'onglet se décide à part, et une seule fois : lié au
+        // verrou de sélection, il se rejouait à chaque image tant que rien
+        // n'était réclamable — et ramenait l'utilisateur sur « Déjà réglées »
+        // dès qu'il essayait d'en sortir.
+        if (!_tabChosen &&
+            (availableDays.isNotEmpty || settledDays.isNotEmpty)) {
+          _tabChosen = true;
+          if (availableDays.isEmpty) _currentTab = 1;
         }
 
         final selectedAmount = _calculateTotal(availableDays);

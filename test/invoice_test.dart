@@ -278,5 +278,11 @@ void main() {
       // l emission du document.
       expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
     });
+
+    test('est calibre par defaut au format rouleau 80 mm', () {
+      // 80 mm en points d'impression PostScript (1 pt = 1/72 inch).
+      expect(InvoicePdf.format80mm.width, closeTo(80 * 72 / 25.4, 0.1));
+      expect(InvoicePdf.format80mm.height.isInfinite, isTrue);
+    });
   });
 }

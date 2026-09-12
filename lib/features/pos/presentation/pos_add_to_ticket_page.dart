@@ -83,12 +83,21 @@ class _PosAddToTicketPageState extends ConsumerState<PosAddToTicketPage> {
                   color: Colors.white,
                 ),
               ),
-              Text(
-                '${ticket.lines.length} article${ticket.lines.length > 1 ? 's' : ''} · ${Formatters.fcfa(ticket.totalFcfa)}',
-                style: AppTypography.sora(
-                  14,
-                  FontWeight.w700,
-                  color: Colors.white,
+              // Le décompte se réduit plutôt que de déborder : sur 360 px,
+              // « 12 articles · 1 250 000 F » ne tient pas à côté du libellé.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '${ticket.lines.length} article${ticket.lines.length > 1 ? 's' : ''} · ${Formatters.fcfa(ticket.totalFcfa)}',
+                    maxLines: 1,
+                    style: AppTypography.sora(
+                      14,
+                      FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -231,39 +240,45 @@ class _ServiceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  serviceName,
-                  style: AppTypography.sora(15, FontWeight.w700),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: AppTypography.manrope(
-                    12,
-                    FontWeight.w500,
-                    color: AppColors.textSecondary,
+    // Toute la ligne ajoute, pas seulement la pastille « + ». En caisse on
+    // vise vite et de travers : un bouton de 32 px au bout d'une ligne pleine
+    // largeur oblige à cadrer, et un raté ne fait rien du tout.
+    //
+    // La pastille reste : elle montre ce que le geste produit. Elle n'a plus
+    // d'action propre, sinon un appui dessus déclencherait les deux.
+    return InkWell(
+      onTap: onAdd,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    serviceName,
+                    style: AppTypography.sora(15, FontWeight.w700),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: AppTypography.manrope(
+                      12,
+                      FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            Formatters.fcfa(priceFcfa),
-            style: AppTypography.sora(15, FontWeight.w700),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: onAdd,
-            child: Container(
+            const SizedBox(width: 12),
+            Text(
+              Formatters.fcfa(priceFcfa),
+              style: AppTypography.sora(15, FontWeight.w700),
+            ),
+            const SizedBox(width: 12),
+            Container(
               width: 32,
               height: 32,
               decoration: const BoxDecoration(
@@ -277,8 +292,8 @@ class _ServiceRow extends StatelessWidget {
                 size: 20,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

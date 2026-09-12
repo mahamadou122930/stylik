@@ -232,4 +232,154 @@ void main() {
       expect(requested(custom: 5000, available: 0), 0);
     });
   });
+
+  group('répartition des versements sur les journées', () {
+    /// La règle de `_computeDayInfos`, reproduite à l'identique.
+    List<({int settled, int remaining})> allocate({
+      required List<int> days,
+      required int totalPaid,
+      required int earnedBeforeWindow,
+    }) {
+      final windowTotal = days.fold<int>(0, (s, d) => s + d);
+      var budget = (totalPaid - earnedBeforeWindow).clamp(0, windowTotal);
+      final out = <({int settled, int remaining})>[];
+      for (final d in days) {
+        if (budget >= d) {
+          out.add((settled: d, remaining: 0));
+          budget -= d;
+        } else if (budget > 0) {
+          out.add((settled: budget, remaining: d - budget));
+          budget = 0;
+        } else {
+          out.add((settled: 0, remaining: d));
+        }
+      }
+      return out;
+    }
+
+    test('les versements anciens ne consomment pas les journées récentes', () {
+      // Le cas remonté : 10 350 F gagnés depuis l'ouverture, 9 450 F versés,
+      // donc 900 F dus. La fenêtre n'affiche que 2 100 F de commissions
+      // récentes ; le reste a été gagné avant.
+      const days = [450, 450, 300, 450, 450];
+      const totalPaid = 9450;
+      const earnedTotal = 10350;
+      final earnedBefore = earnedTotal - days.fold<int>(0, (s, d) => s + d);
+
+      final rows = allocate(
+        days: days,
+        totalPaid: totalPaid,
+        earnedBeforeWindow: earnedBefore,
+      );
+
+      final reclaimable = rows.fold<int>(0, (s, r) => s + r.remaining);
+      // Dépenser les 9 450 F sur la seule fenêtre marquait les cinq journées
+      // comme réglées et ne laissait rien à réclamer.
+      expect(reclaimable, 900);
+      expect(rows.where((r) => r.remaining > 0).length, 2);
+    });
+
+    test('sans historique antérieur, la répartition reste inchangée', () {
+      final rows = allocate(
+        days: const [500, 500, 500],
+        totalPaid: 700,
+        earnedBeforeWindow: 0,
+      );
+
+      expect(rows[0].remaining, 0);
+      expect(rows[1].remaining, 300);
+      expect(rows[2].remaining, 500);
+    });
+
+    test('tout réglé ne laisse aucune journée à réclamer', () {
+      final rows = allocate(
+        days: const [400, 600],
+        totalPaid: 1000,
+        earnedBeforeWindow: 0,
+      );
+
+      expect(rows.every((r) => r.remaining == 0), isTrue);
+    });
+
+    test('un versement dépassant la fenêtre ne creuse pas les journées', () {
+      // Le budget est borné au total de la fenêtre : sans cela, un reliquat
+      // négatif aurait pu réapparaître ailleurs.
+      final rows = allocate(
+        days: const [200],
+        totalPaid: 5000,
+        earnedBeforeWindow: 0,
+      );
+
+      expect(rows.single.settled, 200);
+      expect(rows.single.remaining, 0);
+    });
+  });
+
+  group('journées réglées, vue gérant', () {
+    /// La règle de `_settledDayKeys`, reproduite à l'identique.
+    List<bool> settledFlags({
+      required List<int> days,
+      required int availableBalance,
+    }) {
+      final windowTotal = days.fold<int>(0, (s, d) => s + d);
+      var budget = (windowTotal - availableBalance).clamp(0, windowTotal);
+      final out = <bool>[];
+      var stopped = false;
+      for (final d in days) {
+        if (!stopped && budget >= d) {
+          out.add(true);
+          budget -= d;
+        } else {
+          stopped = true;
+          out.add(false);
+        }
+      }
+      return out;
+    }
+
+    int stillDue(List<int> days, List<bool> settled) {
+      var t = 0;
+      for (var i = 0; i < days.length; i++) {
+        if (!settled[i]) t += days[i];
+      }
+      return t;
+    }
+
+    test('le reste affiché colle à la pastille « Dû »', () {
+      // Le cas remonté : quatre journées de 450 F, 900 F encore dus. Comparer
+      // les 9 450 F versés depuis l'ouverture au cumul de la seule fenêtre
+      // marquait les quatre journées réglées et annonçait « 0 F » sous une
+      // pastille disant « Dû : 900 F ».
+      const days = [450, 450, 450, 450];
+      final flags = settledFlags(days: days, availableBalance: 900);
+
+      expect(flags, [true, true, false, false]);
+      expect(stillDue(days, flags), 900);
+    });
+
+    test('rien de versé laisse toutes les journées réclamables', () {
+      const days = [450, 450];
+      final flags = settledFlags(days: days, availableBalance: 900);
+
+      expect(flags, [false, false]);
+      expect(stillDue(days, flags), 900);
+    });
+
+    test('tout réglé éteint toutes les journées', () {
+      const days = [450, 450];
+      final flags = settledFlags(days: days, availableBalance: 0);
+
+      expect(flags.every((f) => f), isTrue);
+      expect(stillDue(days, flags), 0);
+    });
+
+    test('une journée partiellement couverte reste réclamable', () {
+      // 700 F couverts sur 1 000 : la solder entièrement effacerait 300 F dus.
+      const days = [1000, 500];
+      final flags = settledFlags(days: days, availableBalance: 800);
+
+      expect(flags, [false, false]);
+      expect(stillDue(days, flags), 1500);
+    });
+  });
 }

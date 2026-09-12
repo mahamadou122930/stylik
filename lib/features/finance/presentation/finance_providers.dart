@@ -76,11 +76,11 @@ enum FinancePeriod {
             anchor.year == now.year &&
             anchor.month == now.month &&
             anchor.day == now.day;
-        return isToday ? "aujourd'hui" : Formatters.weekdayDayMonth(anchor);
+        return isToday ? "Aujourd'hui" : Formatters.weekdayDayMonth(anchor);
       case week:
         final range = rangeFor(anchor);
         final isThisWeek = rangeFor(now).from == range.from;
-        if (isThisWeek) return 'cette semaine';
+        if (isThisWeek) return 'Cette semaine';
         final last = range.to.subtract(const Duration(days: 1));
         return '${Formatters.dayMonth(range.from)} – '
             '${Formatters.dayMonth(last)}';
@@ -165,8 +165,12 @@ enum FinancePeriod {
   bool get hasYearPicker => this == month || this == year;
 }
 
+/// Échelle affichée par défaut : la journée.
+///
+/// C'est la question du gérant quand il ouvre Finance — « qu'est-ce que j'ai
+/// fait aujourd'hui ». Le mois est un bilan, il se consulte volontairement.
 final financePeriodProvider = StateProvider<FinancePeriod>(
-  (ref) => FinancePeriod.month,
+  (ref) => FinancePeriod.day,
 );
 
 /// Date de référence : la journée, la semaine, le mois ou l'année regardée.

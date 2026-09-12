@@ -36,6 +36,7 @@ class ReceiptPage extends ConsumerWidget {
     try {
       await Printing.layoutPdf(
         name: 'Facture ${transaction.invoiceNumber}',
+        format: InvoicePdf.format80mm,
         onLayout: (_) async => Uint8List.fromList(
           await InvoicePdf.build(transaction: transaction, salon: salon),
         ),
@@ -144,7 +145,7 @@ class _InvoiceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _Header(transaction: transaction, salon: salon),
-          const Divider(height: 1, color: AppColors.border),
+          const DashedDivider(color: AppColors.border),
           if (transaction.clientName != null) ...[
             _BilledTo(transaction: transaction),
             const Divider(height: 1, color: AppColors.border),
@@ -152,6 +153,7 @@ class _InvoiceCard extends StatelessWidget {
           _Lines(lines: transaction.lines),
           const Divider(height: 1, color: AppColors.border),
           _Totals(transaction: transaction),
+          const DashedDivider(color: AppColors.border),
           _PaymentBadge(transaction: transaction),
         ],
       ),
@@ -309,7 +311,7 @@ class _BilledTo extends StatelessWidget {
               style: AppTypography.manrope(
                 12,
                 FontWeight.w500,
-                color: AppColors.primary,
+                color: AppColors.textSecondary,
               ),
             ),
         ],
@@ -469,7 +471,7 @@ class _PaymentBadge extends StatelessWidget {
     final refunded = transaction.isRefund;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
       child: Row(
         children: [
           AppBadge(

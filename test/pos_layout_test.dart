@@ -12,6 +12,9 @@ import 'package:stylik/features/inventory/domain/product.dart';
 import 'package:stylik/features/pos/domain/payment_method.dart';
 import 'package:stylik/features/pos/domain/ticket.dart';
 import 'package:stylik/features/pos/presentation/pending_tickets_page.dart';
+import 'package:stylik/features/catalog/presentation/catalog_providers.dart';
+import 'package:stylik/features/inventory/presentation/inventory_providers.dart';
+import 'package:stylik/features/pos/presentation/pos_add_to_ticket_page.dart';
 import 'package:stylik/features/pos/presentation/pos_page.dart';
 import 'package:stylik/features/pos/presentation/pos_providers.dart';
 
@@ -212,6 +215,52 @@ void main() {
 
       expect(find.textContaining('2 articles'), findsOneWidget);
       expect(find.textContaining('prestations'), findsNothing);
+    });
+  });
+
+  group('ajout au ticket', () {
+    testWidgets('toucher la ligne ajoute, sans viser la pastille', (
+      tester,
+    ) async {
+      usePhone(tester);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            servicesProvider.overrideWith(
+              (ref) async => [
+                const SalonService(
+                  id: 's1',
+                  salonId: 'salon',
+                  name: 'Coupe de Cheveux Enfant',
+                  category: 'Coiffure',
+                  durationMinutes: 15,
+                  priceFcfa: 500,
+                ),
+              ],
+            ),
+            productsProvider.overrideWith((ref) async => []),
+          ],
+          child: const MaterialApp(
+            locale: Locale('fr', 'FR'),
+            home: PosAddToTicketPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(PosAddToTicketPage)),
+      );
+      expect(container.read(ticketProvider).lines, isEmpty);
+
+      // Le nom de la prestation, à l'opposé de la pastille « + » : un appui
+      // là ne faisait rien avant.
+      await tester.tap(find.text('Coupe de Cheveux Enfant'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(ticketProvider).lines.length, 1);
+      expect(container.read(ticketProvider).totalFcfa, 500);
     });
   });
 }

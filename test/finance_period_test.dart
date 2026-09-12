@@ -145,8 +145,10 @@ void main() {
   group('titres', () {
     test('la période en cours est nommée, pas datée', () {
       final now = DateTime.now();
-      expect(FinancePeriod.day.titleFor(now), "aujourd'hui");
-      expect(FinancePeriod.week.titleFor(now), 'cette semaine');
+      // Un titre affiché commence par une majuscule, y compris quand il
+      // s'insère après un séparateur — « CA · Aujourd'hui ».
+      expect(FinancePeriod.day.titleFor(now), "Aujourd'hui");
+      expect(FinancePeriod.week.titleFor(now), 'Cette semaine');
     });
 
     test('un mois porte son nom et son année', () {
@@ -319,6 +321,29 @@ void main() {
       expect(years.last, financeFirstYear);
       // Proposer 2023 ouvrait un écran vide, sans rien pour l'expliquer.
       expect(years, isNot(contains(financeFirstYear - 1)));
+    });
+  });
+
+  group('échelle par défaut', () {
+    test("Finance s'ouvre sur la journée", () {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+
+      // Le gérant qui ouvre Finance veut savoir ce qu'il a fait
+      // aujourd'hui ; le mois est un bilan, il se demande.
+      expect(c.read(financePeriodProvider), FinancePeriod.day);
+    });
+
+    test('tous les titres commencent par une majuscule', () {
+      final now = DateTime.now();
+      for (final period in FinancePeriod.values) {
+        final title = period.titleFor(now);
+        expect(
+          title[0],
+          title[0].toUpperCase(),
+          reason: '${period.label} -> $title',
+        );
+      }
     });
   });
 }
