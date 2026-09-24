@@ -323,6 +323,14 @@ SET search_path = public
 AS $$
 DECLARE
   v_salon public.salons;
+  v_plan_code TEXT := 'pro';
+  v_plan_name TEXT := 'Pro Salon';
+  v_price INTEGER := 18000;
+  v_features TEXT[] := ARRAY[
+    'Jusqu''à 10 employés',
+    'Rappels SMS & WhatsApp illimités',
+    'Rapports & export comptable'
+  ];
 BEGIN
   -- Exécutable par `anon`, et la clé anonyme est lisible dans l'APK : on refuse
   -- au moins les lignes vides ou aberrantes.
@@ -340,6 +348,40 @@ BEGIN
   VALUES (btrim(p_name), nullif(btrim(coalesce(p_phone, '')), ''),
           nullif(btrim(coalesce(p_address, '')), ''))
   RETURNING * INTO v_salon;
+
+  -- Activation automatique de l'essai Pro 15 jours
+  SELECT
+    code, name, price_per_month_fcfa, features
+  INTO
+    v_plan_code, v_plan_name, v_price, v_features
+  FROM public.subscription_plans
+  WHERE code = 'pro'
+  LIMIT 1;
+
+  INSERT INTO public.subscriptions (
+    salon_id,
+    plan_code,
+    plan_name,
+    price_per_month_fcfa,
+    billing_cycle,
+    status,
+    features,
+    payment_label,
+    next_charge_at
+  )
+  VALUES (
+    v_salon.id,
+    coalesce(v_plan_code, 'pro'),
+    coalesce(v_plan_name, 'Pro Salon'),
+    coalesce(v_price, 18000),
+    'monthly',
+    'trialing',
+    coalesce(v_features, ARRAY['Jusqu''à 10 employés', 'Rappels SMS & WhatsApp illimités', 'Rapports & export comptable']),
+    'Essai gratuit (15 jours)',
+    now() + INTERVAL '15 days'
+  )
+  ON CONFLICT (salon_id) DO NOTHING;
+
   RETURN v_salon;
 END;
 $$;
@@ -420,8 +462,26 @@ CREATE POLICY "Tenant isolation for reminder_rules" ON public.reminder_rules
 CREATE POLICY "Tenant isolation for campaigns" ON public.campaigns
   FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
 
-CREATE POLICY "Tenant isolation for subscriptions" ON public.subscriptions
-  FOR ALL TO authenticated USING (salon_id = public.get_auth_salon_id());
+-- Lecture seule : `FOR ALL` sans `WITH CHECK` laissait PostgreSQL réutiliser
+-- l'expression `USING` pour l'INSERT et l'UPDATE, et n'importe quel membre du
+-- salon pouvait repousser `next_charge_at` ou passer `status` à 'active'.
+-- L'écriture passe par `change_subscription_plan` (20260923), qui vérifie le
+-- rôle et lit le tarif au catalogue au lieu de le recevoir de l'appelant.
+CREATE POLICY "Salon members read their subscription" ON public.subscriptions
+  FOR SELECT TO authenticated USING (salon_id = public.get_auth_salon_id());
+
+-- Lecture seule à l'échéance de l'abonnement (20260923). Le refus est posé
+-- par le trigger `trg_subscription_required`, présent sur toutes les tables
+-- métier, et non par une policy : `adjust_stock`, `refund_transaction` et
+-- `record_payout` sont SECURITY DEFINER et passeraient au travers. Le SELECT
+-- n'est jamais touché — un salon éteint consulte et exporte, il n'écrit plus.
+-- `auth.uid()` nul (service_role, migrations, console d'administration) n'est
+-- jamais bloqué : c'est par là qu'un salon se répare.
+--
+-- `payout_requests` et `time_off` en sont exclues (20260924) : un versement
+-- solde une dette déjà contractée, et le refuser pénalise le coiffeur plutôt
+-- que le gérant qui n'a pas payé — tout en faussant la comptabilité, puisque
+-- l'argent sort du tiroir de toute façon.
 
 -- Le catalogue des formules est public en lecture, modifiable seulement côté admin.
 CREATE POLICY "Anyone can read subscription plans" ON public.subscription_plans FOR SELECT TO anon, authenticated USING (true);

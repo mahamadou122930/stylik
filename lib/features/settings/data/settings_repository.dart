@@ -70,6 +70,12 @@ class SettingsRepository {
   }
 
   /// Abonnement SaaS courant du salon (table `subscriptions`).
+  ///
+  /// La ligne est créée côté serveur, par `create_salon_for_signup`, dans la
+  /// même transaction que le salon. La créer aussi depuis le client obligeait
+  /// à laisser l'écriture ouverte à n'importe quel membre du salon, et son
+  /// `catch` avalait les refus RLS : l'écran annonçait « aucun abonnement »
+  /// sans que rien ne dise pourquoi.
   Future<Subscription?> fetchSubscription(String salonId) async {
     final data = await _client
         .from(SupabaseTables.subscriptions)
@@ -93,29 +99,25 @@ class SettingsRepository {
   ///
   /// Un salon n'a qu'un abonnement (index unique sur `salon_id`) : on remplace
   /// donc la ligne existante plutôt que d'en empiler une nouvelle.
+  ///
+  /// L'écriture passe par une RPC parce que la table n'est plus modifiable
+  /// depuis le client : elle vérifie que l'appelant est gérant, et lit le
+  /// tarif comme l'échéance côté serveur. Envoyés d'ici, ils permettaient de
+  /// s'offrir la formule Pro à 0 F, ou de se donner dix ans d'avance.
   Future<Subscription> changePlan({
     required String salonId,
     required SubscriptionPlan plan,
     required BillingCycle cycle,
     required String paymentLabel,
   }) async {
-    final data = await _client
-        .from(SupabaseTables.subscriptions)
-        .upsert({
-          'salon_id': salonId,
-          'plan_code': plan.code,
-          'plan_name': plan.name,
-          'price_per_month_fcfa': plan.pricePerMonthFcfa,
-          'billing_cycle': cycle.value,
-          'status': 'active',
-          'features': plan.features,
-          'payment_label': paymentLabel,
-          'next_charge_at': cycle
-              .nextChargeFrom(DateTime.now())
-              .toIso8601String(),
-        }, onConflict: 'salon_id')
-        .select()
-        .single();
+    final data = await _client.rpc<Map<String, dynamic>>(
+      'change_subscription_plan',
+      params: {
+        'p_plan_code': plan.code,
+        'p_billing_cycle': cycle.value,
+        'p_payment_label': paymentLabel,
+      },
+    );
     return Subscription.fromMap(data);
   }
 }

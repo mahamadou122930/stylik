@@ -9,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/salon_service.dart';
 import 'catalog_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// 5.2 — Édition d'un service : prix, durée, catégorie, commission.
 class ServiceEditPage extends ConsumerStatefulWidget {
@@ -149,6 +150,7 @@ class _ServiceEditPageState extends ConsumerState<ServiceEditPage> {
   }
 
   Future<void> _save() async {
+    if (!await ensureSubscriptionActive(context, ref)) return;
     final salonId = ref.read(currentSalonIdProvider);
     if (salonId == null || _name.text.trim().isEmpty) return;
 

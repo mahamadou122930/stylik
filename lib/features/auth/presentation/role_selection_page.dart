@@ -9,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../domain/auth_error_message.dart';
 import '../domain/registration_draft.dart';
 import '../domain/user_role.dart';
+import '../../settings/presentation/trial_welcome_page.dart';
 import 'auth_providers.dart';
 
 /// Sélecteur de rôle (Gérant, Coiffeur, Réceptionniste).
@@ -171,7 +172,13 @@ class _RoleSelectionPageState extends ConsumerState<RoleSelectionPage> {
 
     final navigator = Navigator.of(context);
     if (ref.read(currentSessionProvider) != null) {
-      navigator.popUntil((route) => route.isFirst);
+      // La pile d'inscription est déroulée entièrement : sans cela, le
+      // « Commencer l'essai » de l'écran suivant renvoyait sur le formulaire
+      // de création de salon, pour un compte qui vient d'être créé.
+      navigator.pushNamedAndRemoveUntil(
+        TrialWelcomePage.routeName,
+        (route) => route.isFirst,
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

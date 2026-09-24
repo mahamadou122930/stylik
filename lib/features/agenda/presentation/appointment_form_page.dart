@@ -15,6 +15,7 @@ import '../../clients/presentation/clients_providers.dart';
 import '../../staff/presentation/staff_providers.dart';
 import '../domain/appointment.dart';
 import 'agenda_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// 2.4 — Nouveau RDV : Client, prestations, coiffeur, créneau.
 class AppointmentFormPage extends ConsumerStatefulWidget {
@@ -94,8 +95,9 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                           itemBuilder: (context, index) {
                             final c = clients[index];
                             return ListTile(
-                              contentPadding:
-                                  const EdgeInsets.symmetric(vertical: 4),
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                              ),
                               leading: Container(
                                 width: 38,
                                 height: 38,
@@ -187,8 +189,7 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                     itemBuilder: (context, index) {
                       final s = services[index];
                       return ListTile(
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
                         title: Text(
                           s.name,
                           style: AppTypography.manrope(
@@ -233,6 +234,7 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
   }
 
   Future<void> _confirm() async {
+    if (!await ensureSubscriptionActive(context, ref)) return;
     final salonId = ref.read(currentSalonIdProvider);
     if (salonId == null ||
         _client == null ||
@@ -243,7 +245,9 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
 
     setState(() => _isSaving = true);
     try {
-      await ref.read(agendaRepositoryProvider).create(
+      await ref
+          .read(agendaRepositoryProvider)
+          .create(
             Appointment(
               id: '',
               salonId: salonId,
@@ -535,10 +539,7 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
           // 3. Coiffeur
           const _FieldLabel('Coiffeur'),
           if (stylists.isEmpty)
-            Text(
-              'Aucun coiffeur disponible',
-              style: AppTypography.rowSubtitle,
-            )
+            Text('Aucun coiffeur disponible', style: AppTypography.rowSubtitle)
           else
             Row(
               children: [
@@ -578,7 +579,8 @@ class _AppointmentFormPageState extends ConsumerState<AppointmentFormPage> {
                   for (final slot in availableSlots)
                     _SlotChip(
                       slot: slot,
-                      isSelected: _slot != null &&
+                      isSelected:
+                          _slot != null &&
                           _slot!.hour == slot.hour &&
                           _slot!.minute == slot.minute,
                       onTap: () => setState(() => _slot = slot),
@@ -613,16 +615,16 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 2, bottom: 7),
-        child: Text(
-          label,
-          style: AppTypography.sora(
-            12.5,
-            FontWeight.w600,
-            color: AppColors.textBody,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(left: 2, bottom: 7),
+    child: Text(
+      label,
+      style: AppTypography.sora(
+        12.5,
+        FontWeight.w600,
+        color: AppColors.textBody,
+      ),
+    ),
+  );
 }
 
 class _StylistChoiceCard extends StatelessWidget {

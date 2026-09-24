@@ -103,6 +103,8 @@ class _PlanCard extends StatelessWidget {
       current != null &&
       (current!.planCode == plan.code || current!.planName == plan.name);
 
+  bool get _isCurrentPaid => _isCurrent && !(current?.isTrial ?? false);
+
   IconData get _icon => switch (plan.code) {
     'solo' => LucideIcons.user,
     'multi' => LucideIcons.building2,
@@ -170,6 +172,12 @@ class _PlanCard extends StatelessWidget {
             label: 'Populaire',
             color: AppColors.textPrimary,
             background: AppColors.mint,
+          )
+        else if (_isCurrent && (current?.isTrial ?? false))
+          AppBadge(
+            label: 'Essai actif',
+            color: onDark ? Colors.white : AppColors.primary,
+            background: onDark ? AppColors.overlayLight : AppColors.tintGreen,
           ),
       ],
     );
@@ -220,7 +228,7 @@ class _PlanCard extends StatelessWidget {
       return AppCard(
         padding: const EdgeInsets.all(16),
         radius: AppSizes.radiusXl,
-        onTap: _isCurrent ? null : onTap,
+        onTap: _isCurrentPaid ? null : onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -229,9 +237,18 @@ class _PlanCard extends StatelessWidget {
             priceRow,
             const SizedBox(height: 6),
             summary,
-            if (_isCurrent) ...[
+            if (_isCurrentPaid) ...[
               const SizedBox(height: 12),
               _CurrentPlanTag(onDark: false),
+            ] else ...[
+              const SizedBox(height: 12),
+              AppButton.outline(
+                label: _isCurrent
+                    ? 'Confirmer ${plan.name}'
+                    : 'Choisir ${plan.name}',
+                height: 44,
+                onPressed: onTap,
+              ),
             ],
           ],
         ),
@@ -251,11 +268,15 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 6),
           summary,
           const SizedBox(height: 14),
-          if (_isCurrent)
+          if (_isCurrentPaid)
             _CurrentPlanTag(onDark: true)
           else
             AppButton(
-              label: 'Choisir ${plan.name}',
+              label: _isCurrent
+                  ? (current!.isExpired
+                        ? 'Activer ${plan.name}'
+                        : 'Essai en cours · ${current!.trialDaysRemaining} j restants')
+                  : 'Choisir ${plan.name}',
               height: 46,
               onPressed: onTap,
             ),

@@ -82,14 +82,18 @@ class _PlanCheckoutPageState extends ConsumerState<PlanCheckoutPage> {
               best == null || other.sortOrder > best.sortOrder ? other : best,
         );
 
+    final current = ref.watch(subscriptionProvider).valueOrNull;
+    final isTrial = current?.isTrial ?? false;
     final charge = cycle.chargeAmount(plan.pricePerMonthFcfa);
 
     return AppScreen(
       title: '${plan.name} · détail',
       footer: AppButton(
-        label: cycle == BillingCycle.annual
-            ? 'Passer à l\'annuel'
-            : 'Souscrire ${plan.name}',
+        label: isTrial
+            ? 'Payer & activer'
+            : (cycle == BillingCycle.annual
+                  ? 'Passer à l\'annuel'
+                  : 'Souscrire ${plan.name}'),
         trailingLabel: Formatters.fcfa(charge),
         height: 56,
         isLoading: _isSubmitting,
@@ -100,7 +104,7 @@ class _PlanCheckoutPageState extends ConsumerState<PlanCheckoutPage> {
         children: [
           _ComparisonTable(plan: plan, reference: lower),
           const SizedBox(height: 14),
-          _PriceRecap(plan: plan, cycle: cycle),
+          _PriceRecap(plan: plan, cycle: cycle, isTrial: isTrial),
           const AppSectionLabel(
             'Moyen de paiement',
             padding: EdgeInsets.fromLTRB(2, 18, 2, 10),
@@ -260,15 +264,28 @@ class _CapabilityMark extends StatelessWidget {
 
 /// Récapitulatif du montant prélevé, avec le tarif plein barré à l'année.
 class _PriceRecap extends StatelessWidget {
-  const _PriceRecap({required this.plan, required this.cycle});
+  const _PriceRecap({
+    required this.plan,
+    required this.cycle,
+    this.isTrial = false,
+  });
 
   final SubscriptionPlan plan;
   final BillingCycle cycle;
+  final bool isTrial;
 
   @override
   Widget build(BuildContext context) {
     final annual = cycle == BillingCycle.annual;
     final charge = cycle.chargeAmount(plan.pricePerMonthFcfa);
+
+    final paymentLabel = isTrial
+        ? (annual
+              ? 'À payer à la fin de l\'essai (−${cycle.discountPercent} %)'
+              : 'À payer à la fin de l\'essai')
+        : (annual
+              ? 'Payé aujourd\'hui (−${cycle.discountPercent} %)'
+              : 'Payé aujourd\'hui');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -323,9 +340,7 @@ class _PriceRecap extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    annual
-                        ? 'Payé aujourd\'hui (−${cycle.discountPercent} %)'
-                        : 'Payé aujourd\'hui',
+                    paymentLabel,
                     style: AppTypography.manrope(
                       13.5,
                       FontWeight.w700,

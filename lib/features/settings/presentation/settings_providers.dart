@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/providers.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../clients/presentation/clients_providers.dart';
+import '../../finance/presentation/finance_providers.dart';
 import '../data/settings_repository.dart';
 import '../domain/salon.dart';
 import '../domain/subscription.dart';
@@ -40,3 +42,53 @@ final subscriptionPlansProvider = FutureProvider<List<SubscriptionPlan>>((
 final billingCycleProvider = StateProvider<BillingCycle>(
   (ref) => BillingCycle.monthly,
 );
+
+/// Ce que le salon a réellement fait pendant son essai.
+///
+/// L'écran « Votre essai est terminé » lisait `dayAppointmentsProvider` et
+/// `financeSummaryProvider` : les RDV de la **journée** sélectionnée et le CA
+/// de la **période Finance courante**, qui part sur le jour. Sous un titre
+/// « Pendant l'essai », un gérant dont l'essai venait d'expirer lisait donc
+/// « 0 RDV · 0 F » — l'argument exactement inverse de celui que l'écran porte.
+///
+/// La fenêtre va du début de l'essai à maintenant, et les trois chiffres la
+/// couvrent tous les trois.
+typedef TrialRecap = ({
+  DateTime from,
+  DateTime to,
+  int ticketCount,
+  int clientCount,
+  int revenueFcfa,
+});
+
+final trialRecapProvider = FutureProvider<TrialRecap?>((ref) async {
+  final salonId = ref.watch(currentSalonIdProvider);
+  final subscription = await ref.watch(subscriptionProvider.future);
+
+  final from = subscription?.trialStartedAt;
+  if (salonId == null || from == null) return null;
+
+  // L'essai s'arrête à son échéance ; avant elle, le récapitulatif s'arrête
+  // à l'instant présent plutôt que de compter des journées à venir.
+  final now = DateTime.now();
+  final to = subscription!.isExpired ? subscription.nextChargeAt! : now;
+  if (!to.isAfter(from)) return null;
+
+  final summary = await ref
+      .watch(financeRepositoryProvider)
+      .fetchSummary(salonId: salonId, from: from, to: to);
+
+  final clients = await ref.watch(clientsListProvider.future);
+  final newClients = clients.where((c) {
+    final created = c.createdAt;
+    return created != null && !created.isBefore(from) && created.isBefore(to);
+  }).length;
+
+  return (
+    from: from,
+    to: to,
+    ticketCount: summary.ticketCount,
+    clientCount: newClients,
+    revenueFcfa: summary.revenueFcfa,
+  );
+});

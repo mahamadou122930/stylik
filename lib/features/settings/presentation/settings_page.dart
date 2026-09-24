@@ -171,21 +171,43 @@ class SettingsPage extends ConsumerWidget {
                   context,
                 ).pushNamed(NotificationsPage.routeName),
               ),
-              if (isManager)
-                AppListRow(
-                  label: 'Abonnement',
-                  subtitle: 'Formule et facturation',
-                  leading: const AppIconTile(
-                    icon: LucideIcons.award,
-                    color: AppColors.violet,
-                    background: AppColors.tintViolet,
-                  ),
-                  trailing: const AppChevron(),
-                  strong: true,
-                  onTap: () => Navigator.of(
-                    context,
-                  ).pushNamed(SubscriptionPage.routeName),
-                ),
+              if (isManager) ...[
+                () {
+                  final subscription = ref
+                      .watch(subscriptionProvider)
+                      .valueOrNull;
+                  final subSubtitle = switch (subscription) {
+                    null => 'Formule et facturation',
+                    final s when s.isTrial =>
+                      s.isExpired
+                          ? 'Essai expiré · Activer une formule'
+                          : '${s.planName} · Essai (${s.trialDaysRemaining} j restants)',
+                    final s => '${s.planName} · ${s.statusLabel}',
+                  };
+                  return AppListRow(
+                    label: 'Abonnement',
+                    subtitle: subSubtitle,
+                    leading: const AppIconTile(
+                      icon: LucideIcons.award,
+                      color: AppColors.violet,
+                      background: AppColors.tintViolet,
+                    ),
+                    trailing:
+                        subscription?.isTrial == true &&
+                            !subscription!.isExpired
+                        ? AppBadge(
+                            label: '${subscription.trialDaysRemaining} j',
+                            color: AppColors.primary,
+                            dense: true,
+                          )
+                        : const AppChevron(),
+                    strong: true,
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed(SubscriptionPage.routeName),
+                  );
+                }(),
+              ],
             ],
           ),
           const SizedBox(height: 24),

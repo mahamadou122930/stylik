@@ -16,6 +16,10 @@ import '../../auth/presentation/profile_page.dart';
 import '../../inventory/presentation/inventory_page.dart';
 import '../../inventory/presentation/inventory_providers.dart';
 import '../../pos/presentation/pos_providers.dart';
+import '../../settings/presentation/plan_selection_page.dart';
+import '../../settings/presentation/settings_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
+import '../../settings/presentation/trial_expired_page.dart';
 import 'home_providers.dart';
 import 'reception_home_page.dart';
 import 'stylist_home_page.dart';
@@ -81,10 +85,153 @@ class HomePage extends ConsumerWidget {
   }) {
     final appointments = ref.watch(dayAppointmentsProvider);
     final lowStock = ref.watch(lowStockProductsProvider);
+    final subscription = ref.watch(subscriptionProvider).valueOrNull;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SubscriptionLockBanner(),
+        if (subscription?.isTrial == true && !subscription!.isExpired) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.textPrimary,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Essai gratuit',
+                      style: AppTypography.manrope(
+                        12,
+                        FontWeight.w700,
+                        color: AppColors.mint,
+                      ),
+                    ),
+                    Text(
+                      '${subscription.trialDaysRemaining} jours restants',
+                      style: AppTypography.sora(
+                        13,
+                        FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(5),
+                  child: LinearProgressIndicator(
+                    value: subscription.trialProgress,
+                    backgroundColor: Colors.white.withValues(alpha: 0.16),
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.accent,
+                    ),
+                    minHeight: 7,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Fin le ${subscription.nextChargeAt != null ? Formatters.dayMonth(subscription.nextChargeAt!) : ''}. '
+                        'Choisissez un plan pour garder vos données.',
+                        style: AppTypography.manrope(
+                          12.5,
+                          FontWeight.w500,
+                          color: Colors.white.withValues(alpha: 0.7),
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pushNamed(PlanSelectionPage.routeName),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 9,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.mint,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Voir les plans',
+                          style: AppTypography.sora(
+                            13,
+                            FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ] else if (subscription?.isTrial == true &&
+            subscription!.isExpired) ...[
+          AppCard(
+            onTap: () =>
+                Navigator.of(context).pushNamed(TrialExpiredPage.routeName),
+            radius: 18,
+            shadow: false,
+            color: AppColors.tintDanger,
+            borderColor: AppColors.dangerBorder,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                const Icon(
+                  LucideIcons.hourglass,
+                  size: 24,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Votre essai est terminé',
+                        style: AppTypography.sora(
+                          14,
+                          FontWeight.w700,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Choisissez un plan pour retrouver l\'accès de toute l\'équipe.',
+                        style: AppTypography.manrope(
+                          12,
+                          FontWeight.w500,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                AppBadge(
+                  label: 'Choisir un plan',
+                  color: AppColors.danger,
+                  dense: true,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
         _statGrid(
           context,
           ref,

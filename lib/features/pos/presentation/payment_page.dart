@@ -9,6 +9,7 @@ import '../../../core/widgets/widgets.dart';
 import '../domain/payment_method.dart';
 import 'pos_providers.dart';
 import 'receipt_page.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// 6.2 — Moyen de paiement : espèces, mobile money, carte.
 class PaymentPage extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   bool _isProcessing = false;
 
   Future<void> _checkout() async {
+    if (!await ensureSubscriptionActive(context, ref)) return;
     setState(() => _isProcessing = true);
     try {
       final transaction = await ref.read(checkoutControllerProvider)();

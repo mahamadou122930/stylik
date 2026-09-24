@@ -57,6 +57,119 @@ class _SubscriptionBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (subscription.isTrial && !subscription.isExpired)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.tintGreen,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const AppIconTile(
+                      icon: LucideIcons.sparkles,
+                      size: 34,
+                      radius: 10,
+                      color: AppColors.primary,
+                      background: Colors.white,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Période d\'essai Pro (15 jours)',
+                            style: AppTypography.sora(
+                              14,
+                              FontWeight.w700,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subscription.trialDaysRemaining <= 1
+                                ? 'Dernier jour pour tester toutes les fonctionnalités'
+                                : '${subscription.trialDaysRemaining} jours restants sans aucun engagement',
+                            style: AppTypography.manrope(
+                              12,
+                              FontWeight.w500,
+                              color: AppColors.textBody,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: subscription.trialProgress,
+                    backgroundColor: Colors.white,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppColors.primary,
+                    ),
+                    minHeight: 6,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (subscription.isTrial && subscription.isExpired)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.tintDanger,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.dangerBorder),
+            ),
+            child: Row(
+              children: [
+                const AppIconTile(
+                  icon: LucideIcons.triangleAlert,
+                  size: 34,
+                  radius: 10,
+                  color: AppColors.danger,
+                  background: Colors.white,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Période d\'essai terminée',
+                        style: AppTypography.sora(
+                          14,
+                          FontWeight.w700,
+                          color: AppColors.danger,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Votre essai de 15 jours est arrivé à échéance. Activez votre formule pour continuer.',
+                        style: AppTypography.manrope(
+                          12,
+                          FontWeight.w500,
+                          color: AppColors.textBody,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         AppGradientCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +210,9 @@ class _SubscriptionBody extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    Formatters.fcfaShort(subscription.pricePerMonthFcfa),
+                    subscription.isTrial && !subscription.isExpired
+                        ? 'Offert'
+                        : Formatters.fcfaShort(subscription.pricePerMonthFcfa),
                     style: AppTypography.sora(
                       28,
                       FontWeight.w800,
@@ -109,7 +224,9 @@ class _SubscriptionBody extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
-                      '/ mois',
+                      subscription.isTrial && !subscription.isExpired
+                          ? '(puis ${Formatters.fcfaShort(subscription.pricePerMonthFcfa)} / mois)'
+                          : '/ mois',
                       style: AppTypography.manrope(
                         13,
                         FontWeight.w600,
@@ -119,7 +236,8 @@ class _SubscriptionBody extends StatelessWidget {
                   ),
                 ],
               ),
-              if (subscription.billingCycle == BillingCycle.annual) ...[
+              if (subscription.billingCycle == BillingCycle.annual &&
+                  !subscription.isTrial) ...[
                 const SizedBox(height: 4),
                 Text(
                   'Facturé ${Formatters.fcfa(subscription.chargeAmountFcfa)} '
@@ -135,12 +253,32 @@ class _SubscriptionBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        AppButton.outline(
-          label: 'Changer de formule',
-          icon: LucideIcons.arrowLeftRight,
-          onPressed: () =>
-              Navigator.of(context).pushNamed(PlanSelectionPage.routeName),
-        ),
+        if (subscription.isTrial) ...[
+          AppButton(
+            label: subscription.isExpired
+                ? 'Activer mon abonnement'
+                : 'Choisir une formule définitive',
+            icon: LucideIcons.award,
+            onPressed: () =>
+                Navigator.of(context).pushNamed(PlanSelectionPage.routeName),
+          ),
+          if (!subscription.isExpired) ...[
+            const SizedBox(height: 8),
+            AppButton.outline(
+              label: 'Comparer les formules',
+              icon: LucideIcons.arrowLeftRight,
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(PlanSelectionPage.routeName),
+            ),
+          ],
+        ] else ...[
+          AppButton.outline(
+            label: 'Changer de formule',
+            icon: LucideIcons.arrowLeftRight,
+            onPressed: () =>
+                Navigator.of(context).pushNamed(PlanSelectionPage.routeName),
+          ),
+        ],
         if (subscription.features.isNotEmpty) ...[
           const SizedBox(height: 12),
           AppCard(

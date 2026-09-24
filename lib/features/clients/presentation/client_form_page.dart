@@ -8,6 +8,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/client.dart';
 import 'clients_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// 3.3 — Nouveau client : coordonnées, préférences, allergies.
 class ClientFormPage extends ConsumerStatefulWidget {
@@ -48,6 +49,7 @@ class _ClientFormPageState extends ConsumerState<ClientFormPage> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!await ensureSubscriptionActive(context, ref)) return;
     final salonId = ref.read(currentSalonIdProvider);
     if (salonId == null) return;
 

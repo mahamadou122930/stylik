@@ -13,6 +13,7 @@ import '../../agenda/presentation/appointment_detail_page.dart';
 import '../../agenda/presentation/appointment_form_page.dart';
 import '../../pos/presentation/pos_page.dart';
 import 'home_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// Accueil de la réceptionniste — le comptoir.
 ///
@@ -32,6 +33,7 @@ class ReceptionHomePage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SubscriptionLockBanner(),
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,

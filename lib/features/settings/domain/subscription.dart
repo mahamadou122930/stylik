@@ -41,19 +41,64 @@ class Subscription {
 
   final DateTime? nextChargeAt;
 
-  bool get isActive => status == 'active' || status == 'trialing';
+  /// Durée de l'essai offert à la création d'un salon.
+  ///
+  /// Une seule source : les écrans en déduisaient chacun leur « 15 » en dur,
+  /// et une durée changée un jour aurait laissé les barres de progression
+  /// mentir sans que rien ne le signale.
+  static const int trialDurationDays = 15;
+
+  /// Début de l'essai, déduit de son échéance.
+  DateTime? get trialStartedAt =>
+      nextChargeAt?.subtract(const Duration(days: trialDurationDays));
+
+  /// Part de l'essai déjà consommée, entre 0 et 1.
+  double get trialProgress {
+    if (nextChargeAt == null) return 0;
+    final elapsed = trialDurationDays - trialDaysRemaining;
+    return (elapsed / trialDurationDays).clamp(0.0, 1.0);
+  }
+
+  /// Indique si l'abonnement est en période d'essai (15 jours).
+  bool get isTrial => status == 'trialing';
+
+  /// Indique si la date d'échéance / fin d'essai est dépassée.
+  bool get isExpired =>
+      nextChargeAt != null && DateTime.now().isAfter(nextChargeAt!);
+
+  /// Nombre de jours restants avant la fin de la période d'essai.
+  int get trialDaysRemaining {
+    if (nextChargeAt == null) return 0;
+    final diffHours = nextChargeAt!.difference(DateTime.now()).inHours;
+    if (diffHours <= 0) return 0;
+    return (diffHours / 24).ceil();
+  }
+
+  /// Actif si formule payante active ou période d'essai non expirée.
+  bool get isActive =>
+      status == 'active' || (status == 'trialing' && !isExpired);
 
   String get statusLabel => switch (status) {
     'active' => 'Actif',
-    'trialing' => 'Essai',
+    'trialing' =>
+      isExpired
+          ? 'Essai expiré'
+          : (trialDaysRemaining <= 1
+                ? 'Dernier jour d\'essai'
+                : 'Essai ($trialDaysRemaining j)'),
     'past_due' => 'Impayé',
     'canceled' => 'Résilié',
     _ => status,
   };
 
-  String get nextChargeLabel => nextChargeAt == null
-      ? 'Aucun prélèvement planifié'
-      : 'Prochain prélèvement ${Formatters.dayMonth(nextChargeAt!)}';
+  String get nextChargeLabel {
+    if (nextChargeAt == null) return 'Aucun prélèvement planifié';
+    if (isTrial) {
+      if (isExpired) return 'Période d\'essai terminée';
+      return 'Fin de l\'essai le ${Formatters.dayMonth(nextChargeAt!)}';
+    }
+    return 'Prochain prélèvement ${Formatters.dayMonth(nextChargeAt!)}';
+  }
 
   /// Libellé de la périodicité affiché à côté du prix (« / mois », « / an »).
   String get periodLabel =>

@@ -9,6 +9,7 @@ import '../../auth/domain/user_role.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'invite_code_card.dart';
 import 'staff_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// Nouvel employé ou édition d'un membre de l'équipe.
 class StaffFormPage extends ConsumerStatefulWidget {
@@ -75,6 +76,7 @@ class _StaffFormPageState extends ConsumerState<StaffFormPage> {
   }
 
   Future<void> _save() async {
+    if (!await ensureSubscriptionActive(context, ref)) return;
     if (!_formKey.currentState!.validate()) return;
     final salonId = ref.read(currentSalonIdProvider);
     if (salonId == null) return;

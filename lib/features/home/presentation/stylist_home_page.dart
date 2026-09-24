@@ -16,6 +16,7 @@ import '../../finance/presentation/finance_providers.dart';
 import '../../finance/presentation/my_commission_page.dart';
 import '../../finance/presentation/payout_request_page.dart';
 import 'home_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// Accueil du coiffeur — sa journée et sa rémunération.
 ///
@@ -39,6 +40,10 @@ class StylistHomePage extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Le salon est en lecture seule : tout le monde doit le savoir, pas
+        // seulement le gérant. Sinon la caisse continue de tourner depuis le
+        // compte d'un coiffeur.
+        const SubscriptionLockBanner(),
         _CommissionBanner(
           commission: commission.valueOrNull,
           fallbackRate: profile.commissionRate,

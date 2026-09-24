@@ -8,6 +8,7 @@ import '../../../core/widgets/widgets.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../domain/product.dart';
 import 'inventory_providers.dart';
+import '../../settings/presentation/subscription_lock.dart';
 
 /// Formulaire de fiche produit — création et modification.
 class ProductFormPage extends ConsumerStatefulWidget {
@@ -91,6 +92,8 @@ class _ProductFormPageState extends ConsumerState<ProductFormPage> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!await ensureSubscriptionActive(context, ref)) return;
+    if (!mounted) return;
 
     final salonId = ref.read(currentSalonIdProvider);
     if (salonId == null) {

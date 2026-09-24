@@ -73,6 +73,8 @@ import 'features/settings/presentation/roles_page.dart';
 import 'features/settings/presentation/salon_info_page.dart';
 import 'features/settings/presentation/settings_page.dart';
 import 'features/settings/presentation/subscription_page.dart';
+import 'features/settings/presentation/trial_expired_page.dart';
+import 'features/settings/presentation/trial_welcome_page.dart';
 import 'features/staff/presentation/staff_detail_page.dart';
 import 'features/staff/presentation/staff_form_page.dart';
 import 'features/staff/presentation/staff_page.dart';
@@ -218,6 +220,8 @@ class StylikApp extends ConsumerWidget {
     NotificationsPage.routeName: const NotificationsPage(),
     SubscriptionPage.routeName: const SubscriptionPage(),
     PlanSelectionPage.routeName: const PlanSelectionPage(),
+    TrialWelcomePage.routeName: const TrialWelcomePage(),
+    TrialExpiredPage.routeName: const TrialExpiredPage(),
     ProfilePage.routeName: const ProfilePage(),
   };
 }
