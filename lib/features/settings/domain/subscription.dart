@@ -14,6 +14,7 @@ class Subscription {
     this.features = const [],
     this.paymentLabel,
     this.nextChargeAt,
+    this.suspended = false,
   });
 
   final String id;
@@ -39,7 +40,15 @@ class Subscription {
   /// Moyen de paiement masqué (« Orange Money · **** 4218 »).
   final String? paymentLabel;
 
+  /// Fin de la période en cours : fin de l'essai, ou fin de la période payée.
+  ///
+  /// Le nom est hérité d'un prélèvement automatique qui n'existe pas : c'est
+  /// l'opérateur qui prolonge la période, depuis la console, à chaque
+  /// règlement reçu.
   final DateTime? nextChargeAt;
+
+  /// Salon suspendu depuis la console, indépendamment de sa période.
+  final bool suspended;
 
   /// Durée de l'essai offert à la création d'un salon.
   ///
@@ -74,12 +83,18 @@ class Subscription {
     return (diffHours / 24).ceil();
   }
 
-  /// Actif si formule payante active ou période d'essai non expirée.
+  /// Le salon peut-il encore écrire ?
+  ///
+  /// Même règle que `salon_subscription_is_active` côté base, qui fait foi :
+  /// ni suspendu, ni échu. Une période payée expire à son terme comme un
+  /// essai — la console la prolonge à chaque règlement. Une échéance absente
+  /// laisse ouvert : une donnée manquante ne ferme pas une caisse.
   bool get isActive =>
-      status == 'active' || (status == 'trialing' && !isExpired);
+      !suspended && (status == 'active' || status == 'trialing') && !isExpired;
 
   String get statusLabel => switch (status) {
-    'active' => 'Actif',
+    _ when suspended => 'Suspendu',
+    'active' => isExpired ? 'Expiré' : 'Actif',
     'trialing' =>
       isExpired
           ? 'Essai expiré'
@@ -92,20 +107,20 @@ class Subscription {
   };
 
   String get nextChargeLabel {
-    if (nextChargeAt == null) return 'Aucun prélèvement planifié';
+    if (nextChargeAt == null) return 'Aucune échéance';
     if (isTrial) {
       if (isExpired) return 'Période d\'essai terminée';
       return 'Fin de l\'essai le ${Formatters.dayMonth(nextChargeAt!)}';
     }
-    return 'Prochain prélèvement ${Formatters.dayMonth(nextChargeAt!)}';
+    // Pas de « prochain prélèvement » : rien n'est prélevé automatiquement,
+    // l'annoncer ferait attendre au gérant un débit qui ne viendra pas.
+    final date = Formatters.dayMonth(nextChargeAt!);
+    return isExpired ? 'Période terminée le $date' : "Actif jusqu'au $date";
   }
 
   /// Libellé de la périodicité affiché à côté du prix (« / mois », « / an »).
   String get periodLabel =>
       billingCycle == BillingCycle.annual ? '/ an' : '/ mois';
-
-  /// Montant réellement prélevé à chaque échéance.
-  int get chargeAmountFcfa => billingCycle.chargeAmount(pricePerMonthFcfa);
 
   factory Subscription.fromMap(Map<String, dynamic> map) => Subscription(
     id: map['id'] as String,
@@ -122,5 +137,6 @@ class Subscription {
     nextChargeAt: map['next_charge_at'] == null
         ? null
         : DateTime.parse(map['next_charge_at'] as String).toLocal(),
+    suspended: (map['suspended'] as bool?) ?? false,
   );
 }

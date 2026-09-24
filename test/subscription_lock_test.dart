@@ -63,16 +63,42 @@ void main() {
       );
     });
 
-    test('une formule payée reste ouverte même passé son échéance', () async {
-      // Aucun webhook de paiement ne repousse encore `next_charge_at` :
-      // respecter cette date couperait tous les salons abonnés un mois après
-      // leur souscription. C'est la même règle qu'en base.
+    test('une période payée échue verrouille, comme un essai', () async {
+      // La console prolonge la période à chaque règlement reçu : il existe
+      // désormais de quoi repousser l'échéance, elle s'applique donc. C'est
+      // la même règle qu'en base (`salon_subscription_is_active`).
       expect(
         await lockedFor(
-          sub(status: 'active', chargeIn: const Duration(days: -40)),
+          sub(status: 'active', chargeIn: const Duration(days: -1)),
+        ),
+        isTrue,
+      );
+      expect(
+        await lockedFor(
+          sub(status: 'active', chargeIn: const Duration(days: 20)),
         ),
         isFalse,
       );
+    });
+
+    test('une suspension verrouille, même période en cours', () async {
+      final suspended = Subscription(
+        id: 'sub',
+        salonId: 'salon',
+        planCode: 'pro',
+        planName: 'Pro Coiffure',
+        pricePerMonthFcfa: 20000,
+        status: 'active',
+        nextChargeAt: DateTime.now().add(const Duration(days: 20)),
+        suspended: true,
+      );
+      expect(await lockedFor(suspended), isTrue);
+      expect(suspended.statusLabel, 'Suspendu');
+    });
+
+    test('une échéance absente laisse ouvert', () async {
+      // Une donnée manquante ne ferme pas une caisse — même règle qu'en base.
+      expect(await lockedFor(sub(status: 'active')), isFalse);
     });
 
     test('un abonnement non lu ne verrouille rien', () async {
@@ -207,6 +233,84 @@ void main() {
       await tester.pumpAndSettle();
 
       // Et il repart avec un refus : l'écriture ne part jamais.
+      expect(allowed(), isFalse);
+    });
+    testWidgets("un salon activé entre-temps n'est pas bloqué sur le cache", (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1080, 2220);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      // Première lecture : essai échu, mise en cache au démarrage. Entre-temps
+      // le gérant a payé et l'opérateur a activé le salon depuis la console :
+      // toute lecture suivante voit la période payée.
+      var reads = 0;
+      final expired = sub(
+        status: 'trialing',
+        chargeIn: const Duration(days: -2),
+      );
+      final paid = sub(status: 'active', chargeIn: const Duration(days: 30));
+
+      bool? allowed;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            subscriptionProvider.overrideWith(
+              (ref) async => reads++ == 0 ? expired : paid,
+            ),
+          ],
+          child: MaterialApp(
+            locale: const Locale('fr', 'FR'),
+            home: Consumer(
+              builder: (context, ref, _) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      allowed = await ensureSubscriptionActive(context, ref);
+                    },
+                    child: const Text('ENREGISTRER'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('ENREGISTRER'));
+      await tester.pumpAndSettle();
+
+      // Sans la relecture avant refus, ce gérant restait bloqué jusqu'au
+      // redémarrage de l'application — après avoir payé.
+      expect(allowed, isTrue);
+      expect(find.text('Salon en lecture seule'), findsNothing);
+      expect(reads, 2);
+    });
+
+    testWidgets('une suspension le dit, au lieu de parler d’échéance', (
+      tester,
+    ) async {
+      final allowed = await runGuard(
+        tester,
+        Subscription(
+          id: 'sub',
+          salonId: 'salon',
+          planCode: 'pro',
+          planName: 'Pro Coiffure',
+          pricePerMonthFcfa: 20000,
+          status: 'active',
+          nextChargeAt: DateTime.now().add(const Duration(days: 20)),
+          suspended: true,
+        ),
+      );
+
+      expect(find.textContaining('suspendu'), findsOneWidget);
+      expect(find.textContaining('échéance'), findsNothing);
+
+      await tester.tap(find.text('Fermer'));
+      await tester.pumpAndSettle();
       expect(allowed(), isFalse);
     });
   });

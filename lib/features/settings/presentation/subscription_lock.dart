@@ -37,6 +37,8 @@ class SubscriptionLockBanner extends ConsumerWidget {
     if (!ref.watch(subscriptionLockedProvider)) {
       return const SizedBox.shrink();
     }
+    final suspended =
+        ref.watch(subscriptionProvider).valueOrNull?.suspended ?? false;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -66,8 +68,15 @@ class SubscriptionLockBanner extends ConsumerWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Votre abonnement est arrivé à échéance. Tout reste '
-                    'consultable, mais plus rien ne peut être enregistré.',
+                    // La vraie raison : un gérant suspendu qui lirait
+                    // « échéance » chercherait un retard de paiement qui
+                    // n'existe pas.
+                    suspended
+                        ? 'Ce salon est suspendu. Tout reste consultable, '
+                              'mais plus rien ne peut être enregistré.'
+                        : 'Votre abonnement est arrivé à échéance. Tout reste '
+                              'consultable, mais plus rien ne peut être '
+                              'enregistré.',
                     style: AppTypography.manrope(
                       12,
                       FontWeight.w500,
@@ -109,6 +118,18 @@ Future<bool> ensureSubscriptionActive(
   }
 
   if (subscription == null || subscription.isActive) return true;
+
+  // Avant de refuser, une lecture fraîche : l'opérateur a peut-être activé
+  // le salon depuis la console pendant que la valeur en cache vieillissait.
+  // Un gérant qui vient de payer ne doit pas être bloqué sur une donnée
+  // périmée. Ce détour ne coûte que lorsque le salon paraît éteint.
+  final Subscription? fresh;
+  try {
+    fresh = await ref.refresh(subscriptionProvider.future);
+  } catch (_) {
+    return true;
+  }
+  if (fresh == null || fresh.isActive) return true;
   if (!context.mounted) return false;
 
   await showModalBottomSheet<void>(
@@ -118,13 +139,17 @@ Future<bool> ensureSubscriptionActive(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
-    builder: (sheetContext) => _LockedSheet(),
+    builder: (sheetContext) => _LockedSheet(suspended: fresh!.suspended),
   );
 
   return false;
 }
 
 class _LockedSheet extends StatelessWidget {
+  const _LockedSheet({required this.suspended});
+
+  final bool suspended;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -160,10 +185,14 @@ class _LockedSheet extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Votre abonnement est arrivé à échéance. Vos rendez-vous, vos '
-            'clients et vos chiffres restent consultables et exportables — '
-            'mais aucune nouvelle saisie n\'est possible tant qu\'une formule '
-            'n\'est pas activée.',
+            suspended
+                ? 'Ce salon est suspendu. Vos rendez-vous, vos clients et vos '
+                      'chiffres restent consultables — mais aucune nouvelle '
+                      'saisie n’est possible. Contactez le support Stylik.'
+                : 'Votre abonnement est arrivé à échéance. Vos rendez-vous, '
+                      'vos clients et vos chiffres restent consultables et '
+                      'exportables — mais aucune nouvelle saisie n’est '
+                      'possible tant qu’une formule n’est pas activée.',
             textAlign: TextAlign.center,
             style: AppTypography.manrope(
               13.5,

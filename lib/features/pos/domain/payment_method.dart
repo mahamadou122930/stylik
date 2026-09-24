@@ -30,7 +30,7 @@ enum PaymentMethod {
     Color(0xFFE8850C),
   ),
   // Moov Africa Malitel — le second opérateur mobile money du Mali. Remplace
-  // « Free Money », qui n'existe qu'au Sénégal.
+  // « Free Money », absent du Mali.
   moovMoney('moov_money', 'Moov', PaymentFamily.mobileMoney, Color(0xFF0A6FB8)),
   card('card', 'Carte bancaire', PaymentFamily.card, AppColors.blue);
 

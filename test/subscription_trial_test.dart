@@ -69,7 +69,9 @@ void main() {
       expect(sub.isExpired, isFalse);
       expect(sub.isActive, isTrue);
       expect(sub.statusLabel, equals('Actif'));
-      expect(sub.nextChargeLabel, startsWith('Prochain prélèvement'));
+      // Plus de « prochain prélèvement » : rien n'est prélevé
+      // automatiquement, c'est l'opérateur qui prolonge la période.
+      expect(sub.nextChargeLabel, startsWith("Actif jusqu'au"));
     });
 
     test('Désérialisation fromMap avec statut trialing', () {

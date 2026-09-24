@@ -7,6 +7,7 @@ import '../../../core/services/storage_service.dart';
 import '../domain/salon.dart';
 import '../domain/subscription.dart';
 import '../domain/subscription_plan.dart';
+import '../domain/subscription_request.dart';
 
 /// Informations du salon et paramètres généraux.
 class SettingsRepository {
@@ -95,29 +96,47 @@ class SettingsRepository {
     return data.map(SubscriptionPlan.fromMap).toList();
   }
 
-  /// Souscrit à [plan] pour [salonId] — écran « Comparatif & paiement ».
+  /// Dépose une demande d'activation pour [plan] — écran « Comparatif &
+  /// paiement ».
   ///
-  /// Un salon n'a qu'un abonnement (index unique sur `salon_id`) : on remplace
-  /// donc la ligne existante plutôt que d'en empiler une nouvelle.
-  ///
-  /// L'écriture passe par une RPC parce que la table n'est plus modifiable
-  /// depuis le client : elle vérifie que l'appelant est gérant, et lit le
-  /// tarif comme l'échéance côté serveur. Envoyés d'ici, ils permettaient de
-  /// s'offrir la formule Pro à 0 F, ou de se donner dix ans d'avance.
-  Future<Subscription> changePlan({
-    required String salonId,
+  /// L'application ne s'active plus elle-même. `change_subscription_plan`
+  /// passait le salon en formule payée sans que rien ne soit payé : deux taps
+  /// suffisaient à contourner l'essai et la lecture seule. La base calcule
+  /// ici le montant et la référence ; l'opérateur active depuis la console
+  /// une fois le paiement reçu.
+  Future<SubscriptionRequest> requestActivation({
     required SubscriptionPlan plan,
     required BillingCycle cycle,
-    required String paymentLabel,
+    String? method,
   }) async {
     final data = await _client.rpc<Map<String, dynamic>>(
-      'change_subscription_plan',
+      'request_subscription_activation',
       params: {
         'p_plan_code': plan.code,
         'p_billing_cycle': cycle.value,
-        'p_payment_label': paymentLabel,
+        'p_method': method,
       },
     );
-    return Subscription.fromMap(data);
+    return SubscriptionRequest.fromMap(data);
+  }
+
+  /// La demande en attente du salon, s'il y en a une.
+  Future<SubscriptionRequest?> fetchPendingRequest(String salonId) async {
+    final data = await _client
+        .from(SupabaseTables.subscriptionRequests)
+        .select()
+        .eq('salon_id', salonId)
+        .eq('status', 'pending')
+        .maybeSingle();
+    return data == null ? null : SubscriptionRequest.fromMap(data);
+  }
+
+  /// Les comptes sur lesquels envoyer le paiement.
+  Future<List<PaymentAccount>> fetchPaymentAccounts() async {
+    final data = await _client
+        .from(SupabaseTables.billingPaymentAccounts)
+        .select()
+        .order('sort_order', ascending: true);
+    return data.map(PaymentAccount.fromMap).toList();
   }
 }

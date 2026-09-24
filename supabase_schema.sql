@@ -975,3 +975,27 @@ BEGIN
   );
 END;
 $$;
+
+-- ==========================================================================
+-- Passerelle d'administration (20260924_admin_bridge)
+-- ==========================================================================
+-- La console admintools gère les abonnements Stylik à travers projectest,
+-- qui appelle quatre fonctions `admin_*` avec la clé anonyme et l'en-tête
+-- `x-stylik-key`. Jamais la clé service_role. L'empreinte de la clé vit dans
+-- le schéma `admin_bridge`, que PostgREST n'expose pas.
+--
+--   admin_list_salons()                          état tranché par la base
+--   admin_activate_salon(salon, formule, mois)    période empilée
+--   admin_set_salon_suspended(salon, bool)        lecture seule, message dédié
+--   admin_sync_plans(jsonb)                       catalogue de la console
+--
+-- Ajouts : `subscriptions.suspended`, `subscription_plans.yearly_discount`,
+-- tables `subscription_requests` (demandes d'activation, une en attente par
+-- salon au plus) et `billing_payment_accounts` (où envoyer l'argent).
+--
+-- `change_subscription_plan` est supprimée : elle activait sans paiement.
+-- Le gérant dépose une demande (`request_subscription_activation`) ;
+-- l'opérateur active depuis la console une fois l'argent reçu.
+--
+-- Règle d'accès : une période payée expire à son terme comme un essai,
+-- puisque la console la prolonge à chaque règlement.

@@ -78,7 +78,7 @@ void main() {
             profile: const Profile(
               id: 'moi',
               salonId: 'salon',
-              fullName: 'Karim Diop',
+              fullName: 'Karim Coulibaly',
               role: UserRole.coiffeur,
               commissionRate: 30,
             ),
@@ -93,7 +93,7 @@ void main() {
             myMonthCommissionProvider.overrideWith(
               (ref) async => const StylistCommission(
                 stylistId: 'moi',
-                stylistName: 'Karim Diop',
+                stylistName: 'Karim Coulibaly',
                 revenueFcfa: 2104000,
                 commissionFcfa: 322000,
                 serviceCount: 12,
@@ -125,7 +125,7 @@ void main() {
             profile: Profile(
               id: 'moi',
               salonId: 'salon',
-              fullName: 'Karim Diop',
+              fullName: 'Karim Coulibaly',
               role: UserRole.coiffeur,
               commissionRate: 30,
             ),

@@ -68,6 +68,7 @@ import 'features/pos/presentation/transactions_page.dart';
 import 'features/settings/domain/subscription_plan.dart';
 import 'features/settings/presentation/notifications_page.dart';
 import 'features/settings/presentation/plan_checkout_page.dart';
+import 'features/settings/presentation/payment_instructions_page.dart';
 import 'features/settings/presentation/plan_selection_page.dart';
 import 'features/settings/presentation/roles_page.dart';
 import 'features/settings/presentation/salon_info_page.dart';
@@ -220,6 +221,7 @@ class StylikApp extends ConsumerWidget {
     NotificationsPage.routeName: const NotificationsPage(),
     SubscriptionPage.routeName: const SubscriptionPage(),
     PlanSelectionPage.routeName: const PlanSelectionPage(),
+    PaymentInstructionsPage.routeName: const PaymentInstructionsPage(),
     TrialWelcomePage.routeName: const TrialWelcomePage(),
     TrialExpiredPage.routeName: const TrialExpiredPage(),
     ProfilePage.routeName: const ProfilePage(),
@@ -350,7 +352,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       // Si l'utilisateur quitte l'onglet Menu ou y revient,
       // on réinitialise l'onglet Menu à sa racine (état par défaut du menu).
       if (moreIndex >= 0 && (_index == moreIndex || index == moreIndex)) {
-        _navigatorKey(moreIndex).currentState?.popUntil((route) => route.isFirst);
+        _navigatorKey(
+          moreIndex,
+        ).currentState?.popUntil((route) => route.isFirst);
       }
 
       if (!_visitedIndices.contains(index)) {

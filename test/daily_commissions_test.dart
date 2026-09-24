@@ -22,7 +22,7 @@ void main() {
   const profile = Profile(
     id: 'moi',
     salonId: 'salon',
-    fullName: 'Karim Diop',
+    fullName: 'Karim Coulibaly',
     role: UserRole.coiffeur,
     commissionRate: 30,
   );
@@ -72,7 +72,7 @@ void main() {
             (ref) async => [
               StylistCommission(
                 stylistId: 'moi',
-                stylistName: 'Karim Diop',
+                stylistName: 'Karim Coulibaly',
                 revenueFcfa: earned * 100 ~/ 30,
                 commissionFcfa: earned,
                 serviceCount: 10,
@@ -111,7 +111,7 @@ void main() {
             (ref) async => const [
               StylistCommission(
                 stylistId: 'moi',
-                stylistName: 'Karim Diop',
+                stylistName: 'Karim Coulibaly',
                 revenueFcfa: 1000000,
                 commissionFcfa: 300000,
                 serviceCount: 10,

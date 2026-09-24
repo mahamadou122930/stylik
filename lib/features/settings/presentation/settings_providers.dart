@@ -8,6 +8,7 @@ import '../data/settings_repository.dart';
 import '../domain/salon.dart';
 import '../domain/subscription.dart';
 import '../domain/subscription_plan.dart';
+import '../domain/subscription_request.dart';
 
 final settingsRepositoryProvider = Provider<SettingsRepository>(
   (ref) => SettingsRepository(
@@ -92,3 +93,21 @@ final trialRecapProvider = FutureProvider<TrialRecap?>((ref) async {
     revenueFcfa: summary.revenueFcfa,
   );
 });
+
+/// Demande d'activation en attente de paiement, s'il y en a une.
+///
+/// Elle reste visible tant que l'opérateur ne l'a pas honorée : le gérant
+/// qui revient sur l'écran d'abonnement retrouve sa référence et le numéro
+/// où payer, au lieu de redéposer une demande.
+final pendingSubscriptionRequestProvider = FutureProvider<SubscriptionRequest?>(
+  (ref) async {
+    final salonId = ref.watch(currentSalonIdProvider);
+    if (salonId == null) return null;
+    return ref.watch(settingsRepositoryProvider).fetchPendingRequest(salonId);
+  },
+);
+
+/// Comptes sur lesquels envoyer le paiement.
+final paymentAccountsProvider = FutureProvider<List<PaymentAccount>>(
+  (ref) => ref.watch(settingsRepositoryProvider).fetchPaymentAccounts(),
+);

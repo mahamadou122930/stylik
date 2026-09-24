@@ -30,8 +30,7 @@ class PlanSelectionPage extends ConsumerWidget {
         boxed: true,
         items: [
           BillingCycle.monthly.label,
-          '${BillingCycle.annual.label} '
-              '−${BillingCycle.annual.discountPercent} %',
+          _annualLabel(plans.valueOrNull ?? const []),
         ],
         selectedIndex: cycle == BillingCycle.annual ? 1 : 0,
         onChanged: (index) => ref.read(billingCycleProvider.notifier).state =
@@ -113,7 +112,7 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final price = cycle.monthlyPrice(plan.pricePerMonthFcfa);
+    final price = plan.monthlyEquivalent(cycle);
     final onDark = plan.isPopular;
 
     final head = Row(
@@ -212,7 +211,7 @@ class _PlanCard extends StatelessWidget {
     final summary = Text(
       cycle == BillingCycle.annual
           ? '${plan.summary ?? ''}\nFacturé '
-                '${Formatters.fcfa(cycle.chargeAmount(plan.pricePerMonthFcfa))} '
+                '${Formatters.fcfa(plan.chargeFor(BillingCycle.annual))} '
                 'par an'
           : (plan.summary ?? ''),
       style: AppTypography.manrope(
@@ -311,4 +310,19 @@ class _CurrentPlanTag extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Libellé de la bascule annuelle, tiré du catalogue réel.
+///
+/// Les formules peuvent ne pas partager la même remise : annoncer « −20 % »
+/// en tête d'écran quand l'une n'en offre que 10 serait une promesse fausse.
+String _annualLabel(List<SubscriptionPlan> plans) {
+  final percents = {
+    for (final plan in plans) plan.discountPercentFor(BillingCycle.annual),
+  }..remove(0);
+  if (percents.isEmpty) return BillingCycle.annual.label;
+  final best = percents.reduce((a, b) => a > b ? a : b);
+  return percents.length == 1
+      ? '${BillingCycle.annual.label} −$best %'
+      : "${BillingCycle.annual.label} jusqu'à −$best %";
 }

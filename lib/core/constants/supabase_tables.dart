@@ -23,6 +23,8 @@ abstract final class SupabaseTables {
   static const String campaigns = 'campaigns';
   static const String subscriptions = 'subscriptions';
   static const String subscriptionPlans = 'subscription_plans';
+  static const String subscriptionRequests = 'subscription_requests';
+  static const String billingPaymentAccounts = 'billing_payment_accounts';
 }
 
 /// Buckets Supabase Storage.

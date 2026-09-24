@@ -83,10 +83,13 @@ abstract final class Formatters {
   /// Met en majuscule la première lettre de chaque mot (ex: `"4 août 2026"` → `"4 Août 2026"`).
   static String capitalizeWords(String text) {
     if (text.isEmpty) return text;
-    return text.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return '${word[0].toUpperCase()}${word.substring(1)}';
-    }).join(' ');
+    return text
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return '${word[0].toUpperCase()}${word.substring(1)}';
+        })
+        .join(' ');
   }
 
   static String time(DateTime date) => _time.format(date.toLocal());

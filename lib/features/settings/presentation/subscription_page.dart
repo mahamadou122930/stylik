@@ -8,17 +8,37 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/widgets.dart';
 import '../domain/subscription.dart';
 import '../domain/subscription_plan.dart';
+import '../domain/subscription_request.dart';
+import 'payment_instructions_page.dart';
 import 'plan_selection_page.dart';
 import 'settings_providers.dart';
 
 /// 10.4 — Abonnement : formule en cours, contenu et facturation.
-class SubscriptionPage extends ConsumerWidget {
+class SubscriptionPage extends ConsumerStatefulWidget {
   const SubscriptionPage({super.key});
 
   static const routeName = '/settings/subscription';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubscriptionPage> createState() => _SubscriptionPageState();
+}
+
+class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
+  @override
+  void initState() {
+    super.initState();
+    // L'abonnement change hors de l'application : c'est l'opérateur qui
+    // l'active, depuis la console. Sans relecture, un gérant qui vient de
+    // payer verrait encore son essai expiré jusqu'au redémarrage. La valeur
+    // en cache reste affichée pendant la relecture : pas de clignotement.
+    Future.microtask(() {
+      ref.invalidate(subscriptionProvider);
+      ref.invalidate(pendingSubscriptionRequestProvider);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final subscription = ref.watch(subscriptionProvider);
 
     return AppScreen(
@@ -57,6 +77,7 @@ class _SubscriptionBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const _PendingRequestBanner(),
         if (subscription.isTrial && !subscription.isExpired)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -239,15 +260,7 @@ class _SubscriptionBody extends StatelessWidget {
               if (subscription.billingCycle == BillingCycle.annual &&
                   !subscription.isTrial) ...[
                 const SizedBox(height: 4),
-                Text(
-                  'Facturé ${Formatters.fcfa(subscription.chargeAmountFcfa)} '
-                  'par an',
-                  style: AppTypography.manrope(
-                    12,
-                    FontWeight.w600,
-                    color: Colors.white70,
-                  ),
-                ),
+                _AnnualRate(planCode: subscription.planCode),
               ],
             ],
           ),
@@ -365,6 +378,98 @@ class _SubscriptionBody extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Demande d'activation déposée et pas encore payée.
+///
+/// Sans elle, un gérant qui revient sur cet écran ne retrouve ni sa
+/// référence ni le numéro où payer, et redépose une demande — qui remplace la
+/// première, référence comprise.
+class _PendingRequestBanner extends ConsumerWidget {
+  const _PendingRequestBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final SubscriptionRequest? request = ref
+        .watch(pendingSubscriptionRequestProvider)
+        .valueOrNull;
+    if (request == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: AppCard(
+        onTap: () =>
+            Navigator.of(context).pushNamed(PaymentInstructionsPage.routeName),
+        radius: 16,
+        shadow: false,
+        color: AppColors.tintAmber,
+        borderColor: AppColors.amberBorder,
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            const Icon(LucideIcons.hourglass, size: 22, color: AppColors.amber),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Demande en attente de paiement',
+                    style: AppTypography.sora(
+                      14,
+                      FontWeight.w700,
+                      color: AppColors.amberDeep,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${request.planName} · '
+                    '${Formatters.fcfa(request.amountFcfa)} · '
+                    'réf. ${request.reference}',
+                    style: AppTypography.manrope(
+                      12,
+                      FontWeight.w600,
+                      color: AppColors.textBody,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              LucideIcons.chevronRight,
+              size: 18,
+              color: AppColors.amberDeep,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tarif annuel en vigueur de la formule du salon.
+///
+/// L'abonnement ne garde pas la remise qu'il a obtenue — le montant réglé est
+/// au registre de la console, pas ici. Le montant affiché est donc celui du
+/// catalogue aujourd'hui, et il est présenté comme tel plutôt que comme
+/// « facturé » : une remise changée depuis ferait mentir ce mot.
+class _AnnualRate extends ConsumerWidget {
+  const _AnnualRate({required this.planCode});
+
+  final String? planCode;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final plans = ref.watch(subscriptionPlansProvider).valueOrNull ?? const [];
+    final plan = plans.where((p) => p.code == planCode).firstOrNull;
+    if (plan == null) return const SizedBox.shrink();
+
+    return Text(
+      'Tarif annuel en vigueur : '
+      '${Formatters.fcfa(plan.chargeFor(BillingCycle.annual))}',
+      style: AppTypography.manrope(12, FontWeight.w600, color: Colors.white70),
     );
   }
 }
